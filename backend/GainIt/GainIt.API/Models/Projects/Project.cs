@@ -4,7 +4,7 @@ namespace GainIt.API.Models.Projects
 {
     public class Project
     {
-        public int ProjectId { get; set; }
+        public Guid ProjectId { get; set; }
         public string ProjectName { get; set; }
         public string ProjectDescription { get; set; }
         public eProjectStatus ProjectStatus { get; set; } // "Pending" , "In Progress", "Completed"
