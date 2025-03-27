@@ -1,0 +1,66 @@
+# 🔧 Visual Studio
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# 🏗️ Build directories
+bin/
+obj/
+TestResults/
+out/
+
+# 📦 NuGet
+*.nupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+
+# 📁 Logs
+*.log
+
+# 🔒 Secrets
+*.env
+secrets.json
+
+# 🌐 ASP.NET Configuration
+appsettings.Development.json
+appsettings.Production.json
+appsettings.*.local.json
+
+# 📄 OS files
+Thumbs.db
+ehthumbs.db
+*.DS_Store
+.DS_Store
+
+# 🖼️ VS Code settings (optional)
+.vscode/
+
+# ⚛️ Frontend (React or Node)
+node_modules/
+dist/
+build/
+
+# 💡 SQLite or other local DBs
+*.db
+*.sqlite
+
+# 🧪 Coverage / testing
+coverage/
+*.coverage
+*.coveragexml
+
+# 💾 Docker / containers
+*.pid
+*.pid.lock
+*.tar
+*.img
+*.container
+
+# 💼 Misc
+*.exe
+*.dll
+*.pdb
+*.tmp
+*.bak
