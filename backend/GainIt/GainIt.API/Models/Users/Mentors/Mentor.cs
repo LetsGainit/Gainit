@@ -2,12 +2,12 @@
 
 namespace GainIt.API.Models.Users.Mentors
 {
-    public class Mentor : IUser
+    public class Mentor : User
     {
-        public Guid UserId { get; set; }
-        public string FullName { get; set; }
-        public string EmailAddress { get; set; }
-        public eUserRole UserRole { get; set; } = eUserRole.Mentor;  // Set as "Mentor" by default
+        public Mentor()
+        {
+            this.UserRole = eUserRole.Mentor; // Set as "Mentor" by default
+        }
         public int YearsOfExperience { get; set; }
         public string AreaOfExpertise { get; set; }
     }

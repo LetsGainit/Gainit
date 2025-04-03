@@ -4,6 +4,6 @@
     {
         Gainer,
         Mentor,
-        Nonprofit
+        NonprofitOrganization
     }
 }

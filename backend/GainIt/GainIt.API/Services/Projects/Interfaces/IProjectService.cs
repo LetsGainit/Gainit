@@ -6,26 +6,25 @@ namespace GainIt.API.Services.Projects.Interfaces
     public interface IProjectService
     {
         // Basic getters
-        Project? GetProjectById(int i_ProjectId);
-        IEnumerable<Project> getTemplatesProjects();
+        Project? GetProjectById(Guid i_ProjectId);
+        IEnumerable<Project> GetTemplatesProjects();
         IEnumerable<Project> GetNonprofitProjects();
 
         // Get projects by different user roles
-        IEnumerable<Project> GetProjectsByUserId(int i_UserId);
-        IEnumerable<Project> GetProjectsByMentorId(int i_MentorId);
-        IEnumerable<Project> GetProjectsByNonprofitId(int i_NonprofitId);
+        IEnumerable<Project> GetProjectsByUserId(Guid i_UserId);
+        IEnumerable<Project> GetProjectsByMentorId(Guid i_MentorId);
+        IEnumerable<Project> GetProjectsByNonprofitId(Guid i_NonprofitId);
 
         // Creating a new project
         void AddProject(Project i_Project);
 
         // Updating a project
-        void UpdateProjectStatus(int i_ProjectId, eProjectStatus i_Status);
-        void AssignMentor(int i_ProjectId, int i_MentorId);
-        void UpdateRepositoryLink(int i_ProjectId, string i_RepositoryLink);
+        void UpdateProjectStatus(Guid i_ProjectId, eProjectStatus i_Status);
+        void AssignMentor(Guid i_ProjectId, Guid i_MentorId);
+        void UpdateRepositoryLink(Guid i_ProjectId, string i_RepositoryLink);
 
         // Team member management
-        void AddTeamMember(int i_ProjectId, int i_UserId);
-        void RemoveTeamMember(int i_ProjectId, int i_UserId);
-
+        void AddTeamMember(Guid i_ProjectId, Guid i_UserId);
+        void RemoveTeamMember(Guid i_ProjectId, Guid i_UserId);
     }
 }

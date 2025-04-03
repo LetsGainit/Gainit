@@ -11,57 +11,57 @@ namespace GainIt.API.Services.Projects.Implementations
             throw new NotImplementedException();
         }
 
-        public void AddTeamMember(int i_ProjectId, int i_UserId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void AssignMentor(int i_ProjectId, int i_MentorId)
-        {
-            throw new NotImplementedException();
-        }
-
         public IEnumerable<Project> GetNonprofitProjects()
         {
             throw new NotImplementedException();
         }
 
-        public Project? GetProjectById(int i_ProjectId)
+        public IEnumerable<Project> GetProjectsByMentorId(Guid i_MentorId)
         {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<Project> GetProjectsByMentorId(int i_MentorId)
+        public IEnumerable<Project> GetProjectsByNonprofitId(Guid i_NonprofitId)
         {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<Project> GetProjectsByNonprofitId(int i_NonprofitId)
+        public IEnumerable<Project> GetProjectsByUserId(Guid i_UserId)
         {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<Project> GetProjectsByUserId(int i_UserId)
+        public Project? GetProjectById(Guid i_ProjectId)
         {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<Project> getTemplatesProjects()
+        public IEnumerable<Project> GetTemplatesProjects()
         {
             throw new NotImplementedException();
         }
 
-        public void RemoveTeamMember(int i_ProjectId, int i_UserId)
+        public void AssignMentor(Guid i_ProjectId, Guid i_MentorId)
         {
             throw new NotImplementedException();
         }
 
-        public void UpdateProjectStatus(int i_ProjectId, eProjectStatus i_Status)
+        public void RemoveTeamMember(Guid i_ProjectId, Guid i_UserId)
         {
             throw new NotImplementedException();
         }
 
-        public void UpdateRepositoryLink(int i_ProjectId, string i_RepositoryLink)
+        public void UpdateProjectStatus(Guid i_ProjectId, eProjectStatus i_Status)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UpdateRepositoryLink(Guid i_ProjectId, string i_RepositoryLink)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddTeamMember(Guid i_ProjectId, Guid i_UserId)
         {
             throw new NotImplementedException();
         }

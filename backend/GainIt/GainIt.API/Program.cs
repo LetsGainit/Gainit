@@ -1,7 +1,18 @@
+using GainIt.API.Data;
+using GainIt.API.Services.Projects.Implementations;
+using GainIt.API.Services.Projects.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddScoped<IProjectService, ProjectService>(); 
+builder.Services.AddScoped<IProjectService, ProjectService>();
+
+builder.Services.AddDbContext<GainItDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("GainItPostgresDb")));
+
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
