@@ -25,12 +25,33 @@ namespace GainIt.API.Data
 
         protected override void OnModelCreating(ModelBuilder i_ModelBuilder)
         {
-            // Use TPT strategy: each type has its own table (clean, scalable)
+            // Use TPT for inheritance
             i_ModelBuilder.Entity<User>().UseTptMappingStrategy();
 
-            base.OnModelCreating(i_ModelBuilder); // Keep EF Core default behavior
+            // Many-to-many: Projects ↔ TeamMembers (Gainers)
+            i_ModelBuilder.Entity<Project>()
+                .HasMany(p => p.TeamMembers)
+                .WithMany(g => g.ParticipatedProjects)
+                .UsingEntity(j => j.ToTable("ProjectTeamMembers"));
+
+            // One mentor → many projects
+            i_ModelBuilder.Entity<Project>()
+                .HasOne<Mentor>(p => p.AssignedMentor)
+                .WithMany(m => m.MentoredProjects) // ✅ השם החדש
+                .HasForeignKey("AssignedMentorUserId")
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // One nonprofit → many projects
+            i_ModelBuilder.Entity<Project>()
+                .HasOne<NonprofitOrganization>(p => p.OwningOrganization)
+                .WithMany(n => n.OwnedProjects) // ✅ השם החדש
+                .HasForeignKey("OwningOrganizationUserId")
+                .OnDelete(DeleteBehavior.SetNull);
+
+            base.OnModelCreating(i_ModelBuilder);
         }
 
+
     }
-    
+
 }

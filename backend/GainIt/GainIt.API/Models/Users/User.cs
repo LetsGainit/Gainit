@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using GainIt.API.Models.Enums.Users;
+using GainIt.API.Models.Projects;
 
 namespace GainIt.API.Models.Users
 {
@@ -19,5 +20,6 @@ namespace GainIt.API.Models.Users
 
         [Required]
         public eUserRole UserRole { get; protected set; } // Will include: "NonprofitOrganization", "Mentor", or "Gainer"
+
     }
 }

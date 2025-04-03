@@ -1,11 +1,30 @@
-﻿namespace GainIt.API.ViewModels.Projects
+﻿using GainIt.API.Models.Projects;
+using GainIt.API.Models.Users;
+
+namespace GainIt.API.ViewModels.Projects
 {
     public class ProjectViewModel
     {
-        public ProjectViewModel()
+        public ProjectViewModel(Project i_Project)
         {
-            
+            projectName = i_Project.ProjectName;
+            projectDescription = i_Project.ProjectDescription;
+            projectStatus = i_Project.ProjectStatus.ToString();
+            difficultyLevel = i_Project.DifficultyLevel.ToString();
+            projectSource = i_Project.ProjectSource.ToString();
+            createdAtUtc = i_Project.CreatedAtUtc;
+            repositoryLink = i_Project.RepositoryLink;
+            assignedMentorName = i_Project.AssignedMentor?.FullName;
+            owningOrganizationName = i_Project.OwningOrganization.FullName;
+
+            teamMemberFullNames = new List<string>();
+
+            foreach (User user in i_Project.TeamMembers)
+            {
+                teamMemberFullNames.Add(user.FullName);
+            }
         }
+
         public string projectName { get; set; }
 
         public string projectDescription { get; set; }
@@ -20,11 +39,11 @@
 
         public List<string> teamMemberFullNames { get; set; } = new(); // names of users (Gainers)
 
-        public string? RepositoryLink { get; set; } 
+        public string? repositoryLink { get; set; } 
         
-        public string? AssignedMentorName { get; set; }
+        public string? assignedMentorName { get; set; }
         
-        public string? OwningOrganizationName { get; set; }
+        public string? owningOrganizationName { get; set; }
         
 
     }

@@ -1,5 +1,9 @@
 ﻿using GainIt.API.Models.Enums.Projects;
 using System.ComponentModel.DataAnnotations;
+using GainIt.API.Models.Users;
+using GainIt.API.Models.Users.Gainers;
+using GainIt.API.Models.Users.Mentors;
+using GainIt.API.Models.Users.Nonprofits;
 
 namespace GainIt.API.Models.Projects
 {
@@ -27,13 +31,13 @@ namespace GainIt.API.Models.Projects
 
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
-        public List<Guid> TeamMemberIds { get; set; } = new(); // IDs of users (Gainers)
+        public List<Gainer> TeamMembers { get; set; } = new(); // IDs of users (Gainers)
 
         [Url(ErrorMessage = "Invalid Repository URL")]
         public string? RepositoryLink { get; set; }
 
-        public Guid? AssignedMentorId { get; set; }
+        public Mentor? AssignedMentor { get; set; }
 
-        public Guid? OwningOrganizationId { get; set; }
+        public NonprofitOrganization? OwningOrganization{ get; set; }
     }
 }   

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using GainIt.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GainIt.API.Migrations
 {
     [DbContext(typeof(GainItDbContext))]
-    partial class GainItDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250403183138_ChangedModelTypes")]
+    partial class ChangedModelTypes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,7 +32,7 @@ namespace GainIt.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AssignedMentorUserId")
+                    b.Property<Guid?>("AssignedMentorId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -38,7 +41,7 @@ namespace GainIt.API.Migrations
                     b.Property<int>("DifficultyLevel")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("OwningOrganizationUserId")
+                    b.Property<Guid?>("OwningOrganizationId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("ProjectDescription")
@@ -60,11 +63,11 @@ namespace GainIt.API.Migrations
                     b.Property<string>("RepositoryLink")
                         .HasColumnType("text");
 
+                    b.PrimitiveCollection<List<Guid>>("TeamMemberIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]");
+
                     b.HasKey("ProjectId");
-
-                    b.HasIndex("AssignedMentorUserId");
-
-                    b.HasIndex("OwningOrganizationUserId");
 
                     b.ToTable("Projects");
                 });
@@ -93,21 +96,6 @@ namespace GainIt.API.Migrations
                     b.ToTable("Users");
 
                     b.UseTptMappingStrategy();
-                });
-
-            modelBuilder.Entity("GainerProject", b =>
-                {
-                    b.Property<Guid>("ParticipatedProjectsProjectId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TeamMembersUserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("ParticipatedProjectsProjectId", "TeamMembersUserId");
-
-                    b.HasIndex("TeamMembersUserId");
-
-                    b.ToTable("ProjectTeamMembers", (string)null);
                 });
 
             modelBuilder.Entity("GainIt.API.Models.Users.Gainers.Gainer", b =>
@@ -152,38 +140,6 @@ namespace GainIt.API.Migrations
                     b.ToTable("Nonprofits");
                 });
 
-            modelBuilder.Entity("GainIt.API.Models.Projects.Project", b =>
-                {
-                    b.HasOne("GainIt.API.Models.Users.Mentors.Mentor", "AssignedMentor")
-                        .WithMany("MentoredProjects")
-                        .HasForeignKey("AssignedMentorUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("GainIt.API.Models.Users.Nonprofits.NonprofitOrganization", "OwningOrganization")
-                        .WithMany("OwnedProjects")
-                        .HasForeignKey("OwningOrganizationUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("AssignedMentor");
-
-                    b.Navigation("OwningOrganization");
-                });
-
-            modelBuilder.Entity("GainerProject", b =>
-                {
-                    b.HasOne("GainIt.API.Models.Projects.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ParticipatedProjectsProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GainIt.API.Models.Users.Gainers.Gainer", null)
-                        .WithMany()
-                        .HasForeignKey("TeamMembersUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("GainIt.API.Models.Users.Gainers.Gainer", b =>
                 {
                     b.HasOne("GainIt.API.Models.Users.User", null)
@@ -209,16 +165,6 @@ namespace GainIt.API.Migrations
                         .HasForeignKey("GainIt.API.Models.Users.Nonprofits.NonprofitOrganization", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("GainIt.API.Models.Users.Mentors.Mentor", b =>
-                {
-                    b.Navigation("MentoredProjects");
-                });
-
-            modelBuilder.Entity("GainIt.API.Models.Users.Nonprofits.NonprofitOrganization", b =>
-                {
-                    b.Navigation("OwnedProjects");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,4 +1,5 @@
 ﻿using GainIt.API.Models.Enums.Users;
+using GainIt.API.Models.Projects;
 using System.ComponentModel.DataAnnotations;
 
 namespace GainIt.API.Models.Users.Mentors
@@ -16,5 +17,7 @@ namespace GainIt.API.Models.Users.Mentors
         [Required(ErrorMessage = "Area of Expertise is required")]
         [StringLength(200, ErrorMessage = "Area of Expertise cannot exceed 200 characters")]
         public string AreaOfExpertise { get; set; }
+
+        public List<Project> MentoredProjects { get; set; } = new();
     }
 }
