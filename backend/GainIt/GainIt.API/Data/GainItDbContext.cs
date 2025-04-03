@@ -37,14 +37,14 @@ namespace GainIt.API.Data
             // One mentor → many projects
             i_ModelBuilder.Entity<Project>()
                 .HasOne<Mentor>(p => p.AssignedMentor)
-                .WithMany(m => m.MentoredProjects) // ✅ השם החדש
+                .WithMany(m => m.MentoredProjects) 
                 .HasForeignKey("AssignedMentorUserId")
                 .OnDelete(DeleteBehavior.SetNull);
 
             // One nonprofit → many projects
             i_ModelBuilder.Entity<Project>()
                 .HasOne<NonprofitOrganization>(p => p.OwningOrganization)
-                .WithMany(n => n.OwnedProjects) // ✅ השם החדש
+                .WithMany(n => n.OwnedProjects) 
                 .HasForeignKey("OwningOrganizationUserId")
                 .OnDelete(DeleteBehavior.SetNull);
 
