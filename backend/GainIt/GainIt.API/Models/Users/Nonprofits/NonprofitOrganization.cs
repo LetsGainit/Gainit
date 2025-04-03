@@ -1,4 +1,5 @@
 ﻿using GainIt.API.Models.Enums.Users;
+using System.ComponentModel.DataAnnotations;
 
 namespace GainIt.API.Models.Users.Nonprofits
 {
@@ -8,6 +9,9 @@ namespace GainIt.API.Models.Users.Nonprofits
         {
             this.UserRole = eUserRole.NonprofitOrganization;
         }
+
+        [Required(ErrorMessage = "Website URL is required")]
+        [Url(ErrorMessage = "Invalid Website URL")]
         public string WebsiteUrl { get; set; }
 
     }

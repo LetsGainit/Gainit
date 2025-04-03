@@ -1,4 +1,5 @@
 ﻿using GainIt.API.Models.Enums.Users;
+using System.ComponentModel.DataAnnotations;
 
 namespace GainIt.API.Models.Users.Mentors
 {
@@ -8,7 +9,12 @@ namespace GainIt.API.Models.Users.Mentors
         {
             this.UserRole = eUserRole.Mentor; // Set as "Mentor" by default
         }
+
+        [Range(1, 50, ErrorMessage = "Years of Experience must be between 1 and 50")]
         public int YearsOfExperience { get; set; }
+
+        [Required(ErrorMessage = "Area of Expertise is required")]
+        [StringLength(200, ErrorMessage = "Area of Expertise cannot exceed 200 characters")]
         public string AreaOfExpertise { get; set; }
     }
 }
