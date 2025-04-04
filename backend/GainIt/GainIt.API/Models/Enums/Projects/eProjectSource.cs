@@ -3,6 +3,6 @@
     public enum eProjectSource
     {
         Template,
-        Nonprofit
+        NonprofitOrganization
     }
 }
