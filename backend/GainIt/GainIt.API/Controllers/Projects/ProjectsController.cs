@@ -1,6 +1,16 @@
-﻿namespace GainIt.API.Controllers.Projects
+﻿using GainIt.API.Services.Projects.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+
+namespace GainIt.API.Controllers.Projects
 {
-    public class ProjectsController
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ProjectsController : ControllerBase
     {
+        private readonly IProjectService r_ProjectService;
+
+        public ProjectsController(IProjectService i_ProjectService)
+        {
+            r_ProjectService = i_ProjectService;
+        }
     }
-}
