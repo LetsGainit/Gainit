@@ -5,6 +5,7 @@ using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
+using GainIt.API.Models.Users.Nonprofits;
 using GainIt.API.Services.Projects.Interfaces;
 using GainIt.API.ViewModels.Projects;
 using Microsoft.EntityFrameworkCore;
@@ -20,152 +21,156 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         // Retrieve a project by its ID
-        public ProjectViewModel? GetProjectByProjectId(Guid i_ProjectId)
+        public async Task<ProjectViewModel?> GetProjectByProjectId(Guid i_ProjectId)
         {
-            Project? o_project = r_DbContext.Projects
+            Project? o_project = await r_DbContext.Projects
                 .Include(p => p.TeamMembers)
                 .Include(p => p.AssignedMentor)
                 .Include(p => p.OwningOrganization)
-                .FirstOrDefault(p => p.ProjectId == i_ProjectId);
+                .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId);
 
             return o_project == null ? null : new ProjectViewModel(o_project);
         }
 
         // Retrieve all projects that are templates
-        public IEnumerable<ProjectViewModel> GetAllTemplatesProjects()
+        public async Task<IEnumerable<ProjectViewModel>> GetAllTemplatesProjects()
         {
-            return r_DbContext.Projects
+            var o_project = await r_DbContext.Projects
                 .Where(p => p.ProjectSource == eProjectSource.Template)
                 .Include(p => p.TeamMembers)
                 .Include(p => p.AssignedMentor)
-                .ToList()
-                .Select(p => new ProjectViewModel(p));
+                .ToListAsync();
+
+            return o_project.Select(p => new ProjectViewModel(p));
         }
 
         // Retrieve all projects that are nonprofit projects
-        public IEnumerable<ProjectViewModel> GetAllNonprofitProjects()
+        public async Task<IEnumerable<ProjectViewModel>> GetAllNonprofitProjects()
         {
-            return r_DbContext.Projects
+            var o_project = await r_DbContext.Projects
                 .Where(p => p.ProjectSource == eProjectSource.NonprofitOrganization)
                 .Include(p => p.TeamMembers)
                 .Include(p => p.OwningOrganization)
-                .ToList()
-                .Select(p => new ProjectViewModel(p));
+                .ToListAsync();
+
+            return o_project.Select(p => new ProjectViewModel(p));
         }
 
-        // Retrieve all projects that are built-in projects
-        public IEnumerable<ProjectViewModel> GetProjectsByUserId(Guid i_UserId)
+        // Retrieve all projects that are assigned to a specific user
+        public async Task<IEnumerable<ProjectViewModel>> GetProjectsByUserId(Guid i_UserId)
         {
-            return r_DbContext.Projects
+            var o_project = await r_DbContext.Projects
+                .Where(p => p.TeamMembers.Any(u => u.UserId == i_UserId))
                 .Include(p => p.TeamMembers)
                 .Include(p => p.AssignedMentor)
                 .Include(p => p.OwningOrganization)
-                .ToList()
-                .Where(p => p.TeamMembers.Any(u => u.UserId == i_UserId)) 
-                .Select(p => new ProjectViewModel(p));
+                .ToListAsync();
+                
+            return o_project.Select(p => new ProjectViewModel(p));
         }
 
         // Retrieve all projects that are assigned to a specific mentor
-        public IEnumerable<ProjectViewModel> GetProjectsByMentorId(Guid i_MentorId)
+        public async Task<IEnumerable<ProjectViewModel>> GetProjectsByMentorId(Guid i_MentorId)
         {
-            return r_DbContext.Projects
+            var o_project = await r_DbContext.Projects
                 .Where(p => p.AssignedMentor.UserId == i_MentorId)
                 .Include(p => p.TeamMembers)
                 .Include(p => p.OwningOrganization)
-                .ToList()
-                .Select(p => new ProjectViewModel(p));
+                .ToListAsync();
+
+            return o_project.Select(p => new ProjectViewModel(p));
         }
 
         // Retrieve all projects that are owned by a specific nonprofit organization
-        public IEnumerable<ProjectViewModel> GetProjectsByNonprofitId(Guid i_NonprofitId)
+        public async Task<IEnumerable<ProjectViewModel>> GetProjectsByNonprofitId(Guid i_NonprofitId)
         {
-            return r_DbContext.Projects
+            var o_project = await r_DbContext.Projects
                 .Where(p => p.OwningOrganization.UserId == i_NonprofitId)
                 .Include(p => p.OwningOrganization)
                 .Include(p => p.TeamMembers)
                 .Include(p => p.AssignedMentor)
-                .ToList()
-                .Select(p => new ProjectViewModel(p));
+                .ToListAsync();
+
+            return o_project.Select(p => new ProjectViewModel(p));
         }
 
         // Add a new project to the database
-        public void AddProject(Project i_Project)
+        public async Task AddProject(Project i_Project)
         {
             r_DbContext.Projects.Add(i_Project);
-            r_DbContext.SaveChanges();
+           await r_DbContext.SaveChangesAsync();
         }
 
         // Update the status of an existing project
-        public void UpdateProjectStatus(Guid i_ProjectId, eProjectStatus i_Status)
+        public async Task UpdateProjectStatus(Guid i_ProjectId, eProjectStatus i_Status)
         {
-            Project? o_Project = r_DbContext.Projects.Find(i_ProjectId); // Get the project by ID
+            Project? o_Project = await r_DbContext.Projects.FindAsync(i_ProjectId); // Get the project by ID
 
             if (o_Project == null)
             {
                 throw new KeyNotFoundException("Project not found"); // Throw an exception if the project is not found
             }
             o_Project.ProjectStatus = i_Status; // Update the project status
-            r_DbContext.SaveChanges(); // Save changes to the database
-
+            await r_DbContext.SaveChangesAsync(); // Save changes to the database
         }
 
         // Assign a mentor to a project
-        public void AssignMentor(Guid i_ProjectId, Guid i_MentorId)
+        public async Task AssignMentor(Guid i_ProjectId, Guid i_MentorId)
         {
-            Project? o_Project = r_DbContext.Projects.Find(i_ProjectId); // Get the project by ID
+            Project? o_Project = await r_DbContext.Projects.FindAsync(i_ProjectId); // Get the project by ID
 
             if (o_Project == null)
             {
                 throw new KeyNotFoundException("Project not found");
             }
 
-            Mentor? o_Mentor = r_DbContext.Mentors.Find(i_MentorId); // Get the mentor by ID
+            Mentor? o_Mentor = await r_DbContext.Mentors.FindAsync(i_MentorId); // Get the mentor by ID
 
             if (o_Mentor == null)
             {
                 throw new KeyNotFoundException("Mentor not found"); // Throw an exception if the mentor is not found
             }
             o_Project.AssignedMentor = o_Mentor; // Assign the mentor to the project
-            r_DbContext.SaveChanges();
+            await r_DbContext.SaveChangesAsync();
         }
 
         // Remove a mentor from a project
-        public void RemoveMentor(Guid i_ProjectId)
+        public async Task RemoveMentor(Guid i_ProjectId)
         {
-            Project? o_Project = r_DbContext.Projects.Find(i_ProjectId); // Get the project by ID
+            Project? o_Project = await r_DbContext.Projects.FindAsync(i_ProjectId); // Get the project by ID
             if (o_Project == null)
             {
                 throw new KeyNotFoundException("Project not found");
             }
             o_Project.AssignedMentor = null; // Remove the mentor from the project
-            r_DbContext.SaveChanges();
+            await r_DbContext.SaveChangesAsync();
         }
 
         // Update the repository link of a project
-        public void UpdateRepositoryLink(Guid i_ProjectId, string i_RepositoryLink)
+        public async Task UpdateRepositoryLink(Guid i_ProjectId, string i_RepositoryLink)
         {
-          Project? o_Project = r_DbContext.Projects.Find(i_ProjectId); 
+          Project? o_Project = await r_DbContext.Projects.FindAsync(i_ProjectId); 
             if (o_Project == null)
             {
                 throw new KeyNotFoundException("Project not found");
             }
             o_Project.RepositoryLink = i_RepositoryLink; // Update the repository link
-            r_DbContext.SaveChanges();
+            await r_DbContext.SaveChangesAsync();
         }
 
         // Add a team member to a project
-        public void AddTeamMember(Guid i_ProjectId, Guid i_UserId)
+        public async Task AddTeamMember(Guid i_ProjectId, Guid i_UserId)
         {
-            var o_Project = r_DbContext.Projects
+            var o_Project = await r_DbContext.Projects
                 .Include(p => p.TeamMembers)
-                .FirstOrDefault(p => p.ProjectId == i_ProjectId); // Get the project by ID including team members
+                .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId); // Get the project by ID including team members
 
             if (o_Project == null)
             {
                 throw new KeyNotFoundException("Project not found.");
             }
 
-            var o_Gainer = r_DbContext.Gainers.Find(i_UserId); // Get the user by ID
+            var o_Gainer = await r_DbContext.Gainers.FindAsync(i_UserId); // Get the user by ID
 
             if (o_Gainer == null)
             {
@@ -178,20 +183,20 @@ namespace GainIt.API.Services.Projects.Implementations
             }
 
             o_Project.TeamMembers.Add(o_Gainer); // Add the user to the project team
-            r_DbContext.SaveChanges();
+            await r_DbContext.SaveChangesAsync();
         }
 
         // Remove a team member from a project
-        public void RemoveTeamMember(Guid i_ProjectId, Guid i_UserId)
+        public async Task RemoveTeamMember(Guid i_ProjectId, Guid i_UserId)
         {
-            var o_Project = r_DbContext.Projects
+            var o_Project = await r_DbContext.Projects
                 .Include(p => p.TeamMembers)
-                .FirstOrDefault(p => p.ProjectId == i_ProjectId); // Get the project by ID including team members
+                .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId); // Get the project by ID including team members
             if (o_Project == null)
             {
                 throw new KeyNotFoundException("Project not found.");
             }
-            var o_Gainer = r_DbContext.Gainers.Find(i_UserId); // Get the user by ID
+            var o_Gainer = await r_DbContext.Gainers.FindAsync(i_UserId); // Get the user by ID
             if (o_Gainer == null)
             {
                 throw new KeyNotFoundException("User not found or is not a Gainer.");
@@ -201,32 +206,98 @@ namespace GainIt.API.Services.Projects.Implementations
                 throw new InvalidOperationException("User is not a team member in this project.");
             }
             o_Project.TeamMembers.Remove(o_Gainer); // Remove the user from the project team
-            r_DbContext.SaveChanges();
+            await r_DbContext.SaveChangesAsync();
         }
 
         // Search for projects by name or description
-        public IEnumerable<ProjectViewModel> SearchProjectsByNameOrDescription(string i_SearchQuery)
+        public async Task<IEnumerable<ProjectViewModel>> SearchProjectsByNameOrDescription(string i_SearchQuery)
         {
-            return r_DbContext.Projects
+            var o_project = await r_DbContext.Projects
                 .Where(p => p.ProjectName.Contains(i_SearchQuery) || p.ProjectDescription.Contains(i_SearchQuery))
                 .Include(p => p.TeamMembers)
                 .Include(p => p.AssignedMentor)
                 .Include(p => p.OwningOrganization)
-                .ToList()
-                .Select(p => new ProjectViewModel(p));
+                .ToListAsync();
+
+
+            return o_project.Select(p => new ProjectViewModel(p));
         }
 
         // Filter projects by status and difficulty level
-        public IEnumerable<ProjectViewModel> FilterProjectsByStatusAndDifficulty(eProjectStatus i_Status,
+        public async Task<IEnumerable<ProjectViewModel>> FilterProjectsByStatusAndDifficulty(eProjectStatus i_Status,
             eDifficultyLevel i_Difficulty)
         {
-            return r_DbContext.Projects
+            var o_projects = await r_DbContext.Projects
                 .Where(p => p.ProjectStatus == i_Status && p.DifficultyLevel == i_Difficulty)
                 .Include(p => p.TeamMembers)
                 .Include(p => p.AssignedMentor)
                 .Include(p => p.OwningOrganization)
-                .ToList()
-                .Select(p => new ProjectViewModel(p));
+                .ToListAsync();
+
+            return o_projects.Select(p => new ProjectViewModel(p));
+        }
+
+        public async Task<ProjectViewModel> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId)
+        {
+            // Get the template project by ID
+            Project? o_project = await r_DbContext.Projects.FirstOrDefaultAsync(p => p.ProjectId == i_TemplateId && p.ProjectSource == eProjectSource.Template);
+
+            if (o_project == null)
+            {
+                throw new KeyNotFoundException("Template project not found");
+            }
+
+            // Get the user (Gainer) by ID
+            Gainer? o_Gainer = await r_DbContext.Gainers.FindAsync(i_UserId);
+
+            if (o_Gainer == null)
+            {
+                throw new KeyNotFoundException("Gainer not found");
+            }
+
+            // Create a new project based on the template
+            Project o_newProject = new Project
+            {
+                ProjectName = o_project.ProjectName,
+                ProjectDescription = o_project.ProjectDescription,
+                ProjectStatus = eProjectStatus.Pending,
+                CreatedAtUtc = DateTime.Now,
+                DifficultyLevel = o_project.DifficultyLevel,
+                ProjectSource = eProjectSource.Template,
+                TeamMembers = new List<Gainer> { o_Gainer }, // add the Gainer as a team member
+                RepositoryLink = o_project.RepositoryLink
+            };
+
+            // Add the new project to the database
+            r_DbContext.Projects.Add(o_newProject);
+            await r_DbContext.SaveChangesAsync();
+
+            return new ProjectViewModel(o_newProject);
+        }
+
+
+        public async Task<ProjectViewModel> CreateProjectForNonprofitAsync(ProjectViewModel i_Project, Guid i_NonprofitOrgId)
+        {
+            // Get the nonprofit organization by ID
+            NonprofitOrganization? o_Nonprofit = await r_DbContext.Nonprofits.FindAsync(i_NonprofitOrgId);
+
+            Project o_NonprofitNewProject = new Project
+            {
+                ProjectName = i_Project.projectName,
+                ProjectDescription = i_Project.projectDescription,
+                ProjectStatus = eProjectStatus.Pending,
+                CreatedAtUtc = DateTime.Now,
+                ProjectSource = eProjectSource.NonprofitOrganization,
+                OwningOrganization = o_Nonprofit,
+                TeamMembers = new List<Gainer>(), // Initialize with an empty list
+            };
+
+            // Add the new project to the database
+            r_DbContext.Projects.Add(o_NonprofitNewProject);
+            await r_DbContext.SaveChangesAsync();
+
+            // Return the created project as a view model
+            return new ProjectViewModel(o_NonprofitNewProject);
         }
     }
 }

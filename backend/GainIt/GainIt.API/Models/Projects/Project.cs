@@ -24,7 +24,7 @@ namespace GainIt.API.Models.Projects
         public eProjectStatus ProjectStatus { get; set; } // "Pending" , "In Progress", "Completed"
 
         [Required]
-        public eDifficultyLevel DifficultyLevel { get; set; }
+        public eDifficultyLevel? DifficultyLevel { get; set; }
 
         [Required]
         public eProjectSource ProjectSource { get; set; } // If the project is from a NonprofitOrganization or a built-in project
