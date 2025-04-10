@@ -7,6 +7,7 @@ namespace GainIt.API.ViewModels.Projects
     {
         public ProjectViewModel(Project i_Project)
         {
+            projectId = i_Project.ProjectId.ToString();
             projectName = i_Project.ProjectName;
             projectDescription = i_Project.ProjectDescription;
             projectStatus = i_Project.ProjectStatus.ToString();
@@ -24,6 +25,8 @@ namespace GainIt.API.ViewModels.Projects
                 teamMemberFullNames.Add(user.FullName);
             }
         }
+
+        public string projectId { get; set; } 
 
         public string projectName { get; set; }
 

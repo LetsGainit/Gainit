@@ -7,46 +7,46 @@ namespace GainIt.API.Services.Projects.Interfaces
     public interface IProjectService
     {
         // Retrieve a project by its ID
-        Task<ProjectViewModel?> GetProjectByProjectId(Guid i_ProjectId);
+        Task<ProjectViewModel?> GetProjectByProjectIdAsync(Guid i_ProjectId);
 
         // Retrieve all projects that are templates
-        Task<IEnumerable<ProjectViewModel>> GetAllTemplatesProjects();
+        Task<IEnumerable<ProjectViewModel>> GetAllTemplatesProjectsAsync();
 
         // Retrieve all projects that are nonprofit projects
-        Task<IEnumerable<ProjectViewModel>> GetAllNonprofitProjects();
+        Task<IEnumerable<ProjectViewModel>> GetAllNonprofitProjectsAsync();
 
         // Retrieve projects by user ID
-        Task<IEnumerable<ProjectViewModel>> GetProjectsByUserId(Guid i_UserId);
+        Task<IEnumerable<ProjectViewModel>> GetProjectsByUserIdAsync(Guid i_UserId);
 
         // Retrieve projects by mentor ID
-        Task<IEnumerable<ProjectViewModel>> GetProjectsByMentorId(Guid i_MentorId);
+        Task<IEnumerable<ProjectViewModel>> GetProjectsByMentorIdAsync(Guid i_MentorId);
 
         // Retrieve projects by nonprofit ID
-        Task<IEnumerable<ProjectViewModel>> GetProjectsByNonprofitId(Guid i_NonprofitId);
+        Task<IEnumerable<ProjectViewModel>> GetProjectsByNonprofitIdAsync(Guid i_NonprofitId);
 
         // Update project status
-        Task UpdateProjectStatus(Guid i_ProjectId, eProjectStatus i_Status);
+        Task<ProjectViewModel> UpdateProjectStatusAsync(Guid i_ProjectId, eProjectStatus i_Status);
 
         // Assigning a mentor to a project
-        Task AssignMentor(Guid i_ProjectId, Guid i_MentorId);
+        Task<ProjectViewModel> AssignMentorAsync(Guid i_ProjectId, Guid i_MentorId);
 
         // Update project repository link
-        Task UpdateRepositoryLink(Guid i_ProjectId, string i_RepositoryLink);
+        Task<ProjectViewModel> UpdateRepositoryLinkAsync(Guid i_ProjectId, string i_RepositoryLink);
 
         // Add team member to project
-        Task AddTeamMember(Guid i_ProjectId, Guid i_UserId);
+        Task<ProjectViewModel> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId);
 
         // Remove team member from project
-        Task RemoveTeamMember(Guid i_ProjectId, Guid i_UserId);
+        Task<ProjectViewModel> RemoveTeamMemberAsync(Guid i_ProjectId, Guid i_UserId);
 
         // Remove mentor from project
-        Task RemoveMentor(Guid i_ProjectId);
+        Task<ProjectViewModel> RemoveMentorAsync(Guid i_ProjectId);
 
         // Search projects by name or description
-        Task<IEnumerable<ProjectViewModel>> SearchProjectsByNameOrDescription(string i_SearchQuery);
+        Task<IEnumerable<ProjectViewModel>> SearchProjectsByNameOrDescriptionAsync(string i_SearchQuery);
 
         // Filter projects by status and difficulty level
-        Task<IEnumerable<ProjectViewModel>> FilterProjectsByStatusAndDifficulty(eProjectStatus i_Status, eDifficultyLevel i_Difficulty);
+        Task<IEnumerable<ProjectViewModel>> FilterProjectsByStatusAndDifficultyAsync(eProjectStatus i_Status, eDifficultyLevel i_Difficulty);
 
         // Create a new project from a template and assign the user as one of the team members
         Task<ProjectViewModel> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId);
@@ -56,7 +56,7 @@ namespace GainIt.API.Services.Projects.Interfaces
 
 
         // Adding a new project to the system used for testing purposes for now
-        Task AddProject(Project i_Project);
+        Task AddProjectAsync(Project i_Project);
 
 
     }

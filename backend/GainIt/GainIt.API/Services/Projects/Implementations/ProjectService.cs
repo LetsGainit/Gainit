@@ -21,7 +21,7 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         // Retrieve a project by its ID
-        public async Task<ProjectViewModel?> GetProjectByProjectId(Guid i_ProjectId)
+        public async Task<ProjectViewModel?> GetProjectByProjectIdAsync(Guid i_ProjectId)
         {
             Project? o_project = await r_DbContext.Projects
                 .Include(p => p.TeamMembers)
@@ -33,7 +33,7 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         // Retrieve all projects that are templates
-        public async Task<IEnumerable<ProjectViewModel>> GetAllTemplatesProjects()
+        public async Task<IEnumerable<ProjectViewModel>> GetAllTemplatesProjectsAsync()
         {
             var o_project = await r_DbContext.Projects
                 .Where(p => p.ProjectSource == eProjectSource.Template)
@@ -45,7 +45,7 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         // Retrieve all projects that are nonprofit projects
-        public async Task<IEnumerable<ProjectViewModel>> GetAllNonprofitProjects()
+        public async Task<IEnumerable<ProjectViewModel>> GetAllNonprofitProjectsAsync()
         {
             var o_project = await r_DbContext.Projects
                 .Where(p => p.ProjectSource == eProjectSource.NonprofitOrganization)
@@ -57,7 +57,7 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         // Retrieve all projects that are assigned to a specific user
-        public async Task<IEnumerable<ProjectViewModel>> GetProjectsByUserId(Guid i_UserId)
+        public async Task<IEnumerable<ProjectViewModel>> GetProjectsByUserIdAsync(Guid i_UserId)
         {
             var o_project = await r_DbContext.Projects
                 .Where(p => p.TeamMembers.Any(u => u.UserId == i_UserId))
@@ -70,7 +70,7 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         // Retrieve all projects that are assigned to a specific mentor
-        public async Task<IEnumerable<ProjectViewModel>> GetProjectsByMentorId(Guid i_MentorId)
+        public async Task<IEnumerable<ProjectViewModel>> GetProjectsByMentorIdAsync(Guid i_MentorId)
         {
             var o_project = await r_DbContext.Projects
                 .Where(p => p.AssignedMentor.UserId == i_MentorId)
@@ -82,7 +82,7 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         // Retrieve all projects that are owned by a specific nonprofit organization
-        public async Task<IEnumerable<ProjectViewModel>> GetProjectsByNonprofitId(Guid i_NonprofitId)
+        public async Task<IEnumerable<ProjectViewModel>> GetProjectsByNonprofitIdAsync(Guid i_NonprofitId)
         {
             var o_project = await r_DbContext.Projects
                 .Where(p => p.OwningOrganization.UserId == i_NonprofitId)
@@ -95,14 +95,14 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         // Add a new project to the database
-        public async Task AddProject(Project i_Project)
+        public async Task AddProjectAsync(Project i_Project)
         {
             r_DbContext.Projects.Add(i_Project);
            await r_DbContext.SaveChangesAsync();
         }
 
         // Update the status of an existing project
-        public async Task UpdateProjectStatus(Guid i_ProjectId, eProjectStatus i_Status)
+        public async Task<ProjectViewModel> UpdateProjectStatusAsync(Guid i_ProjectId, eProjectStatus i_Status)
         {
             Project? o_Project = await r_DbContext.Projects.FindAsync(i_ProjectId); // Get the project by ID
 
@@ -112,10 +112,12 @@ namespace GainIt.API.Services.Projects.Implementations
             }
             o_Project.ProjectStatus = i_Status; // Update the project status
             await r_DbContext.SaveChangesAsync(); // Save changes to the database
+
+            return new ProjectViewModel(o_Project); // Return the updated project as a view model
         }
 
         // Assign a mentor to a project
-        public async Task AssignMentor(Guid i_ProjectId, Guid i_MentorId)
+        public async Task<ProjectViewModel> AssignMentorAsync(Guid i_ProjectId, Guid i_MentorId)
         {
             Project? o_Project = await r_DbContext.Projects.FindAsync(i_ProjectId); // Get the project by ID
 
@@ -132,10 +134,12 @@ namespace GainIt.API.Services.Projects.Implementations
             }
             o_Project.AssignedMentor = o_Mentor; // Assign the mentor to the project
             await r_DbContext.SaveChangesAsync();
+
+            return new ProjectViewModel(o_Project); // Return the updated project as a view model
         }
 
         // Remove a mentor from a project
-        public async Task RemoveMentor(Guid i_ProjectId)
+        public async Task<ProjectViewModel> RemoveMentorAsync(Guid i_ProjectId)
         {
             Project? o_Project = await r_DbContext.Projects.FindAsync(i_ProjectId); // Get the project by ID
             if (o_Project == null)
@@ -144,10 +148,12 @@ namespace GainIt.API.Services.Projects.Implementations
             }
             o_Project.AssignedMentor = null; // Remove the mentor from the project
             await r_DbContext.SaveChangesAsync();
+
+            return new ProjectViewModel(o_Project);
         }
 
         // Update the repository link of a project
-        public async Task UpdateRepositoryLink(Guid i_ProjectId, string i_RepositoryLink)
+        public async Task<ProjectViewModel> UpdateRepositoryLinkAsync(Guid i_ProjectId, string i_RepositoryLink)
         {
           Project? o_Project = await r_DbContext.Projects.FindAsync(i_ProjectId); 
             if (o_Project == null)
@@ -156,10 +162,12 @@ namespace GainIt.API.Services.Projects.Implementations
             }
             o_Project.RepositoryLink = i_RepositoryLink; // Update the repository link
             await r_DbContext.SaveChangesAsync();
+
+            return new ProjectViewModel(o_Project); // Return the updated project as a view model
         }
 
         // Add a team member to a project
-        public async Task AddTeamMember(Guid i_ProjectId, Guid i_UserId)
+        public async Task<ProjectViewModel> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId)
         {
             var o_Project = await r_DbContext.Projects
                 .Include(p => p.TeamMembers)
@@ -184,10 +192,12 @@ namespace GainIt.API.Services.Projects.Implementations
 
             o_Project.TeamMembers.Add(o_Gainer); // Add the user to the project team
             await r_DbContext.SaveChangesAsync();
+
+            return new ProjectViewModel(o_Project); // Return the updated project as a view model
         }
 
         // Remove a team member from a project
-        public async Task RemoveTeamMember(Guid i_ProjectId, Guid i_UserId)
+        public async Task<ProjectViewModel> RemoveTeamMemberAsync(Guid i_ProjectId, Guid i_UserId)
         {
             var o_Project = await r_DbContext.Projects
                 .Include(p => p.TeamMembers)
@@ -207,10 +217,12 @@ namespace GainIt.API.Services.Projects.Implementations
             }
             o_Project.TeamMembers.Remove(o_Gainer); // Remove the user from the project team
             await r_DbContext.SaveChangesAsync();
+
+            return new ProjectViewModel(o_Project); // Return the updated project as a view model
         }
 
         // Search for projects by name or description
-        public async Task<IEnumerable<ProjectViewModel>> SearchProjectsByNameOrDescription(string i_SearchQuery)
+        public async Task<IEnumerable<ProjectViewModel>> SearchProjectsByNameOrDescriptionAsync(string i_SearchQuery)
         {
             var o_project = await r_DbContext.Projects
                 .Where(p => p.ProjectName.Contains(i_SearchQuery) || p.ProjectDescription.Contains(i_SearchQuery))
@@ -224,7 +236,7 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         // Filter projects by status and difficulty level
-        public async Task<IEnumerable<ProjectViewModel>> FilterProjectsByStatusAndDifficulty(eProjectStatus i_Status,
+        public async Task<IEnumerable<ProjectViewModel>> FilterProjectsByStatusAndDifficultyAsync(eProjectStatus i_Status,
             eDifficultyLevel i_Difficulty)
         {
             var o_projects = await r_DbContext.Projects
