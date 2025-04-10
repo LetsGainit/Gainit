@@ -4,6 +4,7 @@ using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users;
 using GainIt.API.Models.Users.Nonprofits;
 using Microsoft.EntityFrameworkCore;
+using GainIt.API.Models.Enums.Projects;
 
 namespace GainIt.API.Data
 {
@@ -52,6 +53,62 @@ namespace GainIt.API.Data
         }
 
 
+    }
+    public static class GainItDbContextSeeder
+    {
+        public static void SeedData(GainItDbContext context)
+        {
+            if (!context.Users.Any())
+            {
+                context.Users.AddRange(
+                    new Gainer
+                    {
+                        UserId = Guid.NewGuid(),
+                        FullName = "John Doe",
+                        EmailAddress = "john.doe@example.com",
+                        EducationStatus = "Undergraduate",
+                        AreasOfInterest = new List<string> { "Technology", "Education" }
+                    },
+                    new Mentor
+                    {
+                        UserId = Guid.NewGuid(),
+                        FullName = "Jane Smith",
+                        EmailAddress = "jane.smith@example.com",
+                        YearsOfExperience = 10,
+                        AreaOfExpertise = "Software Development"
+                    },
+                    new NonprofitOrganization
+                    {
+                        UserId = Guid.NewGuid(),
+                        FullName = "Helping Hands",
+                        EmailAddress = "contact@helpinghands.org",
+                        WebsiteUrl = "https://helpinghands.org"
+                    }
+                );
+                context.SaveChanges();
+            }
+
+            if (!context.Projects.Any())
+            {
+                // Seed a template project
+                context.Projects.Add(new Project
+                {
+                    ProjectId = Guid.NewGuid(),
+                    ProjectName = "Template Project",
+                    ProjectDescription = "This is a template project for testing purposes.",
+                    ProjectStatus = eProjectStatus.Pending,
+                    DifficultyLevel = eDifficultyLevel.Intermediate,
+                    ProjectSource = eProjectSource.Template,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    TeamMembers = new List<Gainer>(),
+                    RepositoryLink = "https://github.com/example/template-repo"
+                });
+
+                context.SaveChanges();
+            }
+        }
+
+        
     }
 
 }

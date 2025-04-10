@@ -191,6 +191,10 @@ namespace GainIt.API.Controllers.Projects
             }
         }
 
+        #endregion
+
+        #region Team Members Management
+
         /// <summary>
         /// Adds a team member to a project.
         /// </summary>
@@ -249,6 +253,10 @@ namespace GainIt.API.Controllers.Projects
             }
         }
 
+        #endregion
+
+        #region Project Management
+
         /// <summary>
         /// Updates the status of a project.
         /// </summary>
@@ -303,6 +311,9 @@ namespace GainIt.API.Controllers.Projects
                 return NotFound(new { Message = e.Message });
             }
         }
+        #endregion 
+
+        #region Project Search and Filter
         /// <summary>
         /// Searches for projects by name or description.
         /// </summary>
@@ -332,6 +343,9 @@ namespace GainIt.API.Controllers.Projects
             var projects = await r_ProjectService.FilterProjectsByStatusAndDifficultyAsync(status, difficulty);
             return Ok(projects);
         }
+        #endregion
+
+        #region NonProfit Project Creation
 
         /// <summary>
         /// Creates a new project for a nonprofit organization.
@@ -363,23 +377,6 @@ namespace GainIt.API.Controllers.Projects
             {
                 return NotFound(new { Message = e.Message });
             }
-        }
-
-        /// <summary>
-        /// Adds a new project to the system.
-        /// </summary>
-        /// <param name="project">The project details to add.</param>
-        /// <returns>The newly created project details.</returns>
-        [HttpPost("add")]
-        public async Task<ActionResult<ProjectViewModel>> AddProject([FromBody] Project project)
-        {
-            if (project == null)
-            {
-                return BadRequest(new { Message = "Project details cannot be null." });
-            }
-
-            await r_ProjectService.AddProjectAsync(project);
-            return CreatedAtAction(nameof(GetProjectById), new { id = project.ProjectId }, new ProjectViewModel(project));
         }
         #endregion
     }

@@ -94,13 +94,6 @@ namespace GainIt.API.Services.Projects.Implementations
             return o_project.Select(p => new ProjectViewModel(p));
         }
 
-        // Add a new project to the database
-        public async Task AddProjectAsync(Project i_Project)
-        {
-            r_DbContext.Projects.Add(i_Project);
-           await r_DbContext.SaveChangesAsync();
-        }
-
         // Update the status of an existing project
         public async Task<ProjectViewModel> UpdateProjectStatusAsync(Guid i_ProjectId, eProjectStatus i_Status)
         {

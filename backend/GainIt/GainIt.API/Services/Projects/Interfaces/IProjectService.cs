@@ -53,11 +53,5 @@ namespace GainIt.API.Services.Projects.Interfaces
 
         // Create a new project for a nonprofit organization and assign the organization as the owner
         Task<ProjectViewModel> CreateProjectForNonprofitAsync(ProjectViewModel i_Project, Guid i_NonprofitOrgId);
-
-
-        // Adding a new project to the system used for testing purposes for now
-        Task AddProjectAsync(Project i_Project);
-
-
     }
 }
