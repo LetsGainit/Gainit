@@ -36,8 +36,10 @@ namespace GainIt.API.Models.Projects
         [Url(ErrorMessage = "Invalid Repository URL")]
         public string? RepositoryLink { get; set; }
 
+        public Guid? AssignedMentorUserId { get; set; } // Foreign key for Mentor
         public Mentor? AssignedMentor { get; set; }
 
+        public Guid? OwningOrganizationUserId { get; set; } // Foreign key for NonprofitOrganization
         public NonprofitOrganization? OwningOrganization{ get; set; }
     }
 }   

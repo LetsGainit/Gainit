@@ -131,7 +131,7 @@ namespace GainIt.API.Controllers.Projects
             try
             {
                 var o_Project = await r_ProjectService.StartProjectFromTemplateAsync(templateId, userId);
-                return CreatedAtAction(nameof(GetProjectById), new { id = o_Project.projectId }, o_Project);
+                return CreatedAtAction(nameof(GetProjectById), new { projectId = o_Project.projectId }, o_Project);
             }
             catch (KeyNotFoundException e)
             {
@@ -371,7 +371,7 @@ namespace GainIt.API.Controllers.Projects
             try
             {
                 var o_Project = await r_ProjectService.CreateProjectForNonprofitAsync(CreateProjectForNonprofitViewModel, nonprofitOrgId);
-                return CreatedAtAction(nameof(GetProjectById), new { id = o_Project.projectId }, o_Project);
+                return CreatedAtAction(nameof(GetProjectById), new { projectId = o_Project.projectId }, o_Project);
             }
             catch (KeyNotFoundException e)
             {

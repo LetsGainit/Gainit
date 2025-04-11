@@ -20,6 +20,16 @@ namespace GainIt.API.Services.Projects.Implementations
             r_DbContext = i_DbContext;
         }
 
+        //method to load a project with all its related data
+        private async Task<Project> loadFullProjectAsync(Guid projectId)
+        {
+            return await r_DbContext.Projects
+                .Include(p => p.TeamMembers)
+                .Include(p => p.AssignedMentor)
+                .Include(p => p.OwningOrganization)
+                .FirstAsync(p => p.ProjectId == projectId);
+        }
+
         // Retrieve a project by its ID
         public async Task<ProjectViewModel?> GetProjectByProjectIdAsync(Guid i_ProjectId)
         {
@@ -97,7 +107,7 @@ namespace GainIt.API.Services.Projects.Implementations
         // Update the status of an existing project
         public async Task<ProjectViewModel> UpdateProjectStatusAsync(Guid i_ProjectId, eProjectStatus i_Status)
         {
-            Project? o_Project = await r_DbContext.Projects.FindAsync(i_ProjectId); // Get the project by ID
+            Project? o_Project = await loadFullProjectAsync(i_ProjectId); // Get the project by ID
 
             if (o_Project == null)
             {
@@ -128,7 +138,7 @@ namespace GainIt.API.Services.Projects.Implementations
             o_Project.AssignedMentor = o_Mentor; // Assign the mentor to the project
             await r_DbContext.SaveChangesAsync();
 
-            return new ProjectViewModel(o_Project); // Return the updated project as a view model
+            return new ProjectViewModel(await loadFullProjectAsync(i_ProjectId)); // Return the updated project as a view model
         }
 
         // Remove a mentor from a project
@@ -139,10 +149,11 @@ namespace GainIt.API.Services.Projects.Implementations
             {
                 throw new KeyNotFoundException("Project not found");
             }
-            o_Project.AssignedMentor = null; // Remove the mentor from the project
+            o_Project.AssignedMentor = null;
+            o_Project.AssignedMentorUserId = null; // Remove the mentor from the project
             await r_DbContext.SaveChangesAsync();
 
-            return new ProjectViewModel(o_Project);
+            return new ProjectViewModel(await loadFullProjectAsync(i_ProjectId));
         }
 
         // Update the repository link of a project
@@ -156,7 +167,7 @@ namespace GainIt.API.Services.Projects.Implementations
             o_Project.RepositoryLink = i_RepositoryLink; // Update the repository link
             await r_DbContext.SaveChangesAsync();
 
-            return new ProjectViewModel(o_Project); // Return the updated project as a view model
+            return new ProjectViewModel(await loadFullProjectAsync(i_ProjectId)); // Return the updated project as a view model
         }
 
         // Add a team member to a project
@@ -186,7 +197,7 @@ namespace GainIt.API.Services.Projects.Implementations
             o_Project.TeamMembers.Add(o_Gainer); // Add the user to the project team
             await r_DbContext.SaveChangesAsync();
 
-            return new ProjectViewModel(o_Project); // Return the updated project as a view model
+            return new ProjectViewModel(await loadFullProjectAsync(i_ProjectId)); // Return the updated project as a view model
         }
 
         // Remove a team member from a project
@@ -211,7 +222,7 @@ namespace GainIt.API.Services.Projects.Implementations
             o_Project.TeamMembers.Remove(o_Gainer); // Remove the user from the project team
             await r_DbContext.SaveChangesAsync();
 
-            return new ProjectViewModel(o_Project); // Return the updated project as a view model
+            return new ProjectViewModel(await loadFullProjectAsync(i_ProjectId)); // Return the updated project as a view model
         }
 
         // Search for projects by name or description
@@ -266,7 +277,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 ProjectName = o_project.ProjectName,
                 ProjectDescription = o_project.ProjectDescription,
                 ProjectStatus = eProjectStatus.Pending,
-                CreatedAtUtc = DateTime.Now,
+                CreatedAtUtc = DateTime.UtcNow,
                 DifficultyLevel = o_project.DifficultyLevel,
                 ProjectSource = eProjectSource.Template,
                 TeamMembers = new List<Gainer> { o_Gainer }, // add the Gainer as a team member
@@ -277,7 +288,7 @@ namespace GainIt.API.Services.Projects.Implementations
             r_DbContext.Projects.Add(o_newProject);
             await r_DbContext.SaveChangesAsync();
 
-            return new ProjectViewModel(o_newProject);
+            return new ProjectViewModel(await loadFullProjectAsync(o_newProject.ProjectId));
         }
 
 
@@ -291,7 +302,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 ProjectName = i_Project.projectName,
                 ProjectDescription = i_Project.projectDescription,
                 ProjectStatus = eProjectStatus.Pending,
-                CreatedAtUtc = DateTime.Now,
+                CreatedAtUtc = DateTime.UtcNow,
                 ProjectSource = eProjectSource.NonprofitOrganization,
                 OwningOrganization = o_Nonprofit,
                 TeamMembers = new List<Gainer>(), // Initialize with an empty list
@@ -302,7 +313,7 @@ namespace GainIt.API.Services.Projects.Implementations
             await r_DbContext.SaveChangesAsync();
 
             // Return the created project as a view model
-            return new ProjectViewModel(o_NonprofitNewProject);
+            return new ProjectViewModel(await loadFullProjectAsync(o_NonprofitNewProject.ProjectId));
         }
     }
 }
