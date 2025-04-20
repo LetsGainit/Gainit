@@ -1,0 +1,26 @@
+.home-wrapper {
+  position: fixed; /* או absolute */
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  z-index: -1; /* כדי שזה יהיה מאחורי שאר התוכן אם צריך */
+}
+
+.home {
+  background-image: url('/CoverPhoto.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.home-title {
+  font-size: 3rem;
+  font-weight: bold;
+}
