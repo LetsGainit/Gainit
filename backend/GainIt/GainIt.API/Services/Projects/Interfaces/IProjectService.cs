@@ -12,6 +12,9 @@ namespace GainIt.API.Services.Projects.Interfaces
         // Retrieve all projects that are templates
         Task<IEnumerable<ProjectViewModel>> GetAllTemplatesProjectsAsync();
 
+        // Retrieve all projects that are pending templates
+        Task<IEnumerable<ProjectViewModel>> GetAllPendingTemplatesProjectsAsync();
+
         // Retrieve all projects that are nonprofit projects
         Task<IEnumerable<ProjectViewModel>> GetAllNonprofitProjectsAsync();
 

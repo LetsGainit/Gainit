@@ -47,10 +47,18 @@ namespace GainIt.API.Services.Projects.Implementations
         {
             var o_project = await r_DbContext.Projects
                 .Where(p => p.ProjectSource == eProjectSource.Template)
+                .ToListAsync();
+
+            return o_project.Select(p => new ProjectViewModel(p));  // consider doing a different model for templates
+        }
+
+        public async Task<IEnumerable<ProjectViewModel> GetAllPendingTemplatesProjectsAsync()
+        {
+            var o_project = await r_DbContext.Projects
+                .Where(p => p.ProjectSource == eProjectSource.Template && p.ProjectStatus == eProjectStatus.Pending)
                 .Include(p => p.TeamMembers)
                 .Include(p => p.AssignedMentor)
                 .ToListAsync();
-
             return o_project.Select(p => new ProjectViewModel(p));
         }
 
