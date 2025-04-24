@@ -1,4 +1,5 @@
 ﻿using GainIt.API.Data;
+using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Enums.Users;
 using GainIt.API.Models.Projects;
@@ -7,7 +8,6 @@ using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
 using GainIt.API.Services.Projects.Interfaces;
-using GainIt.API.ViewModels.Projects;
 using Microsoft.EntityFrameworkCore;
 
 namespace GainIt.API.Services.Projects.Implementations
@@ -30,8 +30,8 @@ namespace GainIt.API.Services.Projects.Implementations
                 .FirstAsync(p => p.ProjectId == projectId);
         }
 
-        // Retrieve a project by its ID
-        public async Task<ProjectViewModel?> GetProjectByProjectIdAsync(Guid i_ProjectId)
+        // Retrieve an active project by its ID
+        public async Task<ProjectViewModel?> GetActiveProjectByProjectIdAsync(Guid i_ProjectId)
         {
             Project? o_project = await r_DbContext.Projects
                 .Include(p => p.TeamMembers)
@@ -42,17 +42,24 @@ namespace GainIt.API.Services.Projects.Implementations
             return o_project == null ? null : new ProjectViewModel(o_project);
         }
 
-        // Retrieve all projects that are templates
-        public async Task<IEnumerable<ProjectViewModel>> GetAllTemplatesProjectsAsync()
+        // Retrive template project by its ID
+        public async Task<TemplateProjectViewModel?> GetTemplateProjectByProjectIdAsync(Guid i_ProjectId)
         {
-            var o_project = await r_DbContext.Projects
-                .Where(p => p.ProjectSource == eProjectSource.Template)
-                .ToListAsync();
-
-            return o_project.Select(p => new ProjectViewModel(p));  // consider doing a different model for templates
+            TemplateProject? o_project = await r_DbContext.TemplateProjects
+                .FirstOrDefaultAsync(p => p.TemplateProjectId == i_ProjectId);
+            return o_project == null ? null : new TemplateProjectViewModel(o_project);
         }
 
-        public async Task<IEnumerable<ProjectViewModel> GetAllPendingTemplatesProjectsAsync()
+        // Retrieve all projects that are templates
+        public async Task<IEnumerable<TemplateProjectViewModel>> GetAllTemplatesProjectsAsync()
+        {
+            var o_project = await r_DbContext.TemplateProjects
+                .ToListAsync();
+
+            return o_project.Select(p => new TemplateProjectViewModel(p));  
+        }
+
+        public async Task<IEnumerable<ProjectViewModel>> GetAllPendingTemplatesProjectsAsync()
         {
             var o_project = await r_DbContext.Projects
                 .Where(p => p.ProjectSource == eProjectSource.Template && p.ProjectStatus == eProjectStatus.Pending)
@@ -233,8 +240,8 @@ namespace GainIt.API.Services.Projects.Implementations
             return new ProjectViewModel(await loadFullProjectAsync(i_ProjectId)); // Return the updated project as a view model
         }
 
-        // Search for projects by name or description
-        public async Task<IEnumerable<ProjectViewModel>> SearchProjectsByNameOrDescriptionAsync(string i_SearchQuery)
+        // Search for active projects by name or description
+        public async Task<IEnumerable<ProjectViewModel>> SearchActiveProjectsByNameOrDescriptionAsync(string i_SearchQuery)
         {
             var o_project = await r_DbContext.Projects
                 .Where(p => p.ProjectName.Contains(i_SearchQuery) || p.ProjectDescription.Contains(i_SearchQuery))
@@ -247,8 +254,17 @@ namespace GainIt.API.Services.Projects.Implementations
             return o_project.Select(p => new ProjectViewModel(p));
         }
 
-        // Filter projects by status and difficulty level
-        public async Task<IEnumerable<ProjectViewModel>> FilterProjectsByStatusAndDifficultyAsync(eProjectStatus i_Status,
+        // Search for template projects by name or description
+        public async Task<IEnumerable<TemplateProjectViewModel>> SearchTemplateProjectsByNameOrDescriptionAsync(string i_SearchQuery)
+        {
+            var o_project = await r_DbContext.TemplateProjects
+                .Where(p => p.ProjectName.Contains(i_SearchQuery) || p.ProjectDescription.Contains(i_SearchQuery))
+                .ToListAsync();
+            return o_project.Select(p => new TemplateProjectViewModel(p));
+        }
+
+        // Filter active projects by status and difficulty level
+        public async Task<IEnumerable<ProjectViewModel>> FilterActiveProjectsByStatusAndDifficultyAsync(eProjectStatus i_Status,
             eDifficultyLevel i_Difficulty)
         {
             var o_projects = await r_DbContext.Projects
@@ -261,20 +277,29 @@ namespace GainIt.API.Services.Projects.Implementations
             return o_projects.Select(p => new ProjectViewModel(p));
         }
 
+        // Filter template projects by difficulty level
+        public async Task<IEnumerable<TemplateProjectViewModel>> FilterTemplateProjectsByDifficultyAsync(eDifficultyLevel i_Difficulty)
+        {
+            var o_projects = await r_DbContext.TemplateProjects
+                .Where(p => p.DifficultyLevel == i_Difficulty)
+                .ToListAsync();
+            return o_projects.Select(p => new TemplateProjectViewModel(p));
+        }
+
         public async Task<ProjectViewModel> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId)
         {
             // Get the template project by ID
-            Project? o_project = await r_DbContext.Projects.FirstOrDefaultAsync(p => p.ProjectId == i_TemplateId && p.ProjectSource == eProjectSource.Template);
+            TemplateProject? Templateproject = await r_DbContext.TemplateProjects.FirstOrDefaultAsync(p => p.TemplateProjectId == i_TemplateId);
 
-            if (o_project == null)
+            if (Templateproject == null)
             {
                 throw new KeyNotFoundException("Template project not found");
             }
 
             // Get the user (Gainer) by ID
-            Gainer? o_Gainer = await r_DbContext.Gainers.FindAsync(i_UserId);
+            Gainer? Gainer = await r_DbContext.Gainers.FindAsync(i_UserId);
 
-            if (o_Gainer == null)
+            if (Gainer == null)
             {
                 throw new KeyNotFoundException("Gainer not found");
             }
@@ -282,14 +307,13 @@ namespace GainIt.API.Services.Projects.Implementations
             // Create a new project based on the template
             Project o_newProject = new Project
             {
-                ProjectName = o_project.ProjectName,
-                ProjectDescription = o_project.ProjectDescription,
+                ProjectName = Templateproject.ProjectName,
+                ProjectDescription = Templateproject.ProjectDescription,
                 ProjectStatus = eProjectStatus.Pending,
                 CreatedAtUtc = DateTime.UtcNow,
-                DifficultyLevel = o_project.DifficultyLevel,
+                DifficultyLevel = Templateproject.DifficultyLevel,
                 ProjectSource = eProjectSource.Template,
-                TeamMembers = new List<Gainer> { o_Gainer }, // add the Gainer as a team member
-                RepositoryLink = o_project.RepositoryLink
+                TeamMembers = new List<Gainer> { Gainer }, // add the Gainer as a team member
             };
 
             // Add the new project to the database

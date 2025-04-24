@@ -23,6 +23,7 @@ namespace GainIt.API.Data
         public DbSet<Mentor> Mentors { get; set; }
         public DbSet<NonprofitOrganization> Nonprofits { get; set; }
         public DbSet<Project> Projects { get; set; }
+        public DbSet<TemplateProject> TemplateProjects { get; set; }
 
         protected override void OnModelCreating(ModelBuilder i_ModelBuilder)
         {
@@ -88,19 +89,33 @@ namespace GainIt.API.Data
                 context.SaveChanges();
             }
 
+            if (!context.TemplateProjects.Any())
+            {
+                context.TemplateProjects.Add(new TemplateProject
+                {
+                    TemplateProjectId = Guid.NewGuid(),
+                    ProjectName = "Starter Template",
+                    ProjectDescription = "A base template for beginner projects.",
+                    DifficultyLevel = eDifficultyLevel.Beginner
+                });
+
+                context.SaveChanges();
+            }
+
             if (!context.Projects.Any())
             {
                 // Seed a template project
                 context.Projects.Add(new Project
                 {
                     ProjectId = Guid.NewGuid(),
-                    ProjectName = "Template Project",
-                    ProjectDescription = "This is a template project for testing purposes.",
+                    ProjectName = "Nonprofit Project",
+                    ProjectDescription = "This is a nonprofit project for testing purposes.",
                     ProjectStatus = eProjectStatus.Pending,
-                    DifficultyLevel = eDifficultyLevel.Intermediate,
-                    ProjectSource = eProjectSource.Template,
+                    ProjectSource = eProjectSource.NonprofitOrganization,
                     CreatedAtUtc = DateTime.UtcNow,
                     TeamMembers = new List<Gainer>(),
+                    OwningOrganization = context.Users.OfType<NonprofitOrganization>().FirstOrDefault(),
+                    OwningOrganizationUserId = context.Users.OfType<NonprofitOrganization>().FirstOrDefault()?.UserId,
                     RepositoryLink = "https://github.com/example/template-repo"
                 });
 

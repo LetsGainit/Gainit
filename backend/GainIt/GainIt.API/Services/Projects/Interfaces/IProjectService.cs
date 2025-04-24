@@ -1,16 +1,19 @@
-﻿using GainIt.API.Models.Enums.Projects;
+﻿using GainIt.API.DTOs.ViewModels.Projects;
+using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
-using GainIt.API.ViewModels.Projects;
 
 namespace GainIt.API.Services.Projects.Interfaces
 {
     public interface IProjectService
     {
         // Retrieve a project by its ID
-        Task<ProjectViewModel?> GetProjectByProjectIdAsync(Guid i_ProjectId);
+        Task<ProjectViewModel?> GetActiveProjectByProjectIdAsync(Guid i_ProjectId);
+
+        // Retrieve a Template project by its ID
+        Task<TemplateProjectViewModel?> GetTemplateProjectByProjectIdAsync(Guid i_ProjectId);
 
         // Retrieve all projects that are templates
-        Task<IEnumerable<ProjectViewModel>> GetAllTemplatesProjectsAsync();
+        Task<IEnumerable<TemplateProjectViewModel>> GetAllTemplatesProjectsAsync();
 
         // Retrieve all projects that are pending templates
         Task<IEnumerable<ProjectViewModel>> GetAllPendingTemplatesProjectsAsync();
@@ -45,11 +48,17 @@ namespace GainIt.API.Services.Projects.Interfaces
         // Remove mentor from project
         Task<ProjectViewModel> RemoveMentorAsync(Guid i_ProjectId);
 
-        // Search projects by name or description
-        Task<IEnumerable<ProjectViewModel>> SearchProjectsByNameOrDescriptionAsync(string i_SearchQuery);
+        // Search active projects by name or description
+        Task<IEnumerable<ProjectViewModel>> SearchActiveProjectsByNameOrDescriptionAsync(string i_SearchQuery);
 
-        // Filter projects by status and difficulty level
-        Task<IEnumerable<ProjectViewModel>> FilterProjectsByStatusAndDifficultyAsync(eProjectStatus i_Status, eDifficultyLevel i_Difficulty);
+        // Search template projects by name or description
+        Task<IEnumerable<TemplateProjectViewModel>> SearchTemplateProjectsByNameOrDescriptionAsync(string i_SearchQuery);
+
+        // Filter active projects by status and difficulty level
+        Task<IEnumerable<ProjectViewModel>> FilterActiveProjectsByStatusAndDifficultyAsync(eProjectStatus i_Status, eDifficultyLevel i_Difficulty);
+
+        // Filter template projects by difficulty level
+        Task<IEnumerable<TemplateProjectViewModel>> FilterTemplateProjectsByDifficultyAsync(eDifficultyLevel i_Difficulty);
 
         // Create a new project from a template and assign the user as one of the team members
         Task<ProjectViewModel> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId);

@@ -1,7 +1,7 @@
 ﻿using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
 
-namespace GainIt.API.ViewModels.Projects
+namespace GainIt.API.DTOs.ViewModels.Projects
 {
     public class ProjectViewModel
     {

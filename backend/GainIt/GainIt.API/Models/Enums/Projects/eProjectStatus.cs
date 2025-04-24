@@ -2,6 +2,7 @@
 {
     public enum eProjectStatus
     {
+        NotActive,
         Pending,
         InProgress,
         Completed
