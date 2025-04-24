@@ -371,16 +371,28 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Filters projects by status and difficulty level.
+        /// Filters active projects by status and difficulty level.
         /// </summary>
         /// <param name="status">The status of the projects to filter by.</param>
         /// <param name="difficulty">The difficulty level of the projects to filter by.</param>
         /// <returns>A list of filtered projects.</returns>
-        [HttpGet("filter")]
+        [HttpGet("projects/filter")]
         public async Task<ActionResult<IEnumerable<ProjectViewModel>>> FilterProjectsByStatusAndDifficulty([FromQuery] ProjectStatusOptionDTO status, [FromQuery] ProjectDifficultyLevelOptionDTO difficulty)
         {
-            var projects = await r_ProjectService.FilterProjectsByStatusAndDifficultyAsync(status, difficulty);
+            var projects = await r_ProjectService.FilterActiveProjectsByStatusAndDifficultyAsync(status.ProjectStatus, difficulty.DifficultyLevel);
             return Ok(projects);
+        }
+
+        /// <summary>
+        /// Filters template projects by difficulty level.
+        /// </summary>
+        /// <param name="filter">Filter criteria including difficulty level.</param>
+        /// <returns>A list of filtered template projects.</returns>
+        [HttpGet("templates/filter")]
+        public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> FilterTemplateProjects([FromQuery] ProjectDifficultyLevelOptionDTO difficulty)
+        {
+            var templates = await r_ProjectService.FilterTemplateProjectsByDifficultyAsync(difficulty.DifficultyLevel);
+            return Ok(templates);
         }
         #endregion
 
