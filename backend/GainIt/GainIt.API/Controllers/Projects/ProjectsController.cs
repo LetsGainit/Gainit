@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GainIt.API.Controllers.Projects
 {
-    [ApiController]
-    [Route("api/[controller]")]
+    
+
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectService r_ProjectService;
