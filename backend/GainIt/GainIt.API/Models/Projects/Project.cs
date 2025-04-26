@@ -23,7 +23,6 @@ namespace GainIt.API.Models.Projects
         [Required]
         public eProjectStatus ProjectStatus { get; set; } // "Pending" , "In Progress", "Completed"
 
-        [Required]
         public eDifficultyLevel? DifficultyLevel { get; set; }
 
         [Required]

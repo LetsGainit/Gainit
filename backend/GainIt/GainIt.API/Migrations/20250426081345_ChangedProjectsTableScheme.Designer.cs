@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using GainIt.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GainIt.API.Migrations
 {
     [DbContext(typeof(GainItDbContext))]
-    partial class GainItDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250426081345_ChangedProjectsTableScheme")]
+    partial class ChangedProjectsTableScheme
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,7 +38,7 @@ namespace GainIt.API.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("DifficultyLevel")
+                    b.Property<int>("DifficultyLevel")
                         .HasColumnType("integer");
 
                     b.Property<Guid?>("OwningOrganizationUserId")
