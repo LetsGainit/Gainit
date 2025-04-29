@@ -84,7 +84,7 @@ namespace GainIt.API.Services.Projects.Implementations
         // Retrieve all projects that are assigned to a specific user
         public async Task<IEnumerable<ProjectViewModel>> GetProjectsByUserIdAsync(Guid i_UserId)
         {
-            var o_project = await r_DbContext.Projects
+            var o_project = await r_DbContext.Projects 
                 .Where(p => p.TeamMembers.Any(u => u.UserId == i_UserId))
                 .Include(p => p.TeamMembers)
                 .Include(p => p.AssignedMentor)
