@@ -389,7 +389,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="filter">Filter criteria including difficulty level.</param>
         /// <returns>A list of filtered template projects.</returns>
         [HttpGet("templates/filter")]
-        public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> FilterTemplateProjects([FromQuery] ProjectDifficultyLevelOptionDTO difficulty)
+        public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> FilterTemplateProjectsByDifficulty([FromQuery] ProjectDifficultyLevelOptionDTO difficulty)
         {
             var templates = await r_ProjectService.FilterTemplateProjectsByDifficultyAsync(difficulty.DifficultyLevel);
             return Ok(templates);
