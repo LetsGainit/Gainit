@@ -274,9 +274,9 @@ namespace GainIt.API.Data
                     YearsOfExperience = 15,
                     AreaOfExpertise = "Full Stack Development",
                     Biography = "Senior software architect with expertise in cloud technologies and microservices.",
-                    GitHubProfile = "https://github.com/wonntann",
-                    LinkedInProfile = "https://linkedin.com/company/mentors-in-tech",
-                    FacebookProfile = "https://facebook.com/TechCareerMentorship"
+                    GitHubURL = "https://github.com/wonntann",
+                    LinkedInURL = "https://linkedin.com/company/mentors-in-tech",
+                    FacebookPageURL = "https://facebook.com/TechCareerMentorship"
                 };
 
                 var mentor2 = new Mentor
@@ -287,9 +287,9 @@ namespace GainIt.API.Data
                     YearsOfExperience = 10,
                     AreaOfExpertise = "Data Science & AI",
                     Biography = "Experienced data scientist and AI mentor, passionate about machine learning and analytics.",
-                    GitHubProfile = "https://github.com/hepaestus",
-                    LinkedInProfile = "https://linkedin.com/company/tech-career-mentorship",
-                    FacebookProfile = "https://facebook.com/TechCareerMentor"
+                    GitHubURL = "https://github.com/hepaestus",
+                    LinkedInURL = "https://linkedin.com/company/tech-career-mentorship",
+                    FacebookPageURL = "https://facebook.com/TechCareerMentor"
                 };
 
                 // Create a nonprofit organization
@@ -300,9 +300,9 @@ namespace GainIt.API.Data
                     EmailAddress = "contact@techforgood.org",
                     WebsiteUrl = "https://techforgood.org",
                     Biography = "Empowering communities through technology education and digital literacy programs.",
-                    GitHubProfile = "https://github.com/techrityorg",
-                    LinkedInProfile = "https://linkedin.com/company/techforgood-foundation",
-                    FacebookProfile = "https://facebook.com/TechForGoodFoundation"
+                    GitHubURL = "https://github.com/techrityorg",
+                    LinkedInURL = "https://linkedin.com/company/techforgood-foundation",
+                    FacebookPageURL = "https://facebook.com/TechForGoodFoundation"
                 };
 
                 // Create some gainers
@@ -313,9 +313,9 @@ namespace GainIt.API.Data
                     EmailAddress = "alex.wilson@techlearner.dev",
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Web Development", "UI/UX Design", "Cloud Computing" },
-                    GitHubProfile = "https://github.com/alexjwilson",
-                    LinkedInProfile = "https://linkedin.com/in/alexjwilson",
-                    FacebookProfile = "https://facebook.com/alex.j.wilson"
+                    GitHubURL = "https://github.com/alexjwilson",
+                    LinkedInURL = "https://linkedin.com/in/alexjwilson",
+                    FacebookPageURL = "https://facebook.com/alex.j.wilson"
                 };
 
                 var gainer2 = new Gainer
@@ -325,9 +325,9 @@ namespace GainIt.API.Data
                     EmailAddress = "maria.rodriguez@innovatelearn.net",
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "Machine Learning", "Data Science", "Python" },
-                    GitHubProfile = "https://github.com/suecodes",
-                    LinkedInProfile = "https://linkedin.com/in/mariarodriguezdev",
-                    FacebookProfile = "https://facebook.com/maria.rodriguez.dev"
+                    GitHubURL = "https://github.com/suecodes",
+                    LinkedInURL = "https://linkedin.com/in/mariarodriguezdev",
+                    FacebookPageURL = "https://facebook.com/maria.rodriguez.dev"
                 };
 
                 var gainer3 = new Gainer
@@ -337,9 +337,9 @@ namespace GainIt.API.Data
                     EmailAddress = "samuel.kim@codelearner.io",
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Mobile Development", "Android", "Kotlin" },
-                    GitHubProfile = "https://github.com/Tech-Educators",
-                    LinkedInProfile = "https://linkedin.com/in/samuelkimdev",
-                    FacebookProfile = "https://facebook.com/samuel.kim.dev"
+                    GitHubURL = "https://github.com/Tech-Educators",
+                    LinkedInURL = "https://linkedin.com/in/samuelkimdev",
+                    FacebookPageURL = "https://facebook.com/samuel.kim.dev"
                 };
 
                 var gainer4 = new Gainer
@@ -349,9 +349,9 @@ namespace GainIt.API.Data
                     EmailAddress = "priya.patel@securitylearn.dev",
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "Cybersecurity", "Networks", "Linux" },
-                    GitHubProfile = "https://github.com/Open-Tech-Foundation",
-                    LinkedInProfile = "https://linkedin.com/in/priyapateldev",
-                    FacebookProfile = "https://facebook.com/priya.patel.tech"
+                    GitHubURL = "https://github.com/Open-Tech-Foundation",
+                    LinkedInURL = "https://linkedin.com/in/priyapateldev",
+                    FacebookPageURL = "https://facebook.com/priya.patel.tech"
                 };
 
                 var gainer5 = new Gainer
@@ -361,9 +361,9 @@ namespace GainIt.API.Data
                     EmailAddress = "liam.oconnor@gamedev.net",
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Game Development", "Unity", "C#" },
-                    GitHubProfile = "https://github.com/SlateFoundation",
-                    LinkedInProfile = "https://linkedin.com/in/liamoconnordev",
-                    FacebookProfile = "https://facebook.com/liam.oconnor.dev"
+                    GitHubURL = "https://github.com/SlateFoundation",
+                    LinkedInURL = "https://linkedin.com/in/liamoconnordev",
+                    FacebookPageURL = "https://facebook.com/liam.oconnor.dev"
                 };
 
                 var gainer6 = new Gainer
@@ -373,9 +373,9 @@ namespace GainIt.API.Data
                     EmailAddress = "emily.nguyen@ailearner.dev",
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "AI", "Natural Language Processing", "Python" },
-                    GitHubProfile = "https://github.com/AcademySoftwareFoundation",
-                    LinkedInProfile = "https://linkedin.com/in/emilynguyenai",
-                    FacebookProfile = "https://facebook.com/emily.nguyen.ai"
+                    GitHubURL = "https://github.com/AcademySoftwareFoundation",
+                    LinkedInURL = "https://linkedin.com/in/emilynguyenai",
+                    FacebookPageURL = "https://facebook.com/emily.nguyen.ai"
                 };
 
                 context.Users.AddRange(mentor, mentor2, nonprofit, gainer1, gainer2, gainer3, gainer4, gainer5, gainer6);
@@ -485,7 +485,7 @@ namespace GainIt.API.Data
                             }
                         }
                     },
-                    new UserProject
+                    new UserProject 
                     {
                         ProjectId = Guid.NewGuid(),
                         ProjectName = "Community Garden Management System",
