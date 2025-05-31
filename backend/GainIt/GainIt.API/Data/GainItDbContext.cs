@@ -258,6 +258,7 @@ namespace GainIt.API.Data
         }
     }
 
+
     public static class GainItDbContextSeeder
     {
         public static void SeedData(GainItDbContext context)
@@ -312,32 +313,44 @@ namespace GainIt.API.Data
 
                 #region Seed Template Projects
                 var templateProjects = new List<TemplateProject>
-            {
-                new TemplateProject
                 {
-                    ProjectId = Guid.NewGuid(),
-                    ProjectName = "Community Food Bank Management System",
-                    ProjectDescription = "A web application to help food banks manage inventory, track donations, and coordinate volunteers. Features include donation tracking, volunteer scheduling, and inventory management.",
-                    DifficultyLevel = eDifficultyLevel.Intermediate,
-                    Technologies = new List<string> { "React", "Node.js", "MongoDB", "Express" }
-                },
-                new TemplateProject
-                {
-                    ProjectId = Guid.NewGuid(),
-                    ProjectName = "Local Business Directory",
-                    ProjectDescription = "A platform for small businesses to create profiles, manage their information, and connect with local customers. Includes features for business owners to update their information and for customers to leave reviews.",
-                    DifficultyLevel = eDifficultyLevel.Beginner,
-                    Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" }
-                },
-                new TemplateProject
-                {
-                    ProjectId = Guid.NewGuid(),
-                    ProjectName = "Environmental Data Tracker",
-                    ProjectDescription = "An application to track and visualize environmental data such as air quality, water quality, and waste management metrics. Includes data visualization and reporting features.",
-                    DifficultyLevel = eDifficultyLevel.Advanced,
-                    Technologies = new List<string> { "Python", "Django", "PostgreSQL", "D3.js" }
-                }
-            };
+                    new TemplateProject
+                    {
+                        ProjectId = Guid.NewGuid(),
+                        ProjectName = "Community Food Bank Management System",
+                        ProjectDescription = "A web application to help food banks manage inventory, track donations, and coordinate volunteers. Features include donation tracking, volunteer scheduling, and inventory management.",
+                        DifficultyLevel = eDifficultyLevel.Intermediate,
+                        ProjectPictureUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000",
+                        Duration = TimeSpan.FromDays(90),
+                        Goals = "Create an efficient system for managing food bank operations, improve volunteer coordination, and enhance donation tracking capabilities.",
+                        Technologies = new List<string> { "React", "Node.js", "MongoDB", "Express" },
+                        RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" }
+                    },
+                    new TemplateProject
+                    {
+                        ProjectId = Guid.NewGuid(),
+                        ProjectName = "Local Business Directory",
+                        ProjectDescription = "A platform for small businesses to create profiles, manage their information, and connect with local customers. Includes features for business owners to update their information and for customers to leave reviews.",
+                        DifficultyLevel = eDifficultyLevel.Beginner,
+                        ProjectPictureUrl = "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1000",
+                        Duration = TimeSpan.FromDays(60),
+                        Goals = "Help local businesses establish an online presence and connect with their community through a user-friendly platform.",
+                        Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
+                        RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" }
+                    },
+                    new TemplateProject
+                    {
+                        ProjectId = Guid.NewGuid(),
+                        ProjectName = "Environmental Data Tracker",
+                        ProjectDescription = "An application to track and visualize environmental data such as air quality, water quality, and waste management metrics. Includes data visualization and reporting features.",
+                        DifficultyLevel = eDifficultyLevel.Advanced,
+                        ProjectPictureUrl = "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?q=80&w=1000",
+                        Duration = TimeSpan.FromDays(120),
+                        Goals = "Create a comprehensive environmental monitoring system that helps communities track and improve their environmental impact.",
+                        Technologies = new List<string> { "Python", "Django", "PostgreSQL", "D3.js" },
+                        RequiredRoles = new List<string> { "Full Stack Developer", "Data Scientist", "UI/UX Designer", "DevOps Engineer" }
+                    }
+                };
 
                 context.TemplateProjects.AddRange(templateProjects);
                 context.SaveChanges();
@@ -345,36 +358,44 @@ namespace GainIt.API.Data
 
                 #region Seed User Projects
                 var userProjects = new List<UserProject>
-            {
-                new UserProject
                 {
-                    ProjectId = Guid.NewGuid(),
-                    ProjectName = "TechForGood Learning Platform",
-                    ProjectDescription = "An online learning platform for TechForGood Foundation to provide free coding courses to underprivileged communities. Features include course management, progress tracking, and interactive coding exercises.",
-                    ProjectStatus = eProjectStatus.InProgress,
-                    ProjectSource = eProjectSource.NonprofitOrganization,
-                    CreatedAtUtc = DateTime.UtcNow.AddDays(-30),
-                    TeamMembers = new List<Gainer> { gainer1, gainer2 },
-                    AssignedMentor = mentor,
-                    OwningOrganization = nonprofit,
-                    RepositoryLink = "https://github.com/techforgood/learning-platform",
-                    Technologies = new List<string> { "React", "TypeScript", "Node.js", "MongoDB" }
-                },
-                new UserProject
-                {
-                    ProjectId = Guid.NewGuid(),
-                    ProjectName = "Community Garden Management System",
-                    ProjectDescription = "A system to help community gardens manage plots, track plant growth, and coordinate volunteer schedules. Includes features for weather integration and plant care reminders.",
-                    ProjectStatus = eProjectStatus.Pending,
-                    ProjectSource = eProjectSource.NonprofitOrganization,
-                    CreatedAtUtc = DateTime.UtcNow.AddDays(-15),
-                    TeamMembers = new List<Gainer> { gainer1 },
-                    AssignedMentor = mentor,
-                    OwningOrganization = nonprofit,
-                    RepositoryLink = "https://github.com/techforgood/garden-management",
-                    Technologies = new List<string> { "Vue.js", "Python", "PostgreSQL", "Docker" }
-                }
-            };
+                    new UserProject
+                    {
+                        ProjectId = Guid.NewGuid(),
+                        ProjectName = "TechForGood Learning Platform",
+                        ProjectDescription = "An online learning platform for TechForGood Foundation to provide free coding courses to underprivileged communities. Features include course management, progress tracking, and interactive coding exercises.",
+                        ProjectStatus = eProjectStatus.InProgress,
+                        ProjectSource = eProjectSource.NonprofitOrganization,
+                        CreatedAtUtc = DateTime.UtcNow.AddDays(-30),
+                        TeamMembers = new List<Gainer> { gainer1, gainer2 },
+                        AssignedMentor = mentor,
+                        OwningOrganization = nonprofit,
+                        RepositoryLink = "https://github.com/techforgood/learning-platform",
+                        Technologies = new List<string> { "React", "TypeScript", "Node.js", "MongoDB" },
+                        ProjectPictureUrl = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000",
+                        Duration = TimeSpan.FromDays(180),
+                        Goals = "Create an accessible learning platform that empowers underprivileged communities with coding skills and technology education.",
+                        RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Content Creator" }
+                    },
+                    new UserProject
+                    {
+                        ProjectId = Guid.NewGuid(),
+                        ProjectName = "Community Garden Management System",
+                        ProjectDescription = "A system to help community gardens manage plots, track plant growth, and coordinate volunteer schedules. Includes features for weather integration and plant care reminders.",
+                        ProjectStatus = eProjectStatus.Pending,
+                        ProjectSource = eProjectSource.NonprofitOrganization,
+                        CreatedAtUtc = DateTime.UtcNow.AddDays(-15),
+                        TeamMembers = new List<Gainer> { gainer1 },
+                        AssignedMentor = mentor,
+                        OwningOrganization = nonprofit,
+                        RepositoryLink = "https://github.com/techforgood/garden-management",
+                        Technologies = new List<string> { "Vue.js", "Python", "PostgreSQL", "Docker" },
+                        ProjectPictureUrl = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=1000",
+                        Duration = TimeSpan.FromDays(90),
+                        Goals = "Develop a comprehensive system for managing community gardens and promoting sustainable urban agriculture.",
+                        RequiredRoles = new List<string> { "Full Stack Developer", "UI/UX Designer", "DevOps Engineer" }
+                    }
+                };
 
                 context.Projects.AddRange(userProjects);
                 context.SaveChanges();
@@ -419,3 +440,5 @@ namespace GainIt.API.Data
         }
     }
 }
+
+    
