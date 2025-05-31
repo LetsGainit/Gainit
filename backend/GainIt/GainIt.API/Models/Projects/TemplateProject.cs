@@ -40,24 +40,6 @@ namespace GainIt.API.Models.Projects
         public List<string> Technologies { get; set; } = new();
 
         [Required(ErrorMessage = "Open Roles are required")]
-        public List<string> OpenRoles { get; set; } = new();
-
-        //TO ADD: 
-        // picture  - > template project + project 
-        //  duration ( can be nullble)  -> template project + project
-        // private or public? -> project 
-        // open roles - > project
-        // goals -> template project  
-        // technologies -> template ? 
-        // programming languages - > project
-
-
-
-
-
-
-
-        // think about users roles in each project ( how to be saved ) 
-
+        public List<string> RequiredRoles { get; set; } = new();
     }
 }

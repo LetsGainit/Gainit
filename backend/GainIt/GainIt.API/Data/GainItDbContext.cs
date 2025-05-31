@@ -122,8 +122,5 @@ namespace GainIt.API.Data
                 context.SaveChanges();
             }
         }
-
-        
     }
-
 }

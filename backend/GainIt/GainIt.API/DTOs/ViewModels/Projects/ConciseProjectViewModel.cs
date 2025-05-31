@@ -30,7 +30,6 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             if (i_Project is UserProject userProject)
             {
                 ProjectStatus = userProject.ProjectStatus.ToString();
-                IsPublic = userProject.IsPublic;
 
                 if (i_TeamMemberId.HasValue && userProject.UserIdToRoleMap.TryGetValue(i_TeamMemberId.Value, out var userRole))
                 {

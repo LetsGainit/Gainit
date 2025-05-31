@@ -24,7 +24,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             Duration = toDaysAndMonthsString(i_template.Duration);
             Goals = i_template.Goals;
             Technologies = i_template.Technologies;
-            OpenRoles = i_template.OpenRoles;
+            OpenRoles = i_template.RequiredRoles;
         }
 
         private static string toDaysAndMonthsString(TimeSpan duration)

@@ -18,7 +18,8 @@ namespace GainIt.API.Models.Projects
 
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
-        public List<Gainer> TeamMembers { get; set; } = new();
+
+        public required List<Gainer> TeamMembers { get; set; } = new();
 
         [Url(ErrorMessage = "Invalid Repository URL")]
         public string? RepositoryLink { get; set; }
@@ -29,24 +30,31 @@ namespace GainIt.API.Models.Projects
         public Guid? OwningOrganizationUserId { get; set; }
         public NonprofitOrganization? OwningOrganization { get; set; }
 
-        [Required]
-        public bool IsPublic { get; set; } = true; // Default to public
-
         [Required(ErrorMessage = "Programming Languages are required")]
         public List<string> ProgrammingLanguages { get; set; } = new();
 
 
         // Add this property
-        public List<ProjectUserRole> UserRoles { get; set; } = new();
+        public List<ProjectMember> UserRoles { get; set; } = new();
 
         // Helper property to work with dictionary
         [NotMapped]
-        public Dictionary<Guid, string> UserIdToRoleMap
+        public Dictionary<string, Guid> UserIdToRoleMap
         {
-            get => UserRoles.ToDictionary(ur => ur.UserId, ur => ur.UserRole);
+            get => UserRoles.ToDictionary(ur => ur.UserRole, ur => ur.UserId);
             set => UserRoles = value.Select(userRolePair =>
-                new ProjectUserRole { UserId = userRolePair.Key, UserRole = userRolePair.Value })
+                new ProjectMember
+                {
+                    UserRole = userRolePair.Key,
+                    UserId = userRolePair.Value,
+                    User = GetTeamMemberById(userRolePair.Value),
+                    Project = this
+                })
                 .ToList();
+        }
+        public Gainer? GetTeamMemberById(Guid userId)
+        {
+            return TeamMembers.FirstOrDefault(g => g.UserId == userId);
         }
     }
 }   

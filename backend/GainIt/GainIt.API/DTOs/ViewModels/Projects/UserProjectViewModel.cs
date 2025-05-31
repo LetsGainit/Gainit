@@ -46,8 +46,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             // Map new properties
             ProjectPictureUrl = i_Project.ProjectPictureUrl;
             Duration = i_Project.Duration;
-            IsPublic = i_Project.IsPublic;
-            OpenRoles = i_Project.OpenRoles;
+            OpenRoles = i_Project.RequiredRoles;
             ProgrammingLanguages = i_Project.ProgrammingLanguages;
             Goals = i_Project.Goals;
             Technologies = i_Project.Technologies;
