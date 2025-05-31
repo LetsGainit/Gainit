@@ -22,7 +22,7 @@ namespace GainIt.API.Data
         public DbSet<Gainer> Gainers { get; set; }
         public DbSet<Mentor> Mentors { get; set; }
         public DbSet<NonprofitOrganization> Nonprofits { get; set; }
-        public DbSet<Project> Projects { get; set; }
+        public DbSet<UserProject> Projects { get; set; }
         public DbSet<TemplateProject> TemplateProjects { get; set; }
 
         protected override void OnModelCreating(ModelBuilder i_ModelBuilder)
@@ -31,20 +31,20 @@ namespace GainIt.API.Data
             i_ModelBuilder.Entity<User>().UseTptMappingStrategy();
 
             // Many-to-many: Projects ↔ TeamMembers (Gainers)
-            i_ModelBuilder.Entity<Project>()
+            i_ModelBuilder.Entity<UserProject>()
                 .HasMany(p => p.TeamMembers)
                 .WithMany(g => g.ParticipatedProjects)
                 .UsingEntity(j => j.ToTable("ProjectTeamMembers"));
 
             // One mentor → many projects
-            i_ModelBuilder.Entity<Project>()
+            i_ModelBuilder.Entity<UserProject>()
                 .HasOne<Mentor>(p => p.AssignedMentor)
                 .WithMany(m => m.MentoredProjects) 
                 .HasForeignKey("AssignedMentorUserId")
                 .OnDelete(DeleteBehavior.SetNull);
 
             // One nonprofit → many projects
-            i_ModelBuilder.Entity<Project>()
+            i_ModelBuilder.Entity<UserProject>()
                 .HasOne<NonprofitOrganization>(p => p.OwningOrganization)
                 .WithMany(n => n.OwnedProjects) 
                 .HasForeignKey("OwningOrganizationUserId")
@@ -93,7 +93,7 @@ namespace GainIt.API.Data
             {
                 context.TemplateProjects.Add(new TemplateProject
                 {
-                    TemplateProjectId = Guid.NewGuid(),
+                    ProjectId = Guid.NewGuid(),
                     ProjectName = "Starter Template",
                     ProjectDescription = "A base template for beginner projects.",
                     DifficultyLevel = eDifficultyLevel.Beginner
@@ -105,7 +105,7 @@ namespace GainIt.API.Data
             if (!context.Projects.Any())
             {
                 // Seed a template project
-                context.Projects.Add(new Project
+                context.Projects.Add(new UserProject
                 {
                     ProjectId = Guid.NewGuid(),
                     ProjectName = "Nonprofit Project",

@@ -18,7 +18,7 @@ namespace GainIt.API.Models.Users.Nonprofits
 
         public NonprofitExpertise NonprofitExpertise { get; set; } = new();
 
-        public List<Project> OwnedProjects { get; set; } = new();
+        public List<UserProject> OwnedProjects { get; set; } = new();
 
     }
 }

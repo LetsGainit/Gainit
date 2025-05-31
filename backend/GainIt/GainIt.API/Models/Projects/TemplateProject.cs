@@ -8,8 +8,11 @@ namespace GainIt.API.Models.Projects
 {
     public class TemplateProject
     {
+        // in project Services StartProjectFromTemplateAsync uses template project to create a new project.
+        // This is how templates saved in the system and from the templates the user create a project.
+
         [Key]
-        public Guid TemplateProjectId { get; set; }
+        public Guid ProjectId { get; set; }
 
         [Required(ErrorMessage = "Project Name is required")]
         [StringLength(200, ErrorMessage = "Project Name cannot exceed 200 characters")]
@@ -21,5 +24,40 @@ namespace GainIt.API.Models.Projects
 
         [Required]
         public eDifficultyLevel DifficultyLevel { get; set; }
+
+        //new 
+        [Url(ErrorMessage = "Invalid Project Picture URL")]
+        [StringLength(500, ErrorMessage = "Project Picture URL cannot exceed 500 characters")]
+        public string? ProjectPictureUrl { get; set; }
+
+        public TimeSpan Duration { get; set; }
+
+        [Required(ErrorMessage = "Project Goals are required")]
+        [StringLength(2000, ErrorMessage = "Project Goals cannot exceed 2000 characters")]
+        public required string Goals { get; set; }
+
+        [Required(ErrorMessage = "Technologies are required")]
+        public List<string> Technologies { get; set; } = new();
+
+        [Required(ErrorMessage = "Open Roles are required")]
+        public List<string> OpenRoles { get; set; } = new();
+
+        //TO ADD: 
+        // picture  - > template project + project 
+        //  duration ( can be nullble)  -> template project + project
+        // private or public? -> project 
+        // open roles - > project
+        // goals -> template project  
+        // technologies -> tamplate ? 
+        // programming languages - > project
+
+
+
+
+
+
+
+        // think about users roles in each project ( how to be saved ) 
+
     }
 }

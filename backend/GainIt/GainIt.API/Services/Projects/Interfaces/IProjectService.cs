@@ -7,7 +7,7 @@ namespace GainIt.API.Services.Projects.Interfaces
     public interface IProjectService
     {
         // Retrieve a project by its ID
-        Task<ProjectViewModel?> GetActiveProjectByProjectIdAsync(Guid i_ProjectId);
+        Task<UserProjectViewModel?> GetActiveProjectByProjectIdAsync(Guid i_ProjectId);
 
         // Retrieve a Template project by its ID
         Task<TemplateProjectViewModel?> GetTemplateProjectByProjectIdAsync(Guid i_ProjectId);
@@ -16,54 +16,54 @@ namespace GainIt.API.Services.Projects.Interfaces
         Task<IEnumerable<TemplateProjectViewModel>> GetAllTemplatesProjectsAsync();
 
         // Retrieve all projects that are pending templates
-        Task<IEnumerable<ProjectViewModel>> GetAllPendingTemplatesProjectsAsync();
+        Task<IEnumerable<UserProjectViewModel>> GetAllPendingTemplatesProjectsAsync();
 
         // Retrieve all projects that are nonprofit projects
-        Task<IEnumerable<ProjectViewModel>> GetAllNonprofitProjectsAsync();
+        Task<IEnumerable<UserProjectViewModel>> GetAllNonprofitProjectsAsync();
 
         // Retrieve projects by user ID
-        Task<IEnumerable<ProjectViewModel>> GetProjectsByUserIdAsync(Guid i_UserId);
+        Task<IEnumerable<UserProjectViewModel>> GetProjectsByUserIdAsync(Guid i_UserId);
 
         // Retrieve projects by mentor ID
-        Task<IEnumerable<ProjectViewModel>> GetProjectsByMentorIdAsync(Guid i_MentorId);
+        Task<IEnumerable<UserProjectViewModel>> GetProjectsByMentorIdAsync(Guid i_MentorId);
 
         // Retrieve projects by nonprofit ID
-        Task<IEnumerable<ProjectViewModel>> GetProjectsByNonprofitIdAsync(Guid i_NonprofitId);
+        Task<IEnumerable<UserProjectViewModel>> GetProjectsByNonprofitIdAsync(Guid i_NonprofitId);
 
         // Update project status
-        Task<ProjectViewModel> UpdateProjectStatusAsync(Guid i_ProjectId, eProjectStatus i_Status);
+        Task<UserProjectViewModel> UpdateProjectStatusAsync(Guid i_ProjectId, eProjectStatus i_Status);
 
         // Assigning a mentor to a project
-        Task<ProjectViewModel> AssignMentorAsync(Guid i_ProjectId, Guid i_MentorId);
+        Task<UserProjectViewModel> AssignMentorAsync(Guid i_ProjectId, Guid i_MentorId);
 
         // Update project repository link
-        Task<ProjectViewModel> UpdateRepositoryLinkAsync(Guid i_ProjectId, string i_RepositoryLink);
+        Task<UserProjectViewModel> UpdateRepositoryLinkAsync(Guid i_ProjectId, string i_RepositoryLink);
 
         // Add team member to project
-        Task<ProjectViewModel> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId);
+        Task<UserProjectViewModel> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId);
 
         // Remove team member from project
-        Task<ProjectViewModel> RemoveTeamMemberAsync(Guid i_ProjectId, Guid i_UserId);
+        Task<UserProjectViewModel> RemoveTeamMemberAsync(Guid i_ProjectId, Guid i_UserId);
 
         // Remove mentor from project
-        Task<ProjectViewModel> RemoveMentorAsync(Guid i_ProjectId);
+        Task<UserProjectViewModel> RemoveMentorAsync(Guid i_ProjectId);
 
         // Search active projects by name or description
-        Task<IEnumerable<ProjectViewModel>> SearchActiveProjectsByNameOrDescriptionAsync(string i_SearchQuery);
+        Task<IEnumerable<UserProjectViewModel>> SearchActiveProjectsByNameOrDescriptionAsync(string i_SearchQuery);
 
         // Search template projects by name or description
         Task<IEnumerable<TemplateProjectViewModel>> SearchTemplateProjectsByNameOrDescriptionAsync(string i_SearchQuery);
 
         // Filter active projects by status and difficulty level
-        Task<IEnumerable<ProjectViewModel>> FilterActiveProjectsByStatusAndDifficultyAsync(eProjectStatus i_Status, eDifficultyLevel i_Difficulty);
+        Task<IEnumerable<UserProjectViewModel>> FilterActiveProjectsByStatusAndDifficultyAsync(eProjectStatus i_Status, eDifficultyLevel i_Difficulty);
 
         // Filter template projects by difficulty level
         Task<IEnumerable<TemplateProjectViewModel>> FilterTemplateProjectsByDifficultyAsync(eDifficultyLevel i_Difficulty);
 
         // Create a new project from a template and assign the user as one of the team members
-        Task<ProjectViewModel> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId);
+        Task<UserProjectViewModel> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId);
 
         // Create a new project for a nonprofit organization and assign the organization as the owner
-        Task<ProjectViewModel> CreateProjectForNonprofitAsync(ProjectViewModel i_Project, Guid i_NonprofitOrgId);
+        Task<UserProjectViewModel> CreateProjectForNonprofitAsync(UserProjectViewModel i_Project, Guid i_NonprofitOrgId);
     }
 }
