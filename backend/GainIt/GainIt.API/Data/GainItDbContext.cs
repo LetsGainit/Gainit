@@ -269,21 +269,27 @@ namespace GainIt.API.Data
                 var mentor = new Mentor
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Dr. Sarah Chen",
-                    EmailAddress = "sarah.chen@techmentor.com",
+                    FullName = "Dr. Sarah Chen-Martinez",
+                    EmailAddress = "sarah.chen@techmentor.dev",
                     YearsOfExperience = 15,
                     AreaOfExpertise = "Full Stack Development",
-                    Biography = "Senior software architect with expertise in cloud technologies and microservices."
+                    Biography = "Senior software architect with expertise in cloud technologies and microservices.",
+                    GitHubProfile = "https://github.com/wonntann",
+                    LinkedInProfile = "https://linkedin.com/company/mentors-in-tech",
+                    FacebookProfile = "https://facebook.com/TechCareerMentorship"
                 };
 
                 var mentor2 = new Mentor
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Mr. David Lee",
-                    EmailAddress = "david.lee@mentorspace.com",
+                    FullName = "David Lee-Thompson",
+                    EmailAddress = "david.lee@mentorspace.io",
                     YearsOfExperience = 10,
                     AreaOfExpertise = "Data Science & AI",
-                    Biography = "Experienced data scientist and AI mentor, passionate about machine learning and analytics."
+                    Biography = "Experienced data scientist and AI mentor, passionate about machine learning and analytics.",
+                    GitHubProfile = "https://github.com/hepaestus",
+                    LinkedInProfile = "https://linkedin.com/company/tech-career-mentorship",
+                    FacebookProfile = "https://facebook.com/TechCareerMentor"
                 };
 
                 // Create a nonprofit organization
@@ -293,62 +299,83 @@ namespace GainIt.API.Data
                     FullName = "TechForGood Foundation",
                     EmailAddress = "contact@techforgood.org",
                     WebsiteUrl = "https://techforgood.org",
-                    Biography = "Empowering communities through technology education and digital literacy programs."
+                    Biography = "Empowering communities through technology education and digital literacy programs.",
+                    GitHubProfile = "https://github.com/techrityorg",
+                    LinkedInProfile = "https://linkedin.com/company/techforgood-foundation",
+                    FacebookProfile = "https://facebook.com/TechForGoodFoundation"
                 };
 
                 // Create some gainers
                 var gainer1 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Alex Johnson",
-                    EmailAddress = "alex.j@student.edu",
+                    FullName = "Alexander J. Wilson",
+                    EmailAddress = "alex.wilson@techlearner.dev",
                     EducationStatus = "Undergraduate",
-                    AreasOfInterest = new List<string> { "Web Development", "UI/UX Design", "Cloud Computing" }
+                    AreasOfInterest = new List<string> { "Web Development", "UI/UX Design", "Cloud Computing" },
+                    GitHubProfile = "https://github.com/alexjwilson",
+                    LinkedInProfile = "https://linkedin.com/in/alexjwilson",
+                    FacebookProfile = "https://facebook.com/alex.j.wilson"
                 };
 
                 var gainer2 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Maria Rodriguez",
-                    EmailAddress = "maria.r@student.edu",
+                    FullName = "Maria Rodriguez-Silva",
+                    EmailAddress = "maria.rodriguez@innovatelearn.net",
                     EducationStatus = "Graduate",
-                    AreasOfInterest = new List<string> { "Machine Learning", "Data Science", "Python" }
+                    AreasOfInterest = new List<string> { "Machine Learning", "Data Science", "Python" },
+                    GitHubProfile = "https://github.com/suecodes",
+                    LinkedInProfile = "https://linkedin.com/in/mariarodriguezdev",
+                    FacebookProfile = "https://facebook.com/maria.rodriguez.dev"
                 };
 
                 var gainer3 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Samuel Kim",
-                    EmailAddress = "samuel.kim@student.edu",
+                    FullName = "Samuel Kim-Park",
+                    EmailAddress = "samuel.kim@codelearner.io",
                     EducationStatus = "Undergraduate",
-                    AreasOfInterest = new List<string> { "Mobile Development", "Android", "Kotlin" }
+                    AreasOfInterest = new List<string> { "Mobile Development", "Android", "Kotlin" },
+                    GitHubProfile = "https://github.com/Tech-Educators",
+                    LinkedInProfile = "https://linkedin.com/in/samuelkimdev",
+                    FacebookProfile = "https://facebook.com/samuel.kim.dev"
                 };
 
                 var gainer4 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Priya Patel",
-                    EmailAddress = "priya.patel@student.edu",
+                    FullName = "Priya Patel-Shah",
+                    EmailAddress = "priya.patel@securitylearn.dev",
                     EducationStatus = "Graduate",
-                    AreasOfInterest = new List<string> { "Cybersecurity", "Networks", "Linux" }
+                    AreasOfInterest = new List<string> { "Cybersecurity", "Networks", "Linux" },
+                    GitHubProfile = "https://github.com/Open-Tech-Foundation",
+                    LinkedInProfile = "https://linkedin.com/in/priyapateldev",
+                    FacebookProfile = "https://facebook.com/priya.patel.tech"
                 };
 
                 var gainer5 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Liam O'Connor",
-                    EmailAddress = "liam.oconnor@student.edu",
+                    FullName = "Liam O'Connor-Walsh",
+                    EmailAddress = "liam.oconnor@gamedev.net",
                     EducationStatus = "Undergraduate",
-                    AreasOfInterest = new List<string> { "Game Development", "Unity", "C#" }
+                    AreasOfInterest = new List<string> { "Game Development", "Unity", "C#" },
+                    GitHubProfile = "https://github.com/SlateFoundation",
+                    LinkedInProfile = "https://linkedin.com/in/liamoconnordev",
+                    FacebookProfile = "https://facebook.com/liam.oconnor.dev"
                 };
 
                 var gainer6 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Emily Nguyen",
-                    EmailAddress = "emily.nguyen@student.edu",
+                    FullName = "Emily Nguyen-Tran",
+                    EmailAddress = "emily.nguyen@ailearner.dev",
                     EducationStatus = "Graduate",
-                    AreasOfInterest = new List<string> { "AI", "Natural Language Processing", "Python" }
+                    AreasOfInterest = new List<string> { "AI", "Natural Language Processing", "Python" },
+                    GitHubProfile = "https://github.com/AcademySoftwareFoundation",
+                    LinkedInProfile = "https://linkedin.com/in/emilynguyenai",
+                    FacebookProfile = "https://facebook.com/emily.nguyen.ai"
                 };
 
                 context.Users.AddRange(mentor, mentor2, nonprofit, gainer1, gainer2, gainer3, gainer4, gainer5, gainer6);
@@ -428,7 +455,7 @@ namespace GainIt.API.Data
                         TeamMembers = new List<Gainer> { gainer1, gainer2},
                         AssignedMentor = mentor,
                         OwningOrganization = nonprofit,
-                        RepositoryLink = "https://github.com/techforgood/learning-platform",
+                        RepositoryLink = "https://github.com/classroomio/classroomio",
                         ProjectPictureUrl = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000",
                         Duration = TimeSpan.FromDays(180),
                         Goals = new List<string>
@@ -439,7 +466,24 @@ namespace GainIt.API.Data
                             "Foster a supportive local business ecosystem."
                         },
                         Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
-                        RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" }
+                        RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" },
+                        ProjectMembers = new List<ProjectMember>
+                        {
+                            new ProjectMember
+                            {
+                                UserId = gainer1.UserId,
+                                User = gainer1,
+                                UserRole = "Web Developer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-30)
+                            },
+                            new ProjectMember
+                            {
+                                UserId = gainer2.UserId,
+                                User = gainer2,
+                                UserRole = "UI Designer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-30)
+                            }
+                        }
                     },
                     new UserProject
                     {
@@ -452,7 +496,7 @@ namespace GainIt.API.Data
                         TeamMembers = new List<Gainer> { gainer3, gainer4, gainer5 },
                         AssignedMentor = mentor2,
                         OwningOrganization = nonprofit,
-                        RepositoryLink = "https://github.com/techforgood/garden-management",
+                        RepositoryLink = "https://github.com/MDeLuise/plant-it",
                         Technologies = new List<string> { "Vue.js", "Python", "PostgreSQL", "Docker" },
                         ProjectPictureUrl = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=1000",
                         Duration = TimeSpan.FromDays(90),
@@ -463,7 +507,31 @@ namespace GainIt.API.Data
                             "Coordinate volunteer schedules and activities.",
                             "Promote sustainable urban agriculture practices."
                         },
-                        RequiredRoles = new List<string> { "Full Stack Developer", "UI/UX Designer", "DevOps Engineer" }
+                        RequiredRoles = new List<string> { "Full Stack Developer", "UI/UX Designer", "DevOps Engineer" },
+                        ProjectMembers = new List<ProjectMember>
+                        {
+                            new ProjectMember
+                            {
+                                UserId = gainer3.UserId,
+                                User = gainer3,
+                                UserRole = "Full Stack Developer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-15)
+                            },
+                            new ProjectMember
+                            {
+                                UserId = gainer4.UserId,
+                                User = gainer4,
+                                UserRole = "UI/UX Designer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-15)
+                            },
+                            new ProjectMember
+                            {
+                                UserId = gainer5.UserId,
+                                User = gainer5,
+                                UserRole = "DevOps Engineer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-15)
+                            }
+                        }
                     },
                     new UserProject
                     {
@@ -475,7 +543,7 @@ namespace GainIt.API.Data
                         DifficultyLevel = eDifficultyLevel.Beginner,
                         CreatedAtUtc = DateTime.UtcNow.AddDays(-10),
                         TeamMembers = new List<Gainer> { gainer6, gainer1},
-                        RepositoryLink = "https://github.com/studentprojects/business-directory",
+                        RepositoryLink = "https://github.com/learnhouse/learnhouse",
                         Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
                         ProjectPictureUrl = "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1000",
                         Duration = TimeSpan.FromDays(60),
@@ -485,7 +553,24 @@ namespace GainIt.API.Data
                             "Connect students with local business opportunities.",
                             "Provide a platform for student reviews and feedback."
                         },
-                        RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" }
+                        RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" },
+                        ProjectMembers = new List<ProjectMember>
+                        {
+                            new ProjectMember
+                            {
+                                UserId = gainer6.UserId,
+                                User = gainer6,
+                                UserRole = "Web Developer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-10)
+                            },
+                            new ProjectMember
+                            {
+                                UserId = gainer1.UserId,
+                                User = gainer1,
+                                UserRole = "UI Designer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-10)
+                            }
+                        }
                     },
                     new UserProject
                     {
@@ -497,7 +582,7 @@ namespace GainIt.API.Data
                         DifficultyLevel = eDifficultyLevel.Advanced,
                         CreatedAtUtc = DateTime.UtcNow.AddDays(-5),
                         TeamMembers = new List<Gainer> { gainer1, gainer2, gainer3},
-                        RepositoryLink = "https://github.com/studentprojects/environmental-tracker",
+                        RepositoryLink = "https://github.com/openfarmcc/OpenFarm",
                         ProjectPictureUrl = "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?q=80&w=1000",
                         Duration = TimeSpan.FromDays(120),
                         Goals = new List<string>
@@ -508,7 +593,80 @@ namespace GainIt.API.Data
                             "Promote environmental awareness and data-driven decision making."
                         },
                         Technologies = new List<string> { "Python", "Django", "PostgreSQL", "D3.js" },
-                        RequiredRoles = new List<string> { "Full Stack Developer", "Data Scientist", "UI/UX Designer", "DevOps Engineer" }
+                        RequiredRoles = new List<string> { "Full Stack Developer", "Data Scientist", "UI/UX Designer", "DevOps Engineer" },
+                        ProjectMembers = new List<ProjectMember>
+                        {
+                            new ProjectMember
+                            {
+                                UserId = gainer1.UserId,
+                                User = gainer1,
+                                UserRole = "Full Stack Developer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-5)
+                            },
+                            new ProjectMember
+                            {
+                                UserId = gainer2.UserId,
+                                User = gainer2,
+                                UserRole = "Data Scientist",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-5)
+                            },
+                            new ProjectMember
+                            {
+                                UserId = gainer3.UserId,
+                                User = gainer3,
+                                UserRole = "UI/UX Designer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-5)
+                            }
+                        }
+                    },
+                    new UserProject
+                    {
+                        ProjectId = Guid.NewGuid(),
+                        ProjectName = "Community Food Bank Management System",
+                        ProjectDescription = "A web application to help food banks manage inventory, track donations, and coordinate volunteers. Features include donation tracking, volunteer scheduling, and inventory management.",
+                        ProjectStatus = eProjectStatus.InProgress,
+                        ProjectSource = eProjectSource.Template,
+                        DifficultyLevel = eDifficultyLevel.Intermediate,
+                        CreatedAtUtc = DateTime.UtcNow.AddDays(-2),
+                        TeamMembers = new List<Gainer> { gainer4, gainer5, gainer6 },
+                        AssignedMentor = mentor,
+                        OwningOrganization = nonprofit,
+                        RepositoryLink = "https://github.com/foodbank-solutions/foodbank-manager",
+                        ProjectPictureUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000",
+                        Duration = TimeSpan.FromDays(90),
+                        Goals = new List<string>
+                        {
+                            "Create an efficient system for managing food bank operations",
+                            "Improve volunteer coordination",
+                            "Enhance donation tracking capabilities",
+                            "Implement real-time inventory management"
+                        },
+                        Technologies = new List<string> { "React", "Node.js", "MongoDB", "Express" },
+                        RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" },
+                        ProjectMembers = new List<ProjectMember>
+                        {
+                            new ProjectMember
+                            {
+                                UserId = gainer4.UserId,
+                                User = gainer4,
+                                UserRole = "Frontend Developer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-2)
+                            },
+                            new ProjectMember
+                            {
+                                UserId = gainer5.UserId,
+                                User = gainer5,
+                                UserRole = "Backend Developer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-2)
+                            },
+                            new ProjectMember
+                            {
+                                UserId = gainer6.UserId,
+                                User = gainer6,
+                                UserRole = "UI/UX Designer",
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-2)
+                            }
+                        }
                     }
                 };
 
