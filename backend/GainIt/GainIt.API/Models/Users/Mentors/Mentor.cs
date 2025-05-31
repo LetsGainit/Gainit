@@ -22,5 +22,7 @@ namespace GainIt.API.Models.Users.Mentors
         public TechExpertise TechExpertise { get; set; }
 
         public List<UserProject> MentoredProjects { get; set; } = new();
+
+        public List<UserAchievement> Achievements { get; set; } = new();
     }
 }

@@ -35,14 +35,14 @@ namespace GainIt.API.Models.Projects
 
 
         // Add this property
-        public List<ProjectMember> UserRoles { get; set; } = new();
+        public List<ProjectMember> ProjectMembers { get; set; } = new();
 
         // Helper property to work with dictionary
         [NotMapped]
         public Dictionary<string, Guid> RoleToIdMap
         {
-            get => UserRoles.ToDictionary(ur => ur.UserRole, ur => ur.UserId);
-            set => UserRoles = value.Select(userRolePair =>
+            get => ProjectMembers.ToDictionary(ur => ur.UserRole, ur => ur.UserId);
+            set => ProjectMembers = value.Select(userRolePair =>
                 new ProjectMember
                 {
                     UserRole = userRolePair.Key,

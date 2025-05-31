@@ -42,6 +42,10 @@ namespace GainIt.API.Models.Users
                                                                                                  // a picture and get a url from the system
         public string? ProfilePictureURL { get; set; }
 
-        /// mentors review - > do be decided ( if any or just mentors) 
-    }
+
+        public List<UserAchievement> Achievements { get; set; } = new();
+    
+
+    /// mentors review - > do be decided ( if any or just mentors) 
+}
 }
