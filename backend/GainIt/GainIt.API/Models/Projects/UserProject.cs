@@ -39,7 +39,7 @@ namespace GainIt.API.Models.Projects
 
         // Helper property to work with dictionary
         [NotMapped]
-        public Dictionary<string, Guid> UserIdToRoleMap
+        public Dictionary<string, Guid> RoleToIdMap
         {
             get => UserRoles.ToDictionary(ur => ur.UserRole, ur => ur.UserId);
             set => UserRoles = value.Select(userRolePair =>

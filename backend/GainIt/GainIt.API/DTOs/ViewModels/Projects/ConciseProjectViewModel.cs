@@ -10,7 +10,6 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         public string ProjectDescription { get; set; }
         public List<string> Technologies { get; set; }
         public string ProjectStatus { get; set; }
-        public bool IsPublic { get; set; }
         public string UserRoles { get; set; }
         public List<string> TeamMembersPictureUrls { get; set; }
         public string ProjectPictureUrl { get; set; }
@@ -31,9 +30,15 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             {
                 ProjectStatus = userProject.ProjectStatus.ToString();
 
-                if (i_TeamMemberId.HasValue && userProject.UserIdToRoleMap.TryGetValue(i_TeamMemberId.Value, out var userRole))
+                if (i_TeamMemberId.HasValue && userProject.RoleToIdMap.Count > 0)
                 {
-                    UserRoles = userRole;
+                    string role = userProject.RoleToIdMap
+                    .Where(roleToIdEntry => roleToIdEntry.Value == i_TeamMemberId.Value)
+                    .Select(roleToIdEntry => roleToIdEntry.Key)
+                    .FirstOrDefault() ??
+                     string.Empty;
+
+                    UserRoles = role;
                 }
                 else
                 {
