@@ -257,8 +257,6 @@ namespace GainIt.API.Data
             base.OnModelCreating(i_ModelBuilder);
         }
     }
-
-
     public static class GainItDbContextSeeder
     {
         public static void SeedData(GainItDbContext context)
@@ -276,6 +274,16 @@ namespace GainIt.API.Data
                     YearsOfExperience = 15,
                     AreaOfExpertise = "Full Stack Development",
                     Biography = "Senior software architect with expertise in cloud technologies and microservices."
+                };
+
+                var mentor2 = new Mentor
+                {
+                    UserId = Guid.NewGuid(),
+                    FullName = "Mr. David Lee",
+                    EmailAddress = "david.lee@mentorspace.com",
+                    YearsOfExperience = 10,
+                    AreaOfExpertise = "Data Science & AI",
+                    Biography = "Experienced data scientist and AI mentor, passionate about machine learning and analytics."
                 };
 
                 // Create a nonprofit organization
@@ -307,7 +315,43 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Machine Learning", "Data Science", "Python" }
                 };
 
-                context.Users.AddRange(mentor, nonprofit, gainer1, gainer2);
+                var gainer3 = new Gainer
+                {
+                    UserId = Guid.NewGuid(),
+                    FullName = "Samuel Kim",
+                    EmailAddress = "samuel.kim@student.edu",
+                    EducationStatus = "Undergraduate",
+                    AreasOfInterest = new List<string> { "Mobile Development", "Android", "Kotlin" }
+                };
+
+                var gainer4 = new Gainer
+                {
+                    UserId = Guid.NewGuid(),
+                    FullName = "Priya Patel",
+                    EmailAddress = "priya.patel@student.edu",
+                    EducationStatus = "Graduate",
+                    AreasOfInterest = new List<string> { "Cybersecurity", "Networks", "Linux" }
+                };
+
+                var gainer5 = new Gainer
+                {
+                    UserId = Guid.NewGuid(),
+                    FullName = "Liam O'Connor",
+                    EmailAddress = "liam.oconnor@student.edu",
+                    EducationStatus = "Undergraduate",
+                    AreasOfInterest = new List<string> { "Game Development", "Unity", "C#" }
+                };
+
+                var gainer6 = new Gainer
+                {
+                    UserId = Guid.NewGuid(),
+                    FullName = "Emily Nguyen",
+                    EmailAddress = "emily.nguyen@student.edu",
+                    EducationStatus = "Graduate",
+                    AreasOfInterest = new List<string> { "AI", "Natural Language Processing", "Python" }
+                };
+
+                context.Users.AddRange(mentor, mentor2, nonprofit, gainer1, gainer2, gainer3, gainer4, gainer5, gainer6);
                 context.SaveChanges();
                 #endregion
 
@@ -323,23 +367,11 @@ namespace GainIt.API.Data
                         ProjectPictureUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000",
                         Duration = TimeSpan.FromDays(90),
                         Goals = new List<string>
-    {
-        "Create an efficient system for managing food bank operations",
-      "Improve volunteer coordination",
-       "Enhance donation tracking capabilities"
-    },
-    Technologies = new List<string>
-  {
- "React",
-"Node.js",
-  "MongoDB",
-     "Express"
- },
-
-
-
-
-
+                        {
+                        "Create an efficient system for managing food bank operations",
+                        "Improve volunteer coordination",
+                        "Enhance donation tracking capabilities"
+                        },
                         Technologies = new List<string> { "React", "Node.js", "MongoDB", "Express" },
                         RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" }
                     },
@@ -351,7 +383,13 @@ namespace GainIt.API.Data
                         DifficultyLevel = eDifficultyLevel.Beginner,
                         ProjectPictureUrl = "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1000",
                         Duration = TimeSpan.FromDays(60),
-                        Goals = "Help local businesses establish an online presence and connect with their community through a user-friendly platform.",
+                        Goals = new List<string>
+                        {
+                            "Help local businesses establish an online presence and connect with their community through a user-friendly platform.",
+                            "Enable customers to easily discover and review local businesses.",
+                            "Provide business owners with tools to manage their profiles and engage with customers.",
+                            "Foster a supportive local business ecosystem."
+                        },
                         Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
                         RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" }
                     },
@@ -363,7 +401,13 @@ namespace GainIt.API.Data
                         DifficultyLevel = eDifficultyLevel.Advanced,
                         ProjectPictureUrl = "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?q=80&w=1000",
                         Duration = TimeSpan.FromDays(120),
-                        Goals = "Create a comprehensive environmental monitoring system that helps communities track and improve their environmental impact.",
+                        Goals = new List<string>
+                        {
+                            "Create a comprehensive environmental monitoring system that helps communities track and improve their environmental impact.",
+                            "Enable real-time tracking and visualization of air and water quality metrics.",
+                            "Provide actionable insights and reports for community leaders and organizations.",
+                            "Promote environmental awareness and data-driven decision making."
+                        },
                         Technologies = new List<string> { "Python", "Django", "PostgreSQL", "D3.js" },
                         RequiredRoles = new List<string> { "Full Stack Developer", "Data Scientist", "UI/UX Designer", "DevOps Engineer" }
                     }
@@ -371,9 +415,6 @@ namespace GainIt.API.Data
 
                 context.TemplateProjects.AddRange(templateProjects);
                 context.SaveChanges();
-                #endregion
-
-                #region Seed User Projects
                 var userProjects = new List<UserProject>
                 {
                     new UserProject
@@ -384,15 +425,21 @@ namespace GainIt.API.Data
                         ProjectStatus = eProjectStatus.InProgress,
                         ProjectSource = eProjectSource.NonprofitOrganization,
                         CreatedAtUtc = DateTime.UtcNow.AddDays(-30),
-                        TeamMembers = new List<Gainer> { gainer1, gainer2 },
+                        TeamMembers = new List<Gainer> { gainer1, gainer2},
                         AssignedMentor = mentor,
                         OwningOrganization = nonprofit,
                         RepositoryLink = "https://github.com/techforgood/learning-platform",
-                        Technologies = new List<string> { "React", "TypeScript", "Node.js", "MongoDB" },
                         ProjectPictureUrl = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000",
                         Duration = TimeSpan.FromDays(180),
-                        Goals = "Create an accessible learning platform that empowers underprivileged communities with coding skills and technology education.",
-                        RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Content Creator" }
+                        Goals = new List<string>
+                        {
+                            "Help local businesses establish an online presence and connect with their community through a user-friendly platform.",
+                            "Enable customers to easily discover and review local businesses.",
+                            "Provide business owners with tools to manage their profiles and engage with customers.",
+                            "Foster a supportive local business ecosystem."
+                        },
+                        Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
+                        RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" }
                     },
                     new UserProject
                     {
@@ -402,15 +449,66 @@ namespace GainIt.API.Data
                         ProjectStatus = eProjectStatus.Pending,
                         ProjectSource = eProjectSource.NonprofitOrganization,
                         CreatedAtUtc = DateTime.UtcNow.AddDays(-15),
-                        TeamMembers = new List<Gainer> { gainer1 },
-                        AssignedMentor = mentor,
+                        TeamMembers = new List<Gainer> { gainer3, gainer4, gainer5 },
+                        AssignedMentor = mentor2,
                         OwningOrganization = nonprofit,
                         RepositoryLink = "https://github.com/techforgood/garden-management",
                         Technologies = new List<string> { "Vue.js", "Python", "PostgreSQL", "Docker" },
                         ProjectPictureUrl = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=1000",
                         Duration = TimeSpan.FromDays(90),
-                        Goals = "Develop a comprehensive system for managing community gardens and promoting sustainable urban agriculture.",
+                        Goals = new List<string>
+                        {
+                            "Develop a comprehensive system for managing community gardens.",
+                            "Track plant growth and provide care reminders.",
+                            "Coordinate volunteer schedules and activities.",
+                            "Promote sustainable urban agriculture practices."
+                        },
                         RequiredRoles = new List<string> { "Full Stack Developer", "UI/UX Designer", "DevOps Engineer" }
+                    },
+                    new UserProject
+                    {
+                        ProjectId = Guid.NewGuid(),
+                        ProjectName = "Local Business Directory",
+                        ProjectDescription = "A platform for small businesses to create profiles, manage their information, and connect with local customers. Includes features for business owners to update their information and for customers to leave reviews.",
+                        ProjectStatus = eProjectStatus.InProgress,
+                        ProjectSource = eProjectSource.Template,
+                        DifficultyLevel = eDifficultyLevel.Beginner,
+                        CreatedAtUtc = DateTime.UtcNow.AddDays(-10),
+                        TeamMembers = new List<Gainer> { gainer6, gainer1},
+                        RepositoryLink = "https://github.com/studentprojects/business-directory",
+                        Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
+                        ProjectPictureUrl = "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1000",
+                        Duration = TimeSpan.FromDays(60),
+                        Goals = new List<string>
+                        {
+                            "Support student entrepreneurs in building their businesses.",
+                            "Connect students with local business opportunities.",
+                            "Provide a platform for student reviews and feedback."
+                        },
+                        RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" }
+                    },
+                    new UserProject
+                    {
+                        ProjectId = Guid.NewGuid(),
+                        ProjectName = "Environmental Data Tracker",
+                        ProjectDescription = "An application to track and visualize environmental data such as air quality, water quality, and waste management metrics. Includes data visualization and reporting features.",
+                        ProjectStatus = eProjectStatus.Pending,
+                        ProjectSource = eProjectSource.Template,
+                        DifficultyLevel = eDifficultyLevel.Advanced,
+                        CreatedAtUtc = DateTime.UtcNow.AddDays(-5),
+                        TeamMembers = new List<Gainer> { gainer1, gainer2, gainer3},
+                        RepositoryLink = "https://github.com/studentprojects/environmental-tracker",
+                        ProjectPictureUrl = "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?q=80&w=1000",
+                        Duration = TimeSpan.FromDays(120),
+                        Goals = new List<string>
+                        {
+                            "Create a comprehensive environmental monitoring system that helps communities track and improve their environmental impact.",
+                            "Enable real-time tracking and visualization of air and water quality metrics.",
+                            "Provide actionable insights and reports for community leaders and organizations.",
+                            "Promote environmental awareness and data-driven decision making."
+                        },
+                        Technologies = new List<string> { "Python", "Django", "PostgreSQL", "D3.js" },
+                        RequiredRoles = new List<string> { "Full Stack Developer", "Data Scientist", "UI/UX Designer", "DevOps Engineer" }
                     }
                 };
 
@@ -458,4 +556,3 @@ namespace GainIt.API.Data
     }
 }
 
-    

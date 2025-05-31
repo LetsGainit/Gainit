@@ -34,7 +34,7 @@ namespace GainIt.API.Models.Projects
 
         [Required(ErrorMessage = "Project Goals are required")]
         [StringLength(2000, ErrorMessage = "Project Goals cannot exceed 2000 characters")]
-        public required string Goals { get; set; }
+        public required List<string> Goals { get; set; }
 
         [Required(ErrorMessage = "Technologies are required")]
         public List<string> Technologies { get; set; } = new();
