@@ -322,7 +322,24 @@ namespace GainIt.API.Data
                         DifficultyLevel = eDifficultyLevel.Intermediate,
                         ProjectPictureUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000",
                         Duration = TimeSpan.FromDays(90),
-                        Goals = "Create an efficient system for managing food bank operations, improve volunteer coordination, and enhance donation tracking capabilities.",
+                        Goals = new List<string>
+    {
+        "Create an efficient system for managing food bank operations",
+      "Improve volunteer coordination",
+       "Enhance donation tracking capabilities"
+    },
+    Technologies = new List<string>
+  {
+ "React",
+"Node.js",
+  "MongoDB",
+     "Express"
+ },
+
+
+
+
+
                         Technologies = new List<string> { "React", "Node.js", "MongoDB", "Express" },
                         RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" }
                     },
