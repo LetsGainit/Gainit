@@ -16,11 +16,11 @@ namespace GainIt.API.Models.Projects
 
         [Required(ErrorMessage = "Project Name is required")]
         [StringLength(200, ErrorMessage = "Project Name cannot exceed 200 characters")]
-        public string ProjectName { get; set; }
+        public required string ProjectName { get; set; }
 
         [Required(ErrorMessage = "Project Description is required")]
         [StringLength(1000, ErrorMessage = "Project Description cannot exceed 1000 characters")]
-        public string ProjectDescription { get; set; }
+        public required string ProjectDescription { get; set; }
 
         [Required]
         public eDifficultyLevel DifficultyLevel { get; set; }
@@ -28,7 +28,7 @@ namespace GainIt.API.Models.Projects
         //new 
         [Url(ErrorMessage = "Invalid Project Picture URL")]
         [StringLength(500, ErrorMessage = "Project Picture URL cannot exceed 500 characters")]
-        public string? ProjectPictureUrl { get; set; }
+        public required string ProjectPictureUrl { get; set; }
 
         public TimeSpan Duration { get; set; }
 
@@ -48,7 +48,7 @@ namespace GainIt.API.Models.Projects
         // private or public? -> project 
         // open roles - > project
         // goals -> template project  
-        // technologies -> tamplate ? 
+        // technologies -> template ? 
         // programming languages - > project
 
 

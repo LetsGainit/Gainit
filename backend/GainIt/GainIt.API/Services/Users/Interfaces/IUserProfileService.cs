@@ -1,17 +1,8 @@
-﻿namespace GainIt.API.Services.Users.Interfaces
+﻿using GainIt.API.DTOs.ViewModels.Users;
+
+namespace GainIt.API.Services.Users.Interfaces
 {
     public interface IUserProfileService
-    {
-        
+    { 
     }
 }
-/// abstract userXpretise 
-
-
-
-// TechnicalExpretise : 
- 
-
-
-
-// NOneprofit : 

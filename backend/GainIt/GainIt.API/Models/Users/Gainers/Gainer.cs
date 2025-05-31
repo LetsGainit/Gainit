@@ -18,7 +18,7 @@ namespace GainIt.API.Models.Users.Gainers
         
         public List<string> AreasOfInterest { get; set; }
 
-        public TechExpertise TechExpertise { get; set; } = new();
+        public TechExpertise TechExpertise { get; set; }
 
         public List<UserProject> ParticipatedProjects { get; set; } = new();
     }

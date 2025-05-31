@@ -10,17 +10,17 @@ namespace GainIt.API.Models.Users
 
         [Required]
         [StringLength(200)]
-        public string Title { get; set; }
+        public required string Title { get; set; }
 
         [Required]
         [StringLength(1000)]
-        public string Description { get; set; }
+        public required string Description { get; set; }
 
         public bool IsUnlocked { get; set; }
 
-        [Required]
-        [StringLength(500)]
-        public string IconUrl { get; set; }
+        [Url(ErrorMessage = "Invalid Picture URL")]
+        [StringLength(500, ErrorMessage = "Picture URL cannot exceed 500 characters")]
+        public required string IconUrl { get; set; }
 
         // foreign‐key back to User
         [ForeignKey("UserId")]
@@ -28,6 +28,6 @@ namespace GainIt.API.Models.Users
 
         // navigation back to its owner
         [ForeignKey("User")]
-        public User User { get; set; }
+        public required User User { get; set; }
     }
 }

@@ -5,35 +5,52 @@ namespace GainIt.API.DTOs.ViewModels.Projects
 {
     public class UserProjectViewModel
     {
-        public string projectId { get; set; }
-        public string projectName { get; set; }
-        public string projectDescription { get; set; }
-        public string projectStatus { get; set; }
-        public string difficultyLevel { get; set; }
-        public string projectSource { get; set; }
-        public DateTime createdAtUtc { get; set; }
-        public List<string> teamMemberFullNames { get; set; }
-        public string? repositoryLink { get; set; }
-        public string? assignedMentorName { get; set; }
-        public string? owningOrganizationName { get; set; }
+        public string ProjectId { get; set; }
+        public string ProjectName { get; set; }
+        public string ProjectDescription { get; set; }
+        public string ProjectStatus { get; set; }
+        public string DifficultyLevel { get; set; }
+        public string ProjectSource { get; set; }
+        public DateTime CreatedAtUtc { get; set; }
+        public List<string> TeamMemberFullNames { get; set; } //pictures and roles
+        public string? RepositoryLink { get; set; }
+        public string? AssignedMentorName { get; set; }
+        public string? OwningOrganizationName { get; set; }
+        public string? ProjectPictureUrl { get; set; }
+        public TimeSpan? Duration { get; set; }
+        public bool IsPublic { get; set; }
+        public List<string> OpenRoles { get; set; }
+        public List<string> ProgrammingLanguages { get; set; }
+        public string Goals { get; set; }
+        public List<string> Technologies { get; set; }
+
 
         public UserProjectViewModel(UserProject i_Project)
         {
-            projectId = i_Project.ProjectId.ToString();
-            projectName = i_Project.ProjectName;
-            projectDescription = i_Project.ProjectDescription;
-            projectStatus = i_Project.ProjectStatus.ToString();
-            difficultyLevel = i_Project.DifficultyLevel.ToString();
-            projectSource = i_Project.ProjectSource.ToString();
-            createdAtUtc = i_Project.CreatedAtUtc;
-            repositoryLink = i_Project.RepositoryLink;
-            assignedMentorName = i_Project.AssignedMentor?.FullName;
-            owningOrganizationName = i_Project.OwningOrganization?.FullName;
+            ProjectId = i_Project.ProjectId.ToString();
+            ProjectName = i_Project.ProjectName;
+            ProjectDescription = i_Project.ProjectDescription;
+            ProjectStatus = i_Project.ProjectStatus.ToString();
+            DifficultyLevel = i_Project.DifficultyLevel.ToString();
+            ProjectSource = i_Project.ProjectSource.ToString();
+            CreatedAtUtc = i_Project.CreatedAtUtc;
+            RepositoryLink = i_Project.RepositoryLink;
+            AssignedMentorName = i_Project.AssignedMentor?.FullName;
+            OwningOrganizationName = i_Project.OwningOrganization?.FullName;
 
             // Populate teamMemberFullNames from TeamMembers
-            teamMemberFullNames = i_Project.TeamMembers
+            TeamMemberFullNames = i_Project.TeamMembers
                 .Select(member => member.FullName)
                 .ToList();
+
+            // Map new properties
+            ProjectPictureUrl = i_Project.ProjectPictureUrl;
+            Duration = i_Project.Duration;
+            IsPublic = i_Project.IsPublic;
+            OpenRoles = i_Project.OpenRoles;
+            ProgrammingLanguages = i_Project.ProgrammingLanguages;
+            Goals = i_Project.Goals;
+            Technologies = i_Project.Technologies;
         }
     }
 }

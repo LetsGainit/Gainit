@@ -15,6 +15,6 @@ namespace GainIt.API.Models.Users.Expertise
         // navigation back to its owner
         [Required]
         [ForeignKey("User")]
-        public User User { get; set; }
+        public required User User { get; set; }
     }
 }

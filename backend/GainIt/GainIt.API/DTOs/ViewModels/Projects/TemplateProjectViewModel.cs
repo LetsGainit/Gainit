@@ -4,7 +4,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
 {
     public class TemplateProjectViewModel
     {
-        public Guid Id { get; set; }
+        public string ProjectId { get; set; }
         public string ProjectName { get; set; }
         public string ProjectDescription { get; set; }
         public string DifficultyLevel { get; set; }
@@ -12,10 +12,11 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         public string Duration { get; set; }
         public string Goals { get; set; }
         public List<string> Technologies { get; set; }
+        public List<string> OpenRoles { get; set; } = new();
 
         public TemplateProjectViewModel(TemplateProject i_template)
         {
-            Id = i_template.ProjectId;
+            ProjectId = i_template.ProjectId.ToString();
             ProjectName = i_template.ProjectName;
             ProjectDescription = i_template.ProjectDescription;
             DifficultyLevel = i_template.DifficultyLevel.ToString();
@@ -23,6 +24,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             Duration = toDaysAndMonthsString(i_template.Duration);
             Goals = i_template.Goals;
             Technologies = i_template.Technologies;
+            OpenRoles = i_template.OpenRoles;
         }
 
         private static string toDaysAndMonthsString(TimeSpan duration)

@@ -4,6 +4,7 @@ using GainIt.API.Models.Users;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GainIt.API.Models.Projects
 {
@@ -33,5 +34,19 @@ namespace GainIt.API.Models.Projects
 
         [Required(ErrorMessage = "Programming Languages are required")]
         public List<string> ProgrammingLanguages { get; set; } = new();
+
+
+        // Add this property
+        public List<ProjectUserRole> UserRoles { get; set; } = new();
+
+        // Helper property to work with dictionary
+        [NotMapped]
+        public Dictionary<Guid, string> UserIdToRoleMap
+        {
+            get => UserRoles.ToDictionary(ur => ur.UserId, ur => ur.UserRole);
+            set => UserRoles = value.Select(userRolePair =>
+                new ProjectUserRole { UserId = userRolePair.Key, UserRole = userRolePair.Value })
+                .ToList();
+        }
     }
 }   
