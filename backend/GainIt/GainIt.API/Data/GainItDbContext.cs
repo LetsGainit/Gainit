@@ -755,7 +755,7 @@ namespace GainIt.API.Data
                         AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
                         AchievementTemplate = achievementTemplates[0],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-20),
-                        Criteria = "Successfully completed the TechForGood Learning Platform project with all features implemented"
+                        EarnedDetails = "Successfully completed the TechForGood Learning Platform project with all features implemented"
                     },
                     new UserAchievement
                     {
@@ -765,7 +765,7 @@ namespace GainIt.API.Data
                         AchievementTemplateId = achievementTemplates[1].Id, // Team Player
                         AchievementTemplate = achievementTemplates[1],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-15),
-                        Criteria = "Actively participated in 5 different projects as a team member"
+                        EarnedDetails = "Actively participated in 5 different projects as a team member"
                     },
                     // Gainer2 achievements
                     new UserAchievement
@@ -776,7 +776,7 @@ namespace GainIt.API.Data
                         AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
                         AchievementTemplate = achievementTemplates[0],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-25),
-                        Criteria = "Successfully completed the TechForGood Learning Platform project with all features implemented"
+                        EarnedDetails = "Successfully completed the TechForGood Learning Platform project with all features implemented"
                     },
                     // Mentor achievements
                     new UserAchievement
@@ -787,7 +787,7 @@ namespace GainIt.API.Data
                         AchievementTemplateId = achievementTemplates[2].Id, // Mentor's Choice
                         AchievementTemplate = achievementTemplates[2],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-10),
-                        Criteria = "Received positive feedback from 3 different project teams for excellent mentorship"
+                        EarnedDetails = "Received positive feedback from 3 different project teams for excellent mentorship"
                     },
                     // Gainer3 achievements
                     new UserAchievement
@@ -798,7 +798,7 @@ namespace GainIt.API.Data
                         AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
                         AchievementTemplate = achievementTemplates[0],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-5),
-                        Criteria = "Successfully completed the Community Garden Management System project with all features implemented"
+                        EarnedDetails = "Successfully completed the Community Garden Management System project with all features implemented"
                     },
                     // Gainer4 achievements
                     new UserAchievement
@@ -809,7 +809,7 @@ namespace GainIt.API.Data
                         AchievementTemplateId = achievementTemplates[1].Id, // Team Player
                         AchievementTemplate = achievementTemplates[1],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-8),
-                        Criteria = "Actively participated in 5 different projects as a team member"
+                        EarnedDetails = "Actively participated in 5 different projects as a team member"
                     }
                 };
 
