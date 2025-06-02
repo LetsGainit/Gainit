@@ -385,7 +385,7 @@ namespace GainIt.API.Data
                 #region Seed Template Projects
                 var templateProjects = new List<TemplateProject>
                 {
-                    new TemplateProject
+                      new TemplateProject
                     {
                         ProjectId = Guid.NewGuid(),
                         ProjectName = "Community Food Bank Management System",
@@ -485,7 +485,7 @@ namespace GainIt.API.Data
                             }
                         }
                     },
-                    new UserProject 
+                    new UserProject
                     {
                         ProjectId = Guid.NewGuid(),
                         ProjectName = "Community Garden Management System",
@@ -601,7 +601,8 @@ namespace GainIt.API.Data
                                 UserId = gainer1.UserId,
                                 User = gainer1,
                                 UserRole = "Full Stack Developer",
-                                JoinedAtUtc = DateTime.UtcNow.AddDays(-5)
+                                JoinedAtUtc = DateTime.UtcNow.AddDays(-5),
+                                
                             },
                             new ProjectMember
                             {
@@ -668,7 +669,7 @@ namespace GainIt.API.Data
                             }
                         }
                     }
-                };
+                }
 
                 context.Projects.AddRange(userProjects);
                 context.SaveChanges();
