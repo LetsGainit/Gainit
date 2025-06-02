@@ -277,7 +277,8 @@ namespace GainIt.API.Data
                     Biography = "Senior software architect with expertise in cloud technologies and microservices.",
                     GitHubURL = "https://github.com/wonntann",
                     LinkedInURL = "https://linkedin.com/company/mentors-in-tech",
-                    FacebookPageURL = "https://facebook.com/TechCareerMentorship"
+                    FacebookPageURL = "https://facebook.com/TechCareerMentorship",
+                    Achievements = new List<UserAchievement>()
                 };
 
                 var mentor2 = new Mentor
@@ -290,7 +291,8 @@ namespace GainIt.API.Data
                     Biography = "Experienced data scientist and AI mentor, passionate about machine learning and analytics.",
                     GitHubURL = "https://github.com/hepaestus",
                     LinkedInURL = "https://linkedin.com/company/tech-career-mentorship",
-                    FacebookPageURL = "https://facebook.com/TechCareerMentor"
+                    FacebookPageURL = "https://facebook.com/TechCareerMentor",
+                    Achievements = new List<UserAchievement>()
                 };
 
                 // Create a nonprofit organization
@@ -303,7 +305,8 @@ namespace GainIt.API.Data
                     Biography = "Empowering communities through technology education and digital literacy programs.",
                     GitHubURL = "https://github.com/techrityorg",
                     LinkedInURL = "https://linkedin.com/company/techforgood-foundation",
-                    FacebookPageURL = "https://facebook.com/TechForGoodFoundation"
+                    FacebookPageURL = "https://facebook.com/TechForGoodFoundation",
+                    Achievements = new List<UserAchievement>()
                 };
 
                 // Create some gainers
@@ -316,7 +319,8 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Web Development", "UI/UX Design", "Cloud Computing" },
                     GitHubURL = "https://github.com/alexjwilson",
                     LinkedInURL = "https://linkedin.com/in/alexjwilson",
-                    FacebookPageURL = "https://facebook.com/alex.j.wilson"
+                    FacebookPageURL = "https://facebook.com/alex.j.wilson",
+                    Achievements = new List<UserAchievement>()
                 };
 
                 var gainer2 = new Gainer
@@ -328,7 +332,8 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Machine Learning", "Data Science", "Python" },
                     GitHubURL = "https://github.com/suecodes",
                     LinkedInURL = "https://linkedin.com/in/mariarodriguezdev",
-                    FacebookPageURL = "https://facebook.com/maria.rodriguez.dev"
+                    FacebookPageURL = "https://facebook.com/maria.rodriguez.dev",
+                    Achievements = new List<UserAchievement>()
                 };
 
                 var gainer3 = new Gainer
@@ -340,7 +345,8 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Mobile Development", "Android", "Kotlin" },
                     GitHubURL = "https://github.com/Tech-Educators",
                     LinkedInURL = "https://linkedin.com/in/samuelkimdev",
-                    FacebookPageURL = "https://facebook.com/samuel.kim.dev"
+                    FacebookPageURL = "https://facebook.com/samuel.kim.dev",
+                    Achievements = new List<UserAchievement>()
                 };
 
                 var gainer4 = new Gainer
@@ -352,7 +358,8 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Cybersecurity", "Networks", "Linux" },
                     GitHubURL = "https://github.com/Open-Tech-Foundation",
                     LinkedInURL = "https://linkedin.com/in/priyapateldev",
-                    FacebookPageURL = "https://facebook.com/priya.patel.tech"
+                    FacebookPageURL = "https://facebook.com/priya.patel.tech",
+                    Achievements = new List<UserAchievement>()
                 };
 
                 var gainer5 = new Gainer
@@ -364,7 +371,8 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Game Development", "Unity", "C#" },
                     GitHubURL = "https://github.com/SlateFoundation",
                     LinkedInURL = "https://linkedin.com/in/liamoconnordev",
-                    FacebookPageURL = "https://facebook.com/liam.oconnor.dev"
+                    FacebookPageURL = "https://facebook.com/liam.oconnor.dev",
+                    Achievements = new List<UserAchievement>()
                 };
 
                 var gainer6 = new Gainer
@@ -376,7 +384,8 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "AI", "Natural Language Processing", "Python" },
                     GitHubURL = "https://github.com/AcademySoftwareFoundation",
                     LinkedInURL = "https://linkedin.com/in/emilynguyenai",
-                    FacebookPageURL = "https://facebook.com/emily.nguyen.ai"
+                    FacebookPageURL = "https://facebook.com/emily.nguyen.ai",
+                    Achievements = new List<UserAchievement>()
                 };
 
                 context.Users.AddRange(mentor, mentor2, nonprofit, gainer1, gainer2, gainer3, gainer4, gainer5, gainer6);
@@ -742,55 +751,80 @@ namespace GainIt.API.Data
                     {
                         Id = Guid.NewGuid(),
                         UserId = gainer1.UserId,
+                        User = gainer1,
                         AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
+                        AchievementTemplate = achievementTemplates[0],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-20),
-                        Description = "Completed the TechForGood Learning Platform project"
+                        Criteria = "Successfully completed the TechForGood Learning Platform project with all features implemented"
                     },
                     new UserAchievement
                     {
                         Id = Guid.NewGuid(),
                         UserId = gainer1.UserId,
+                        User = gainer1,
                         AchievementTemplateId = achievementTemplates[1].Id, // Team Player
+                        AchievementTemplate = achievementTemplates[1],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-15),
-                        Description = "Participated in multiple projects as a team member"
+                        Criteria = "Actively participated in 5 different projects as a team member"
                     },
                     // Gainer2 achievements
                     new UserAchievement
                     {
                         Id = Guid.NewGuid(),
                         UserId = gainer2.UserId,
+                        User = gainer2,
                         AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
+                        AchievementTemplate = achievementTemplates[0],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-25),
-                        Description = "Completed the TechForGood Learning Platform project"
+                        Criteria = "Successfully completed the TechForGood Learning Platform project with all features implemented"
                     },
                     // Mentor achievements
                     new UserAchievement
                     {
                         Id = Guid.NewGuid(),
                         UserId = mentor.UserId,
+                        User = mentor,
                         AchievementTemplateId = achievementTemplates[2].Id, // Mentor's Choice
+                        AchievementTemplate = achievementTemplates[2],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-10),
-                        Description = "Received positive feedback from project teams"
+                        Criteria = "Received positive feedback from 3 different project teams for excellent mentorship"
                     },
                     // Gainer3 achievements
                     new UserAchievement
                     {
                         Id = Guid.NewGuid(),
                         UserId = gainer3.UserId,
+                        User = gainer3,
                         AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
+                        AchievementTemplate = achievementTemplates[0],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-5),
-                        Description = "Completed the Community Garden Management System project"
+                        Criteria = "Successfully completed the Community Garden Management System project with all features implemented"
                     },
                     // Gainer4 achievements
                     new UserAchievement
                     {
                         Id = Guid.NewGuid(),
                         UserId = gainer4.UserId,
+                        User = gainer4,
                         AchievementTemplateId = achievementTemplates[1].Id, // Team Player
+                        AchievementTemplate = achievementTemplates[1],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-8),
-                        Description = "Participated in multiple projects as a team member"
+                        Criteria = "Actively participated in 5 different projects as a team member"
                     }
                 };
+
+                // Add achievements to users' collections
+                gainer1.Achievements = userAchievements.Where(a => a.UserId == gainer1.UserId).ToList();
+                gainer2.Achievements = userAchievements.Where(a => a.UserId == gainer2.UserId).ToList();
+                gainer3.Achievements = userAchievements.Where(a => a.UserId == gainer3.UserId).ToList();
+                gainer4.Achievements = userAchievements.Where(a => a.UserId == gainer4.UserId).ToList();
+                mentor.Achievements = userAchievements.Where(a => a.UserId == mentor.UserId).ToList();
+
+                // Add achievements to users' collections
+                foreach (var achievement in userAchievements)
+                {
+                    achievement.User.Achievements.Add(achievement);
+                }
 
                 context.UserAchievements.AddRange(userAchievements);
                 context.SaveChanges();
