@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-//builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 
 builder.Services.AddDbContext<GainItDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("GainItPostgresDb")));
