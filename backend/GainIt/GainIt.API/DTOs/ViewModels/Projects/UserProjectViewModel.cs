@@ -1,4 +1,5 @@
-﻿using GainIt.API.Models.Projects;
+﻿using GainIt.API.DTOs.ViewModels.Users;
+using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
 
 namespace GainIt.API.DTOs.ViewModels.Projects
@@ -12,18 +13,16 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         public string DifficultyLevel { get; set; }
         public string ProjectSource { get; set; }
         public DateTime CreatedAtUtc { get; set; }
-        public List<string> TeamMemberFullNames { get; set; } //pictures and roles
+        public List<ConciseUserViewModel> ProjectTeamMembers { get; set; } = new List<ConciseUserViewModel>();
         public string? RepositoryLink { get; set; }
-        public string? AssignedMentorName { get; set; }
-        public string? OwningOrganizationName { get; set; }
+        public FullNonprofitViewModel? OwningOrganization { get; set; }
+        public FullMentorViewModel? AssignedMentor { get; set; }
         public string? ProjectPictureUrl { get; set; }
         public TimeSpan? Duration { get; set; }
-        public bool IsPublic { get; set; }
-        public List<string> OpenRoles { get; set; }
-        public List<string> ProgrammingLanguages { get; set; }
-        public string Goals { get; set; }
-        public List<string> Technologies { get; set; }
-
+        public List<string> OpenRoles { get; set; } = new List<string>();
+        public List<string> ProgrammingLanguages { get; set; } = new List<string>();
+        public List<string> Goals { get; set; } = new List<string>();
+        public List<string> Technologies { get; set; } = new List<string>();
 
         public UserProjectViewModel(UserProject i_Project)
         {
@@ -35,15 +34,19 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             ProjectSource = i_Project.ProjectSource.ToString();
             CreatedAtUtc = i_Project.CreatedAtUtc;
             RepositoryLink = i_Project.RepositoryLink;
-            AssignedMentorName = i_Project.AssignedMentor?.FullName;
-            OwningOrganizationName = i_Project.OwningOrganization?.FullName;
 
-            // Populate teamMemberFullNames from TeamMembers
-            TeamMemberFullNames = i_Project.TeamMembers
-                .Select(member => member.FullName)
+            ProjectTeamMembers = i_Project.ProjectMembers
+                .Select(member => new ConciseUserViewModel(member))
                 .ToList();
 
-            // Map new properties
+            AssignedMentor = i_Project.AssignedMentor != null
+                ? new FullMentorViewModel(i_Project.AssignedMentor)
+                : null;
+
+            OwningOrganization = i_Project.OwningOrganization != null
+                ? new FullNonprofitViewModel(i_Project.OwningOrganization)
+                : null;
+
             ProjectPictureUrl = i_Project.ProjectPictureUrl;
             Duration = i_Project.Duration;
             OpenRoles = i_Project.RequiredRoles;

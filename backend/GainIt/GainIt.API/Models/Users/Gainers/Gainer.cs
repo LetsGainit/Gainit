@@ -9,7 +9,7 @@ namespace GainIt.API.Models.Users.Gainers
     {
         public Gainer()
         {
-            this.UserRole = eUserRole.Gainer;  // Set as "Gainer" by default
+            this.UserRole = eUserType.Gainer;  // Set as "Gainer" by default
         }
 
         [Required(ErrorMessage = "Education Status is required")]

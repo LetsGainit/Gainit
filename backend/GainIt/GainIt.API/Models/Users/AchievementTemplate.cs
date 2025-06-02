@@ -21,10 +21,6 @@ namespace GainIt.API.Models.Users
         [StringLength(500)]
         public string IconUrl { get; set; }
 
-        [Url(ErrorMessage = "Invalid Picture URL")]
-        [StringLength(500, ErrorMessage = "Picture URL cannot exceed 500 characters")]
-        public string? PictureUrl { get; set; }
-
         // Criteria for unlocking the achievement
         [Required]
         [StringLength(1000)]

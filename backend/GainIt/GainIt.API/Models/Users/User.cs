@@ -19,7 +19,7 @@ namespace GainIt.API.Models.Users
         public string EmailAddress { get; set; }
 
         [Required]
-        public eUserRole UserRole { get; protected set; } // Will include: "NonprofitOrganization", "Mentor", or "Gainer"
+        public eUserType UserRole { get; protected set; } // Will include: "NonprofitOrganization", "Mentor", or "Gainer"
 
         [Required]
         [StringLength(1000, ErrorMessage = "Biography cannot exceed 1000 characters")]

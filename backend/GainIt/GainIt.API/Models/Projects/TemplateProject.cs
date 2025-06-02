@@ -12,7 +12,7 @@ namespace GainIt.API.Models.Projects
         // This is how templates saved in the system and from the templates the user create a project.
 
         [Key]
-        public Guid ProjectId { get; set; }
+        public Guid ProjectId { get; set; } = new Guid();
 
         [Required(ErrorMessage = "Project Name is required")]
         [StringLength(200, ErrorMessage = "Project Name cannot exceed 200 characters")]

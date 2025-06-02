@@ -9,7 +9,7 @@ namespace GainIt.API.Models.Users.Mentors
     {
         public Mentor()
         {
-            this.UserRole = eUserRole.Mentor; // Set as "Mentor" by default
+            this.UserRole = eUserType.Mentor; // Set as "Mentor" by default
         }
 
         [Range(1, 50, ErrorMessage = "Years of Experience must be between 1 and 50")]

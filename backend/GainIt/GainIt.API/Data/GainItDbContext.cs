@@ -217,9 +217,6 @@ namespace GainIt.API.Data
                 entity.Property(e => e.IconUrl)
                     .HasMaxLength(200);
 
-                entity.Property(e => e.PictureUrl)
-                    .HasMaxLength(200);
-
                 entity.Property(e => e.UnlockCriteria)
                     .IsRequired()
                     .HasMaxLength(500);

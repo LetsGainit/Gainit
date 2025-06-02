@@ -10,9 +10,9 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         public string DifficultyLevel { get; set; }
         public string ProjectPictureUrl { get; set; }
         public string Duration { get; set; }
-        public string Goals { get; set; }
-        public List<string> Technologies { get; set; }
-        public List<string> OpenRoles { get; set; } = new();
+        public List<string> Goals { get; set; } = new List<string>();
+        public List<string> Technologies { get; set; } = new List<string>();
+        public List<string> RequiredRoles { get; set; } = new List<string>();
 
         public TemplateProjectViewModel(TemplateProject i_template)
         {
@@ -24,7 +24,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             Duration = toDaysAndMonthsString(i_template.Duration);
             Goals = i_template.Goals;
             Technologies = i_template.Technologies;
-            OpenRoles = i_template.RequiredRoles;
+            RequiredRoles = i_template.RequiredRoles;
         }
 
         private static string toDaysAndMonthsString(TimeSpan duration)

@@ -9,7 +9,7 @@ namespace GainIt.API.Models.Users.Nonprofits
     {
         public NonprofitOrganization()
         {
-            this.UserRole = eUserRole.NonprofitOrganization;
+            this.UserRole = eUserType.NonprofitOrganization;
         }
 
         [Required(ErrorMessage = "Website URL is required")]
