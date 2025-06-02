@@ -733,6 +733,67 @@ namespace GainIt.API.Data
 
                 context.AchievementTemplates.AddRange(achievementTemplates);
                 context.SaveChanges();
+
+                // Add achievements to users
+                var userAchievements = new List<UserAchievement>
+                {
+                    // Gainer1 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer1.UserId,
+                        AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-20),
+                        Description = "Completed the TechForGood Learning Platform project"
+                    },
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer1.UserId,
+                        AchievementTemplateId = achievementTemplates[1].Id, // Team Player
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-15),
+                        Description = "Participated in multiple projects as a team member"
+                    },
+                    // Gainer2 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer2.UserId,
+                        AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-25),
+                        Description = "Completed the TechForGood Learning Platform project"
+                    },
+                    // Mentor achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = mentor.UserId,
+                        AchievementTemplateId = achievementTemplates[2].Id, // Mentor's Choice
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-10),
+                        Description = "Received positive feedback from project teams"
+                    },
+                    // Gainer3 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer3.UserId,
+                        AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-5),
+                        Description = "Completed the Community Garden Management System project"
+                    },
+                    // Gainer4 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer4.UserId,
+                        AchievementTemplateId = achievementTemplates[1].Id, // Team Player
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-8),
+                        Description = "Participated in multiple projects as a team member"
+                    }
+                };
+
+                context.UserAchievements.AddRange(userAchievements);
+                context.SaveChanges();
                 #endregion
             }
         }
