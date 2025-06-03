@@ -1,6 +1,9 @@
 ﻿using GainIt.API.DTOs.Requests.Users;
 using GainIt.API.DTOs.ViewModels.Users;
+using GainIt.API.DTOs.ViewModels.Users.Stats;
+using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
+using GainIt.API.Models.Users.Expertise;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
@@ -15,9 +18,9 @@ namespace GainIt.API.Services.Users.Interfaces
         Task<NonprofitOrganization> GetNonprofitByIdAsync(Guid userId);
         
         // Update user profiles with type-specific data
-        Task<Gainer> UpdateGainerProfileAsync(Guid userId, GainerProfileUpdateDto updateDto);
-        Task<Mentor> UpdateMentorProfileAsync(Guid userId, MentorProfileUpdateDto updateDto);
-        Task<NonprofitOrganization> UpdateNonprofitProfileAsync(Guid userId, NonprofitProfileUpdateDto updateDto);
+        Task<Gainer> UpdateGainerProfileAsync(Guid userId, GainerProfileUpdateDTO updateDto);
+        Task<Mentor> UpdateMentorProfileAsync(Guid userId, MentorProfileUpdateDTO updateDto);
+        Task<NonprofitOrganization> UpdateNonprofitProfileAsync(Guid userId, NonprofitProfileUpdateDTO updateDto);
         
         // Get expertise with type-specific details
         Task<IEnumerable<TechExpertise>> GetGainerExpertiseAsync(Guid userId);
@@ -50,8 +53,12 @@ namespace GainIt.API.Services.Users.Interfaces
         Task<IEnumerable<NonprofitOrganization>> SearchNonprofitsAsync(string searchTerm);
         
         // Get user statistics with type-specific metrics
-        Task<GainerStats> GetGainerStatsAsync(Guid userId);
-        Task<MentorStats> GetMentorStatsAsync(Guid userId);
-        Task<NonprofitStats> GetNonprofitStatsAsync(Guid userId);
+
+
+        // we to talk about this feature 
+
+        //Task<GainerStats> GetGainerStatsAsync(Guid userId);
+        //Task<MentorStats> GetMentorStatsAsync(Guid userId);
+        //Task<NonprofitStats> GetNonprofitStatsAsync(Guid userId);
     }
 }

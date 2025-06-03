@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace GainIt.API.DTOs.Requests.Users
 {
-    public class GainerProfileUpdateDto
+    public class GainerProfileUpdateDTO
     {
         [Required(ErrorMessage = "Full Name is required")]
         [StringLength(100, ErrorMessage = "Full Name cannot exceed 100 characters")]
@@ -38,10 +38,10 @@ namespace GainIt.API.DTOs.Requests.Users
         public int YearsOfExperience { get; set; }
 
         [Required(ErrorMessage = "Education Level is required")]
-        public string EducationLevel { get; set; }
+        public string EducationStatus { get; set; }
 
-        [Required(ErrorMessage = "Career Goals are required")]
-        [StringLength(500, ErrorMessage = "Career Goals cannot exceed 500 characters")]
-        public string CareerGoals { get; set; }
+        [Required(ErrorMessage = "Areas of Interest are required")]
+        [MinLength(1, ErrorMessage = "At least one area of interest is required")]
+        public List<string> AreasOfInterest { get; set; }
     }
 } 

@@ -1,8 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using GainIt.API.Models.Users.Expertise;
 
 namespace GainIt.API.DTOs.Requests.Users
 {
-    public class MentorProfileUpdateDto
+    public class MentorProfileUpdateDTO
     {
         [Required(ErrorMessage = "Full Name is required")]
         [StringLength(100, ErrorMessage = "Full Name cannot exceed 100 characters")]
@@ -28,26 +29,14 @@ namespace GainIt.API.DTOs.Requests.Users
         [StringLength(200, ErrorMessage = "Profile picture URL cannot exceed 200 characters")]
         public string? ProfilePictureURL { get; set; }
 
-        // Mentor-specific properties
-        [Required(ErrorMessage = "Professional Title is required")]
-        [StringLength(100, ErrorMessage = "Professional Title cannot exceed 100 characters")]
-        public string ProfessionalTitle { get; set; }
+        // Mentor-specific fields start here
+        [Range(1, 50, ErrorMessage = "Years of Experience must be between 1 and 50")]
+        public int YearsOfExperience { get; set; }
 
-        [Required(ErrorMessage = "Years of Mentoring Experience is required")]
-        [Range(0, 50, ErrorMessage = "Years of Mentoring Experience must be between 0 and 50")]
-        public int YearsOfMentoringExperience { get; set; }
+        [Required(ErrorMessage = "Area of Expertise is required")]
+        [StringLength(200, ErrorMessage = "Area of Expertise cannot exceed 200 characters")]
+        public string AreaOfExpertise { get; set; }
 
-        [Required(ErrorMessage = "Mentoring Style is required")]
-        [StringLength(500, ErrorMessage = "Mentoring Style cannot exceed 500 characters")]
-        public string MentoringStyle { get; set; }
-
-        [Required(ErrorMessage = "Areas of Mentorship is required")]
-        public List<string> AreasOfMentorship { get; set; }
-
-        [Required(ErrorMessage = "Availability is required")]
-        public string Availability { get; set; }
-
-        [Required(ErrorMessage = "Preferred Communication Method is required")]
-        public string PreferredCommunicationMethod { get; set; }
+        public TechExpertise TechExpertise { get; set; }
     }
 } 

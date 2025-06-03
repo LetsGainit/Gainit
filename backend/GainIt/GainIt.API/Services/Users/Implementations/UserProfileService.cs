@@ -1,7 +1,9 @@
 ﻿using GainIt.API.Data;
 using GainIt.API.DTOs.Requests.Users;
 using GainIt.API.DTOs.ViewModels.Users;
+using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
+using GainIt.API.Models.Users.Expertise;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
@@ -14,88 +16,97 @@ namespace GainIt.API.Services.Users.Implementations
     {
         private readonly GainItDbContext _dbContext;
 
-        public UserProfileService(GainItDbContext dbContext)
+        public UserProfileService(GainItDbContext i_dbContext)
         {
-            _dbContext = dbContext;
+            _dbContext = i_dbContext;
         }
 
-        public async Task<Gainer> GetGainerByIdAsync(Guid userId)
+        public async Task<Gainer> GetGainerByIdAsync(Guid i_userId)
         {
             return await _dbContext.Gainers
                 .Include(g => g.TechExpertise)
                 .Include(g => g.ParticipatedProjects)
                 .Include(g => g.Achievements)
-                .FirstOrDefaultAsync(g => g.UserId == userId);
+                .FirstOrDefaultAsync(g => g.UserId == i_userId) ?? 
+                throw new KeyNotFoundException($"Gainer with ID {i_userId} not found");
         }
 
-        public async Task<Mentor> GetMentorByIdAsync(Guid userId)
+        public async Task<Mentor> GetMentorByIdAsync(Guid i_userId)
         {
             return await _dbContext.Mentors
                 .Include(m => m.TechExpertise)
                 .Include(m => m.MentoredProjects)
                 .Include(m => m.Achievements)
-                .FirstOrDefaultAsync(m => m.UserId == userId);
+                .FirstOrDefaultAsync(m => m.UserId == i_userId) ??
+                throw new KeyNotFoundException($"Mentor with ID {i_userId} not found");
         }
 
-        public async Task<NonprofitOrganization> GetNonprofitByIdAsync(Guid userId)
+        public async Task<NonprofitOrganization> GetNonprofitByIdAsync(Guid i_userId)
         {
             return await _dbContext.Nonprofits
                 .Include(n => n.NonprofitExpertise)
                 .Include(n => n.OwnedProjects)
-                .FirstOrDefaultAsync(n => n.UserId == userId);
+                .FirstOrDefaultAsync(n => n.UserId == i_userId) ??
+                throw new KeyNotFoundException($"Noneprofit with ID {i_userId} not found");
         }
 
-        public async Task<Gainer> UpdateGainerProfileAsync(Guid userId, GainerProfileUpdateDto updateDto)
+        public async Task<Gainer> UpdateGainerProfileAsync(Guid i_userId, GainerProfileUpdateDTO i_updateDto)
         {
-            var gainer = await GetGainerByIdAsync(userId);
+            var gainer = await GetGainerByIdAsync(i_userId);
             if (gainer == null)
-                throw new KeyNotFoundException($"Gainer with ID {userId} not found");
+                throw new KeyNotFoundException($"Gainer with ID {i_userId} not found");
 
             // Update base user properties
-            gainer.FullName = updateDto.FullName;
-            gainer.Biography = updateDto.Biography;
-            gainer.FacebookPageURL = updateDto.FacebookPageURL;
-            gainer.LinkedInURL = updateDto.LinkedInURL;
-            gainer.GitHubURL = updateDto.GitHubURL;
-            gainer.ProfilePictureURL = updateDto.ProfilePictureURL;
+            gainer.FullName = i_updateDto.FullName;
+            gainer.Biography = i_updateDto.Biography;
+            gainer.FacebookPageURL = i_updateDto.FacebookPageURL;
+            gainer.LinkedInURL = i_updateDto.LinkedInURL;
+            gainer.GitHubURL = i_updateDto.GitHubURL;
+            gainer.ProfilePictureURL = i_updateDto.ProfilePictureURL;
 
             // Update Gainer-specific properties
-            gainer.CurrentRole = updateDto.CurrentRole;
-            gainer.YearsOfExperience = updateDto.YearsOfExperience;
-            gainer.EducationLevel = updateDto.EducationLevel;
-            gainer.CareerGoals = updateDto.CareerGoals;
+            gainer.EducationStatus = i_updateDto.EducationStatus;
+            gainer.AreasOfInterest = i_updateDto.AreasOfInterest;   // we get it as List<string> so we need to think how to take it
 
             await _dbContext.SaveChangesAsync();
             return gainer;
         }
 
-        public async Task<Mentor> UpdateMentorProfileAsync(Guid userId, MentorProfileUpdateDto updateDto)
+        public async Task<Mentor> UpdateMentorProfileAsync(Guid userId, MentorProfileUpdateDTO i_updateDto)
         {
             var mentor = await GetMentorByIdAsync(userId);
             if (mentor == null)
                 throw new KeyNotFoundException($"Mentor with ID {userId} not found");
 
             // Update base user properties
-            mentor.FullName = updateDto.FullName;
-            mentor.Biography = updateDto.Biography;
-            mentor.FacebookPageURL = updateDto.FacebookPageURL;
-            mentor.LinkedInURL = updateDto.LinkedInURL;
-            mentor.GitHubURL = updateDto.GitHubURL;
-            mentor.ProfilePictureURL = updateDto.ProfilePictureURL;
+            mentor.FullName = i_updateDto.FullName;
+            mentor.Biography = i_updateDto.Biography;
+            mentor.FacebookPageURL = i_updateDto.FacebookPageURL;
+            mentor.LinkedInURL = i_updateDto.LinkedInURL;
+            mentor.GitHubURL = i_updateDto.GitHubURL;
+            mentor.ProfilePictureURL = i_updateDto.ProfilePictureURL;
 
             // Update Mentor-specific properties
-            mentor.ProfessionalTitle = updateDto.ProfessionalTitle;
-            mentor.YearsOfMentoringExperience = updateDto.YearsOfMentoringExperience;
-            mentor.MentoringStyle = updateDto.MentoringStyle;
-            mentor.AreasOfMentorship = updateDto.AreasOfMentorship;
-            mentor.Availability = updateDto.Availability;
-            mentor.PreferredCommunicationMethod = updateDto.PreferredCommunicationMethod;
+            mentor.YearsOfExperience = i_updateDto.YearsOfExperience;
+            mentor.AreaOfExpertise = i_updateDto.AreaOfExpertise;
+
+            // Update TechExpertise
+            if (mentor.TechExpertise == null)
+            {
+                mentor.TechExpertise = new TechExpertise
+                {
+                    User = mentor // Set the required 'User' property to the current mentor instance
+                };
+            }
+            mentor.TechExpertise.ProgrammingLanguages = i_updateDto.TechExpertise.ProgrammingLanguages;
+            mentor.TechExpertise.Technologies = i_updateDto.TechExpertise.Technologies;
+            mentor.TechExpertise.Tools = i_updateDto.TechExpertise.Tools;
 
             await _dbContext.SaveChangesAsync();
             return mentor;
         }
 
-        public async Task<NonprofitOrganization> UpdateNonprofitProfileAsync(Guid userId, NonprofitProfileUpdateDto updateDto)
+        public async Task<NonprofitOrganization> UpdateNonprofitProfileAsync(Guid userId, NonprofitProfileUpdateDTO updateDto)
         {
             var nonprofit = await GetNonprofitByIdAsync(userId);
             if (nonprofit == null)
@@ -110,13 +121,23 @@ namespace GainIt.API.Services.Users.Implementations
             nonprofit.ProfilePictureURL = updateDto.ProfilePictureURL;
 
             // Update Nonprofit-specific properties
-            nonprofit.OrganizationType = updateDto.OrganizationType;
-            nonprofit.MissionStatement = updateDto.MissionStatement;
-            nonprofit.WebsiteURL = updateDto.WebsiteURL;
-            nonprofit.Location = updateDto.Location;
-            nonprofit.FocusAreas = updateDto.FocusAreas;
-            nonprofit.YearFounded = updateDto.YearFounded;
-            nonprofit.TeamSize = updateDto.TeamSize;
+            nonprofit.WebsiteUrl = updateDto.WebsiteUrl;
+
+            // Update NonprofitExpertise
+            if (nonprofit.NonprofitExpertise == null)
+            {
+                nonprofit.NonprofitExpertise = new NonprofitExpertise
+                {
+                    User = nonprofit, 
+                    FieldOfWork = updateDto.NonprofitExpertise.FieldOfWork, 
+                    MissionStatement = updateDto.NonprofitExpertise.MissionStatement 
+                };
+            }
+            else
+            {
+                nonprofit.NonprofitExpertise.FieldOfWork = updateDto.NonprofitExpertise.FieldOfWork;
+                nonprofit.NonprofitExpertise.MissionStatement = updateDto.NonprofitExpertise.MissionStatement;
+            }
 
             await _dbContext.SaveChangesAsync();
             return nonprofit;
@@ -125,19 +146,25 @@ namespace GainIt.API.Services.Users.Implementations
         public async Task<IEnumerable<TechExpertise>> GetGainerExpertiseAsync(Guid userId)
         {
             var gainer = await GetGainerByIdAsync(userId);
-            return gainer?.TechExpertise ?? Enumerable.Empty<TechExpertise>();
+            return gainer?.TechExpertise != null
+                ? new List<TechExpertise> { gainer.TechExpertise }
+                : Enumerable.Empty<TechExpertise>();
         }
 
         public async Task<IEnumerable<TechExpertise>> GetMentorExpertiseAsync(Guid userId)
         {
             var mentor = await GetMentorByIdAsync(userId);
-            return mentor?.TechExpertise ?? Enumerable.Empty<TechExpertise>();
+            return mentor?.TechExpertise != null
+                ? new List<TechExpertise> { mentor.TechExpertise }
+                : Enumerable.Empty<TechExpertise>();
         }
 
         public async Task<IEnumerable<NonprofitExpertise>> GetNonprofitExpertiseAsync(Guid userId)
         {
             var nonprofit = await GetNonprofitByIdAsync(userId);
-            return nonprofit?.NonprofitExpertise ?? Enumerable.Empty<NonprofitExpertise>();
+            return nonprofit?.NonprofitExpertise != null
+                ? new List<NonprofitExpertise> { nonprofit.NonprofitExpertise }
+                : Enumerable.Empty<NonprofitExpertise>();
         }
 
         public async Task<TechExpertise> AddExpertiseToGainerAsync(Guid userId, TechExpertise expertise)
@@ -146,10 +173,35 @@ namespace GainIt.API.Services.Users.Implementations
             if (gainer == null)
                 throw new KeyNotFoundException($"Gainer with ID {userId} not found");
 
-            gainer.TechExpertise.Add(expertise);
+            // Ensure TechExpertise is initialized before adding expertise  
+            if (gainer.TechExpertise == null)
+            {
+                gainer.TechExpertise = new TechExpertise
+                {
+                    User = gainer, // Set the required 'User' property to the current gainer instance  
+                    ProgrammingLanguages = new List<string>(),
+                    Technologies = new List<string>(),
+                    Tools = new List<string>()
+                };
+            }
+
+            // Add expertise details to the respective lists  
+            gainer.TechExpertise.ProgrammingLanguages.AddRange(expertise.ProgrammingLanguages);
+            gainer.TechExpertise.Technologies.AddRange(expertise.Technologies);
+            gainer.TechExpertise.Tools.AddRange(expertise.Tools);
+
             await _dbContext.SaveChangesAsync();
             return expertise;
         }
+
+
+
+        // checked the methods above , from here need to go over
+
+
+
+
+
 
         public async Task<TechExpertise> AddExpertiseToMentorAsync(Guid userId, TechExpertise expertise)
         {
@@ -157,7 +209,23 @@ namespace GainIt.API.Services.Users.Implementations
             if (mentor == null)
                 throw new KeyNotFoundException($"Mentor with ID {userId} not found");
 
-            mentor.TechExpertise.Add(expertise);
+            // Ensure TechExpertise is initialized before adding expertise  
+            if (mentor.TechExpertise == null)
+            {
+                mentor.TechExpertise = new TechExpertise
+                {
+                    User = mentor, // Set the required 'User' property to the current mentor instance  
+                    ProgrammingLanguages = new List<string>(),
+                    Technologies = new List<string>(),
+                    Tools = new List<string>()
+                };
+            }
+
+            // Add expertise details to the respective lists  
+            mentor.TechExpertise.ProgrammingLanguages.AddRange(expertise.ProgrammingLanguages);
+            mentor.TechExpertise.Technologies.AddRange(expertise.Technologies);
+            mentor.TechExpertise.Tools.AddRange(expertise.Tools);
+
             await _dbContext.SaveChangesAsync();
             return expertise;
         }
@@ -168,9 +236,25 @@ namespace GainIt.API.Services.Users.Implementations
             if (nonprofit == null)
                 throw new KeyNotFoundException($"Nonprofit with ID {userId} not found");
 
-            nonprofit.NonprofitExpertise.Add(expertise);
+            // Ensure NonprofitExpertise is initialized before adding expertise
+            if (nonprofit.NonprofitExpertise == null)
+            {
+                nonprofit.NonprofitExpertise = new NonprofitExpertise
+                {
+                    User = nonprofit,
+                    FieldOfWork = expertise.FieldOfWork,
+                    MissionStatement = expertise.MissionStatement
+                };
+            }
+            else
+            {
+                // Update existing NonprofitExpertise properties
+                nonprofit.NonprofitExpertise.FieldOfWork = expertise.FieldOfWork;
+                nonprofit.NonprofitExpertise.MissionStatement = expertise.MissionStatement;
+            }
+
             await _dbContext.SaveChangesAsync();
-            return expertise;
+            return nonprofit.NonprofitExpertise;
         }
 
         public async Task<IEnumerable<UserAchievement>> GetGainerAchievementsAsync(Guid userId)
@@ -305,7 +389,11 @@ namespace GainIt.API.Services.Users.Implementations
                 .ToListAsync();
         }
 
-        public async Task<GainerStats> GetGainerStatsAsync(Guid userId)
+
+
+        ////////////////////   the stats sevice? ///////////////////////////////////////////////////
+
+        /*public async Task<GainerStats> GetGainerStatsAsync(Guid userId)
         {
             var gainer = await GetGainerByIdAsync(userId);
             if (gainer == null)
@@ -348,6 +436,6 @@ namespace GainIt.API.Services.Users.Implementations
                 TotalAchievements = nonprofit.Achievements.Count,
                 ExpertiseCount = nonprofit.NonprofitExpertise.Count
             };
-        }
+        }*/
     }
 }
