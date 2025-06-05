@@ -39,10 +39,6 @@ namespace GainIt.API.DTOs.ViewModels.Projects
                 .Select(member => new ConciseUserViewModel(member))
                 .ToList();
 
-            AssignedMentor = i_Project.AssignedMentor != null
-                ? new FullMentorViewModel(i_Project.AssignedMentor)
-                : null;
-
             OwningOrganization = i_Project.OwningOrganization != null
                 ? new FullNonprofitViewModel(i_Project.OwningOrganization)
                 : null;

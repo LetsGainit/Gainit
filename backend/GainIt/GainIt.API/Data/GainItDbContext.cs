@@ -123,16 +123,8 @@ namespace GainIt.API.Data
             // Configure UserProject
             i_ModelBuilder.Entity<UserProject>(entity =>
             {
-                // Many-to-many: Projects ↔ TeamMembers (Gainers)
-                entity.HasMany(p => p.TeamMembers)
-                    .WithMany(g => g.ParticipatedProjects)
-                    .UsingEntity(j => j.ToTable("ProjectTeamMembers"));
-
-                // One mentor → many projects
-                entity.HasOne<Mentor>(p => p.AssignedMentor)
-                    .WithMany(m => m.MentoredProjects)
-                    .HasForeignKey("AssignedMentorUserId")
-                    .OnDelete(DeleteBehavior.SetNull);
+              
+                
 
                 // One nonprofit → many projects
                 entity.HasOne<NonprofitOrganization>(p => p.OwningOrganization)
@@ -459,8 +451,6 @@ namespace GainIt.API.Data
                     ProjectStatus = eProjectStatus.InProgress,
                     ProjectSource = eProjectSource.NonprofitOrganization,
                     CreatedAtUtc = DateTime.UtcNow.AddDays(-30),
-                    TeamMembers = new List<Gainer> { gainer1, gainer2 },
-                    AssignedMentor = mentor,
                     OwningOrganization = nonprofit,
                     RepositoryLink = "https://github.com/classroomio/classroomio",
                     ProjectPictureUrl = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000",
@@ -484,8 +474,6 @@ namespace GainIt.API.Data
                     ProjectStatus = eProjectStatus.Pending,
                     ProjectSource = eProjectSource.NonprofitOrganization,
                     CreatedAtUtc = DateTime.UtcNow.AddDays(-15),
-                    TeamMembers = new List<Gainer> { gainer3, gainer4, gainer5 },
-                    AssignedMentor = mentor2,
                     OwningOrganization = nonprofit,
                     RepositoryLink = "https://github.com/MDeLuise/plant-it",
                     Technologies = new List<string> { "Vue.js", "Python", "PostgreSQL", "Docker" },
@@ -510,7 +498,6 @@ namespace GainIt.API.Data
                     ProjectSource = eProjectSource.Template,
                     DifficultyLevel = eDifficultyLevel.Beginner,
                     CreatedAtUtc = DateTime.UtcNow.AddDays(-10),
-                    TeamMembers = new List<Gainer> { gainer6, gainer1 },
                     RepositoryLink = "https://github.com/learnhouse/learnhouse",
                     Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
                     ProjectPictureUrl = "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1000",
@@ -533,7 +520,6 @@ namespace GainIt.API.Data
                     ProjectSource = eProjectSource.Template,
                     DifficultyLevel = eDifficultyLevel.Advanced,
                     CreatedAtUtc = DateTime.UtcNow.AddDays(-5),
-                    TeamMembers = new List<Gainer> { gainer1, gainer2, gainer3 },
                     RepositoryLink = "https://github.com/openfarmcc/OpenFarm",
                     ProjectPictureUrl = "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?q=80&w=1000",
                     Duration = TimeSpan.FromDays(120),
@@ -557,8 +543,6 @@ namespace GainIt.API.Data
                     ProjectSource = eProjectSource.Template,
                     DifficultyLevel = eDifficultyLevel.Intermediate,
                     CreatedAtUtc = DateTime.UtcNow.AddDays(-2),
-                    TeamMembers = new List<Gainer> { gainer4, gainer5, gainer6 },
-                    AssignedMentor = mentor,
                     OwningOrganization = nonprofit,
                     RepositoryLink = "https://github.com/foodbank-solutions/foodbank-manager",
                     ProjectPictureUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000",

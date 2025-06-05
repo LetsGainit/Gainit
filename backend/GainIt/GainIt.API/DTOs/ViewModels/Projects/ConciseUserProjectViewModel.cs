@@ -37,8 +37,8 @@ namespace GainIt.API.DTOs.ViewModels.Projects
                 MyRoleInProject = string.Empty;
             }
 
-            TeamMembersPictureUrls = i_Project.TeamMembers?
-                   .Select(member => member.ProfilePictureURL ?? string.Empty)
+            TeamMembersPictureUrls = i_Project.ProjectMembers?
+                   .Select(member => member.User.ProfilePictureURL ?? string.Empty)
                    .Where(url => !string.IsNullOrEmpty(url))
                    .ToList() ?? new List<string>();
         }

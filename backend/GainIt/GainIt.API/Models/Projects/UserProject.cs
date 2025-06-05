@@ -18,13 +18,9 @@ namespace GainIt.API.Models.Projects
 
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
-
-        public required List<Gainer> TeamMembers { get; set; } = new();
-
         [Url(ErrorMessage = "Invalid Repository URL")]
         public string? RepositoryLink { get; set; }
 
-        public Guid? AssignedMentorUserId { get; set; }
         public Mentor? AssignedMentor { get; set; }
 
         public Guid? OwningOrganizationUserId { get; set; }
@@ -54,7 +50,10 @@ namespace GainIt.API.Models.Projects
         }
         public Gainer? GetTeamMemberById(Guid userId)
         {
-            return TeamMembers.FirstOrDefault(g => g.UserId == userId);
+            return ProjectMembers
+                .Where(pm => pm.UserId == userId && pm.LeftAtUtc == null)
+                .Select(pm => pm.User as Gainer)
+                .FirstOrDefault();
         }
     }
-}   
+}
