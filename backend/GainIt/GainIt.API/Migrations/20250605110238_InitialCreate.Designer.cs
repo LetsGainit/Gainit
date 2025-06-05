@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GainIt.API.Migrations
 {
     [DbContext(typeof(GainItDbContext))]
-    [Migration("20250602163951_ChangedProjectAndUserFeatures")]
-    partial class ChangedProjectAndUserFeatures
+    [Migration("20250605110238_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -232,21 +232,6 @@ namespace GainIt.API.Migrations
                     b.ToTable("UserAchievements");
                 });
 
-            modelBuilder.Entity("GainerUserProject", b =>
-                {
-                    b.Property<Guid>("ParticipatedProjectsProjectId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TeamMembersUserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("ParticipatedProjectsProjectId", "TeamMembersUserId");
-
-                    b.HasIndex("TeamMembersUserId");
-
-                    b.ToTable("ProjectTeamMembers", (string)null);
-                });
-
             modelBuilder.Entity("GainIt.API.Models.Projects.UserProject", b =>
                 {
                     b.HasBaseType("GainIt.API.Models.Projects.TemplateProject");
@@ -256,6 +241,9 @@ namespace GainIt.API.Migrations
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("GainerUserId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("OwningOrganizationUserId")
                         .HasColumnType("uuid");
@@ -274,6 +262,8 @@ namespace GainIt.API.Migrations
                         .HasColumnType("text");
 
                     b.HasIndex("AssignedMentorUserId");
+
+                    b.HasIndex("GainerUserId");
 
                     b.HasIndex("OwningOrganizationUserId");
 
@@ -422,27 +412,15 @@ namespace GainIt.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("GainerUserProject", b =>
-                {
-                    b.HasOne("GainIt.API.Models.Projects.UserProject", null)
-                        .WithMany()
-                        .HasForeignKey("ParticipatedProjectsProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GainIt.API.Models.Users.Gainers.Gainer", null)
-                        .WithMany()
-                        .HasForeignKey("TeamMembersUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("GainIt.API.Models.Projects.UserProject", b =>
                 {
                     b.HasOne("GainIt.API.Models.Users.Mentors.Mentor", "AssignedMentor")
                         .WithMany("MentoredProjects")
-                        .HasForeignKey("AssignedMentorUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("AssignedMentorUserId");
+
+                    b.HasOne("GainIt.API.Models.Users.Gainers.Gainer", null)
+                        .WithMany("ParticipatedProjects")
+                        .HasForeignKey("GainerUserId");
 
                     b.HasOne("GainIt.API.Models.Users.Nonprofits.NonprofitOrganization", "OwningOrganization")
                         .WithMany("OwnedProjects")
@@ -531,6 +509,11 @@ namespace GainIt.API.Migrations
             modelBuilder.Entity("GainIt.API.Models.Projects.UserProject", b =>
                 {
                     b.Navigation("ProjectMembers");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Users.Gainers.Gainer", b =>
+                {
+                    b.Navigation("ParticipatedProjects");
                 });
 
             modelBuilder.Entity("GainIt.API.Models.Users.Mentors.Mentor", b =>

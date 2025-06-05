@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using GainIt.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GainIt.API.Migrations
 {
     [DbContext(typeof(GainItDbContext))]
-    partial class GainItDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250605110552_UpdatedInitialCreate")]
+    partial class UpdatedInitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -233,13 +236,13 @@ namespace GainIt.API.Migrations
                 {
                     b.HasBaseType("GainIt.API.Models.Projects.TemplateProject");
 
+                    b.Property<Guid?>("AssignedMentorUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("GainerUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("MentorUserId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("OwningOrganizationUserId")
@@ -258,9 +261,9 @@ namespace GainIt.API.Migrations
                     b.Property<string>("RepositoryLink")
                         .HasColumnType("text");
 
-                    b.HasIndex("GainerUserId");
+                    b.HasIndex("AssignedMentorUserId");
 
-                    b.HasIndex("MentorUserId");
+                    b.HasIndex("GainerUserId");
 
                     b.HasIndex("OwningOrganizationUserId");
 
@@ -411,18 +414,20 @@ namespace GainIt.API.Migrations
 
             modelBuilder.Entity("GainIt.API.Models.Projects.UserProject", b =>
                 {
+                    b.HasOne("GainIt.API.Models.Users.Mentors.Mentor", "AssignedMentor")
+                        .WithMany("MentoredProjects")
+                        .HasForeignKey("AssignedMentorUserId");
+
                     b.HasOne("GainIt.API.Models.Users.Gainers.Gainer", null)
                         .WithMany("ParticipatedProjects")
                         .HasForeignKey("GainerUserId");
-
-                    b.HasOne("GainIt.API.Models.Users.Mentors.Mentor", null)
-                        .WithMany("MentoredProjects")
-                        .HasForeignKey("MentorUserId");
 
                     b.HasOne("GainIt.API.Models.Users.Nonprofits.NonprofitOrganization", "OwningOrganization")
                         .WithMany("OwnedProjects")
                         .HasForeignKey("OwningOrganizationUserId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AssignedMentor");
 
                     b.Navigation("OwningOrganization");
                 });

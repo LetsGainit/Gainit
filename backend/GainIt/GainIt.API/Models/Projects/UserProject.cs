@@ -21,8 +21,6 @@ namespace GainIt.API.Models.Projects
         [Url(ErrorMessage = "Invalid Repository URL")]
         public string? RepositoryLink { get; set; }
 
-        public Mentor? AssignedMentor { get; set; }
-
         public Guid? OwningOrganizationUserId { get; set; }
         public NonprofitOrganization? OwningOrganization { get; set; }
 

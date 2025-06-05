@@ -5,7 +5,7 @@
 namespace GainIt.API.Migrations
 {
     /// <inheritdoc />
-    public partial class AddMentorAndNonprofitFKs : Migration
+    public partial class UpdatedInitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

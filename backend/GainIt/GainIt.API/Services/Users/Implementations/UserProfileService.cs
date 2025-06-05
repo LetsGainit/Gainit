@@ -361,6 +361,21 @@ namespace GainIt.API.Services.Users.Implementations
             return nonprofit?.OwnedProjects ?? Enumerable.Empty<UserProject>();
         }
 
+        public Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<Mentor>> SearchMentorsAsync(string searchTerm)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<NonprofitOrganization>> SearchNonprofitsAsync(string searchTerm)
+        {
+            throw new NotImplementedException();
+        }
+
         /*public async Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm)
         {
             return await _dbContext.Gainers
