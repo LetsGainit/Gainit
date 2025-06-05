@@ -298,6 +298,44 @@ namespace GainIt.API.Data
                     Achievements = new List<UserAchievement>()
                 };
 
+                // Create NonprofitExpertise for the nonprofit
+                var nonprofitExpertise = new NonprofitExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = nonprofit.UserId,
+                    User = nonprofit,
+                    FieldOfWork = "Technology Education",
+                    MissionStatement = "To bridge the digital divide by providing accessible technology education and resources to underserved communities."
+                };
+
+                nonprofit.NonprofitExpertise = nonprofitExpertise;
+                context.NonprofitExpertises.Add(nonprofitExpertise);
+
+                // Create TechExpertise for mentors
+                var mentorTechExpertise = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = mentor.UserId,
+                    User = mentor,
+                    ProgrammingLanguages = new List<string> { "JavaScript", "Python", "Java", "C#" },
+                    Technologies = new List<string> { "React", "Node.js", "ASP.NET Core", "Docker" },
+                    Tools = new List<string> { "Git", "Azure", "AWS", "Visual Studio" }
+                };
+
+                var mentor2TechExpertise = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = mentor2.UserId,
+                    User = mentor2,
+                    ProgrammingLanguages = new List<string> { "Python", "R", "SQL", "Scala" },
+                    Technologies = new List<string> { "TensorFlow", "PyTorch", "Spark", "Hadoop" },
+                    Tools = new List<string> { "Jupyter", "Docker", "Kubernetes", "AWS SageMaker" }
+                };
+
+                mentor.TechExpertise = mentorTechExpertise;
+                mentor2.TechExpertise = mentor2TechExpertise;
+                context.TechExpertises.AddRange(mentorTechExpertise, mentor2TechExpertise);
+
                 // Create some gainers
                 var gainer1 = new Gainer
                 {
@@ -383,6 +421,79 @@ namespace GainIt.API.Data
                     Achievements = new List<UserAchievement>()
                 };
 
+                // Create TechExpertise entries for each gainer
+                var techExpertise1 = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = gainer1.UserId,
+                    User = gainer1,
+                    ProgrammingLanguages = new List<string> { "JavaScript", "Python", "Java" },
+                    Technologies = new List<string> { "React", "Node.js", "Express" },
+                    Tools = new List<string> { "Git", "Docker", "AWS" }
+                };
+
+                var techExpertise2 = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = gainer2.UserId,
+                    User = gainer2,
+                    ProgrammingLanguages = new List<string> { "Python", "R", "SQL" },
+                    Frameworks = new List<string> { "TensorFlow", "PyTorch", "Scikit-learn" },
+                    Tools = new List<string> { "Jupyter", "Pandas", "NumPy" }
+                };
+
+                var techExpertise3 = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = gainer3.UserId,
+                    User = gainer3,
+                    ProgrammingLanguages = new List<string> { "Kotlin", "Java", "Swift" },
+                    Frameworks = new List<string> { "Android SDK", "Jetpack Compose", "Room" },
+                    Tools = new List<string> { "Android Studio", "Firebase", "Git" }
+                };
+
+                var techExpertise4 = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = gainer4.UserId,
+                    User = gainer4,
+                    ProgrammingLanguages = new List<string> { "Python", "Bash", "C++" },
+                    Frameworks = new List<string> { "Django", "Flask", "FastAPI" },
+                    Tools = new List<string> { "Wireshark", "Metasploit", "Kali Linux" }
+                };
+
+                var techExpertise5 = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = gainer5.UserId,
+                    User = gainer5,
+                    ProgrammingLanguages = new List<string> { "C#", "JavaScript", "Python" },
+                    Frameworks = new List<string> { "Unity", "Unreal Engine", "MonoGame" },
+                    Tools = new List<string> { "Visual Studio", "Git", "Blender" }
+                };
+
+                var techExpertise6 = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = gainer6.UserId,
+                    User = gainer6,
+                    ProgrammingLanguages = new List<string> { "Python", "Java", "R" },
+                    Frameworks = new List<string> { "TensorFlow", "PyTorch", "Hugging Face" },
+                    Tools = new List<string> { "Jupyter", "Git", "Docker" }
+                };
+
+                // Add TechExpertise entries to context
+                context.TechExpertises.AddRange(techExpertise1, techExpertise2, techExpertise3, techExpertise4, techExpertise5, techExpertise6);
+
+                // Link TechExpertise to Gainers
+                gainer1.TechExpertise = techExpertise1;
+                gainer2.TechExpertise = techExpertise2;
+                gainer3.TechExpertise = techExpertise3;
+                gainer4.TechExpertise = techExpertise4;
+                gainer5.TechExpertise = techExpertise5;
+                gainer6.TechExpertise = techExpertise6;
+
+                // Add all users to context
                 context.Users.AddRange(mentor, mentor2, nonprofit, gainer1, gainer2, gainer3, gainer4, gainer5, gainer6);
                 context.SaveChanges();
                 #endregion
@@ -390,7 +501,7 @@ namespace GainIt.API.Data
                 #region Seed Template Projects
                 var templateProjects = new List<TemplateProject>
                 {
-                      new TemplateProject
+                    new TemplateProject
                     {
                         ProjectId = Guid.NewGuid(),
                         ProjectName = "Community Food Bank Management System",
@@ -400,9 +511,9 @@ namespace GainIt.API.Data
                         Duration = TimeSpan.FromDays(90),
                         Goals = new List<string>
                         {
-                        "Create an efficient system for managing food bank operations",
-                        "Improve volunteer coordination",
-                        "Enhance donation tracking capabilities"
+                            "Create an efficient system for managing food bank operations",
+                            "Improve volunteer coordination",
+                            "Enhance donation tracking capabilities"
                         },
                         Technologies = new List<string> { "React", "Node.js", "MongoDB", "Express" },
                         RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" }
@@ -448,7 +559,7 @@ namespace GainIt.API.Data
                 context.TemplateProjects.AddRange(templateProjects);
                 context.SaveChanges();
 
-                // Create individual projects first
+                // Create individual projects
                 var project1 = new UserProject
                 {
                     ProjectId = Guid.NewGuid(),
@@ -469,7 +580,8 @@ namespace GainIt.API.Data
                         "Foster a supportive local business ecosystem."
                     },
                     Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
-                    RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" }
+                    RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" },
+                    ProgrammingLanguages = new List<string> { "JavaScript", "HTML", "CSS" }
                 };
 
                 var project2 = new UserProject
@@ -724,35 +836,35 @@ namespace GainIt.API.Data
 
                 #region Seed Achievements
                 var achievementTemplates = new List<AchievementTemplate>
-            {
-                new AchievementTemplate
                 {
-                    Id = Guid.NewGuid(),
-                    Title = "First Project Complete",
-                    Description = "Successfully completed your first project",
-                    IconUrl = "/achievements/first-project.png",
-                    UnlockCriteria = "Complete a project with status 'Completed'",
-                    Category = "Project Completion"
-                },
-                new AchievementTemplate
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "Team Player",
-                    Description = "Participated in 5 different projects",
-                    IconUrl = "/achievements/team-player.png",
-                    UnlockCriteria = "Be a team member in 5 different projects",
-                    Category = "Collaboration"
-                },
-                new AchievementTemplate
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "Mentor's Choice",
-                    Description = "Received positive feedback from a mentor",
-                    IconUrl = "/achievements/mentor-choice.png",
-                    UnlockCriteria = "Receive positive feedback from a project mentor",
-                    Category = "Recognition"
-                }
-            };
+                    new AchievementTemplate
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "First Project Complete",
+                        Description = "Successfully completed your first project",
+                        IconUrl = "/achievements/first-project.png",
+                        UnlockCriteria = "Complete a project with status 'Completed'",
+                        Category = "Project Completion"
+                    },
+                    new AchievementTemplate
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Team Player",
+                        Description = "Participated in 5 different projects",
+                        IconUrl = "/achievements/team-player.png",
+                        UnlockCriteria = "Be a team member in 5 different projects",
+                        Category = "Collaboration"
+                    },
+                    new AchievementTemplate
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Mentor's Choice",
+                        Description = "Received positive feedback from a mentor",
+                        IconUrl = "/achievements/mentor-choice.png",
+                        UnlockCriteria = "Receive positive feedback from a project mentor",
+                        Category = "Recognition"
+                    }
+                };
 
                 context.AchievementTemplates.AddRange(achievementTemplates);
                 context.SaveChanges();
@@ -766,7 +878,7 @@ namespace GainIt.API.Data
                         Id = Guid.NewGuid(),
                         UserId = gainer1.UserId,
                         User = gainer1,
-                        AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
+                        AchievementTemplateId = achievementTemplates[0].Id,
                         AchievementTemplate = achievementTemplates[0],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-20),
                         EarnedDetails = "Successfully completed the TechForGood Learning Platform project with all features implemented"
@@ -776,7 +888,7 @@ namespace GainIt.API.Data
                         Id = Guid.NewGuid(),
                         UserId = gainer1.UserId,
                         User = gainer1,
-                        AchievementTemplateId = achievementTemplates[1].Id, // Team Player
+                        AchievementTemplateId = achievementTemplates[1].Id,
                         AchievementTemplate = achievementTemplates[1],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-15),
                         EarnedDetails = "Actively participated in 5 different projects as a team member"
@@ -787,7 +899,7 @@ namespace GainIt.API.Data
                         Id = Guid.NewGuid(),
                         UserId = gainer2.UserId,
                         User = gainer2,
-                        AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
+                        AchievementTemplateId = achievementTemplates[0].Id,
                         AchievementTemplate = achievementTemplates[0],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-25),
                         EarnedDetails = "Successfully completed the TechForGood Learning Platform project with all features implemented"
@@ -798,7 +910,7 @@ namespace GainIt.API.Data
                         Id = Guid.NewGuid(),
                         UserId = mentor.UserId,
                         User = mentor,
-                        AchievementTemplateId = achievementTemplates[2].Id, // Mentor's Choice
+                        AchievementTemplateId = achievementTemplates[2].Id,
                         AchievementTemplate = achievementTemplates[2],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-10),
                         EarnedDetails = "Received positive feedback from 3 different project teams for excellent mentorship"
@@ -809,7 +921,7 @@ namespace GainIt.API.Data
                         Id = Guid.NewGuid(),
                         UserId = gainer3.UserId,
                         User = gainer3,
-                        AchievementTemplateId = achievementTemplates[0].Id, // First Project Complete
+                        AchievementTemplateId = achievementTemplates[0].Id,
                         AchievementTemplate = achievementTemplates[0],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-5),
                         EarnedDetails = "Successfully completed the Community Garden Management System project with all features implemented"
@@ -820,7 +932,7 @@ namespace GainIt.API.Data
                         Id = Guid.NewGuid(),
                         UserId = gainer4.UserId,
                         User = gainer4,
-                        AchievementTemplateId = achievementTemplates[1].Id, // Team Player
+                        AchievementTemplateId = achievementTemplates[1].Id,
                         AchievementTemplate = achievementTemplates[1],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-8),
                         EarnedDetails = "Actively participated in 5 different projects as a team member"
