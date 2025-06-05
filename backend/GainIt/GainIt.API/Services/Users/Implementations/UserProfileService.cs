@@ -289,7 +289,7 @@ namespace GainIt.API.Services.Users.Implementations
             {
                 UserId = userId,
                 AchievementTemplateId = achievementTemplateId,
-                EarnedDate = DateTime.UtcNow
+                EarnedAtUtc = DateTime.UtcNow
             };
 
             gainer.Achievements.Add(achievement);
@@ -311,7 +311,9 @@ namespace GainIt.API.Services.Users.Implementations
             {
                 UserId = userId,
                 AchievementTemplateId = achievementTemplateId,
-                EarnedDate = DateTime.UtcNow
+                EarnedAtUtc = DateTime.UtcNow,
+                User = mentor,
+                AchievementTemplate = achievementTemplate
             };
 
             mentor.Achievements.Add(achievement);
@@ -333,7 +335,7 @@ namespace GainIt.API.Services.Users.Implementations
             {
                 UserId = userId,
                 AchievementTemplateId = achievementTemplateId,
-                EarnedDate = DateTime.UtcNow
+                EarnedAtUtc = DateTime.UtcNow
             };
 
             nonprofit.Achievements.Add(achievement);
@@ -359,7 +361,7 @@ namespace GainIt.API.Services.Users.Implementations
             return nonprofit?.OwnedProjects ?? Enumerable.Empty<UserProject>();
         }
 
-        public async Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm)
+        /*public async Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm)
         {
             return await _dbContext.Gainers
                 .Include(g => g.TechExpertise)
@@ -387,7 +389,7 @@ namespace GainIt.API.Services.Users.Implementations
                            n.Biography.Contains(searchTerm) ||
                            n.NonprofitExpertise.Any(e => e.Name.Contains(searchTerm)))
                 .ToListAsync();
-        }
+        }*/
 
 
 

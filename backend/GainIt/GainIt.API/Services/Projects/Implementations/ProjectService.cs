@@ -17,7 +17,7 @@ namespace GainIt.API.Services.Projects.Implementations
             r_DbContext = i_DbContext;
         }
 
-        public async Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId)
+        public async Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId, string i_Role)
         {
             var project = await r_DbContext.Projects
                 .Include(p => p.ProjectMembers)
@@ -30,13 +30,29 @@ namespace GainIt.API.Services.Projects.Implementations
             }
 
             var gainer = await r_DbContext.Gainers.FindAsync(i_UserId);
-
             if (gainer == null)
             {
                 throw new KeyNotFoundException("User not found or is not a Gainer.");
             }
 
-            if (project.ProjectMembers.Any(pm => pm.UserId == i_UserId && pm.LeftAtUtc == null))
+            // Check if the role is open in the project
+            if (!project.RequiredRoles.Contains(i_Role))
+            {
+                throw new InvalidOperationException($"Role '{i_Role}' is not an open role in this project.");
+            }
+
+            // Check if the role is already filled
+            if (project.ProjectMembers.Any(pm =>
+                pm.UserRole == i_Role &&
+                pm.LeftAtUtc == null))
+            {
+                throw new InvalidOperationException($"Role '{i_Role}' is already filled in this project.");
+            }
+
+            // Check if user is already a member
+            if (project.ProjectMembers.Any(pm =>
+                pm.UserId == i_UserId &&
+                pm.LeftAtUtc == null))
             {
                 throw new InvalidOperationException("User is already a team member in this project.");
             }
@@ -45,7 +61,7 @@ namespace GainIt.API.Services.Projects.Implementations
             {
                 ProjectId = i_ProjectId,
                 UserId = i_UserId,
-                UserRole = "Team Member",
+                UserRole = i_Role,
                 IsAdmin = false,
                 Project = project,
                 User = gainer,

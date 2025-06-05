@@ -257,18 +257,20 @@ namespace GainIt.API.Controllers.Projects
         /// </summary>
         /// <param name="projectId">The ID of the project.</param>
         /// <param name="userId">The ID of the user to add as a team member.</param>
+        /// <param name="userRole"> The Role of the user</param>
+        /// 
         /// <returns>The updated project details.</returns>
         [HttpPost("{projectId}/team-members")]
-        public async Task<ActionResult<UserProjectViewModel>> AddTeamMember(Guid projectId, [FromQuery] Guid userId)
+        public async Task<ActionResult<UserProjectViewModel>> AddTeamMember(Guid projectId, [FromQuery] Guid userId, [FromQuery] string userRole)
         {
-            if (projectId == Guid.Empty || userId == Guid.Empty)
+            if (projectId == Guid.Empty || userId == Guid.Empty || userRole == string.Empty)
             {
-                return BadRequest(new { Message = "Project ID and User ID cannot be empty." });
+                return BadRequest(new { Message = "Project ID ot User ID or User role cannot be empty." });
             }
 
             try
             {
-                UserProject updatedProject = await r_ProjectService.AddTeamMemberAsync(projectId, userId);
+                UserProject updatedProject = await r_ProjectService.AddTeamMemberAsync(projectId, userId, userRole);
 
                 UserProjectViewModel updatedProjectViewModel = new UserProjectViewModel(updatedProject);
 
@@ -440,6 +442,7 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Filters template projects by difficulty level.
         /// </summary>
+        /// <param name="difficulty"></param>
         /// <param name="filter">Filter criteria including difficulty level.</param>
         /// <returns>A list of filtered template projects.</returns>
         [HttpGet("templates/filter")]
