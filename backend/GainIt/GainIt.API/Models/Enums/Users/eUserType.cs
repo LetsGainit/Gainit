@@ -1,6 +1,6 @@
 ﻿namespace GainIt.API.Models.Enums.Users
 {
-    public enum eUserRole
+    public enum eUserType
     {
         Gainer,
         Mentor,

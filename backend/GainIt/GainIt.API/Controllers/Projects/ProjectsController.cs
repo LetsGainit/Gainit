@@ -7,8 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GainIt.API.Controllers.Projects
 {
-    
-
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectService r_ProjectService;
@@ -26,20 +24,25 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="projectId">The ID of the project to retrieve.</param>
         /// <returns>The project details if found, or a 404 Not Found response.</returns>
         [HttpGet("{projectId}")]
-        public async Task<ActionResult<ProjectViewModel>> GetActiveProjectById(Guid projectId)
+        public async Task<ActionResult<UserProjectViewModel>> GetActiveProjectById(Guid projectId)
         {
             if (projectId == Guid.Empty)
             {
-                return BadRequest(new { Message = "Project ID cannot be empty." }); 
+                return BadRequest(new { Message = "Project ID cannot be empty." });
             }
 
-            ProjectViewModel? project = await r_ProjectService.GetActiveProjectByProjectIdAsync(projectId);
+            UserProject? project = await r_ProjectService.GetActiveProjectByProjectIdAsync(projectId);
+
             if (project == null)
             {
                 return NotFound(new { Message = "Project not found." });
             }
-            return Ok(project);
+
+            UserProjectViewModel userProjectViewModel = new UserProjectViewModel(project);
+
+            return Ok(userProjectViewModel);
         }
+
         /// <summary>
         /// Retrieves a template project by its ID.
         /// </summary>
@@ -52,13 +55,19 @@ namespace GainIt.API.Controllers.Projects
             {
                 return BadRequest(new { Message = "Project ID cannot be empty." });
             }
-            TemplateProjectViewModel? project = await r_ProjectService.GetTemplateProjectByProjectIdAsync(projectId);
+
+            TemplateProject? project = await r_ProjectService.GetTemplateProjectByProjectIdAsync(projectId);
+
             if (project == null)
             {
                 return NotFound(new { Message = "Project not found." });
             }
-            return Ok(project);
+
+            TemplateProjectViewModel templateProjectViewModel = new TemplateProjectViewModel(project);
+
+            return Ok(templateProjectViewModel);
         }
+
         /// <summary>
         /// Retrieves all projects that are templates.
         /// </summary>
@@ -67,7 +76,10 @@ namespace GainIt.API.Controllers.Projects
         public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> GetAllTemplatesProjects()
         {
             var projects = await r_ProjectService.GetAllTemplatesProjectsAsync();
-            return Ok(projects);
+
+            var templateProjectsViewModel = projects.Select(p => new TemplateProjectViewModel(p)).ToList();
+
+            return Ok(templateProjectsViewModel);
         }
 
         /// <summary>
@@ -75,10 +87,13 @@ namespace GainIt.API.Controllers.Projects
         /// </summary>
         /// /// <returns>A list of nonprofit projects.</returns>
         [HttpGet("nonprofits")]
-        public async Task<ActionResult<IEnumerable<ProjectViewModel>>> GetAllNonprofitProjects()
+        public async Task<ActionResult<IEnumerable<UserProjectViewModel>>> GetAllNonprofitProjects()
         {
             var projects = await r_ProjectService.GetAllNonprofitProjectsAsync();
-            return Ok(projects);
+
+            var nonprofitProjectsViewModel = projects.Select(p => new UserProjectViewModel(p)).ToList();
+
+            return Ok(nonprofitProjectsViewModel);
         }
 
         /// <summary>
@@ -87,7 +102,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="userId">The ID of the user.</param>
         /// <returns>A list of projects associated with the user.</returns>
         [HttpGet("user/{userId}")]
-        public async Task<ActionResult<IEnumerable<ProjectViewModel>>> GetProjectsByUserId(Guid userId)
+        public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetProjectsByUserId(Guid userId)
         {
             if (userId == Guid.Empty)
             {
@@ -95,7 +110,10 @@ namespace GainIt.API.Controllers.Projects
             }
 
             var projects = await r_ProjectService.GetProjectsByUserIdAsync(userId);
-            return Ok(projects);
+
+            var conciseProjects = projects.Select(p => new ConciseUserProjectViewModel(p, userId)).ToList();
+
+            return Ok(conciseProjects);
         }
 
         /// <summary>
@@ -104,7 +122,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="mentorId">The ID of the mentor.</param>
         /// <returns>A list of projects associated with the mentor.</returns>
         [HttpGet("mentor/{mentorId}")]
-        public async Task<ActionResult<IEnumerable<ProjectViewModel>>> GetProjectsByMentorId(Guid mentorId)
+        public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetProjectsByMentorId(Guid mentorId)
         {
             if (mentorId == Guid.Empty)
             {
@@ -112,7 +130,10 @@ namespace GainIt.API.Controllers.Projects
             }
 
             var projects = await r_ProjectService.GetProjectsByMentorIdAsync(mentorId);
-            return Ok(projects);
+
+            var conciseProjects = projects.Select(p => new ConciseUserProjectViewModel(p, mentorId)).ToList();
+
+            return Ok(conciseProjects);
         }
 
         /// <summary>
@@ -121,14 +142,17 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="nonprofitId">The ID of the nonprofit organization.</param>
         /// <returns>A list of projects associated with the nonprofit organization.</returns>
         [HttpGet("nonprofit/{nonprofitId}")]
-        public async Task<ActionResult<IEnumerable<ProjectViewModel>>> GetProjectsByNonprofitId(Guid nonprofitId)
+        public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetProjectsByNonprofitId(Guid nonprofitId)
         {
             if (nonprofitId == Guid.Empty)
             {
                 return BadRequest(new { Message = "Nonprofit ID cannot be empty." });
             }
             var projects = await r_ProjectService.GetProjectsByNonprofitIdAsync(nonprofitId);
-            return Ok(projects);
+
+            var conciseProjects = projects.Select(p => new ConciseUserProjectViewModel(p, null)).ToList();
+
+            return Ok(conciseProjects);
         }
 
         #endregion
@@ -141,7 +165,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="userId">The ID of the user to assign to the project.</param>
         /// <returns>The newly created project details.</returns>
         [HttpPost("start-from-template")]
-        public async Task<ActionResult<ProjectViewModel>> CreateProjectFromTemplate([FromQuery] Guid templateId, [FromQuery] Guid userId)
+        public async Task<ActionResult<UserProjectViewModel>> CreateProjectFromTemplate([FromQuery] Guid templateId, [FromQuery] Guid userId)
         {
             if (templateId == Guid.Empty || userId == Guid.Empty)
             {
@@ -150,11 +174,14 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                ProjectViewModel? o_Project = await r_ProjectService.StartProjectFromTemplateAsync(templateId, userId);
+                UserProject o_Project = await r_ProjectService.StartProjectFromTemplateAsync(templateId, userId);
+
+                UserProjectViewModel projectViewModel = new UserProjectViewModel(o_Project);
+
                 return CreatedAtAction(
                     nameof(GetActiveProjectById),
-                    new {projectId = o_Project.projectId },
-                    o_Project
+                    new { projectId = o_Project.ProjectId },
+                    projectViewModel
                 );
             }
             catch (KeyNotFoundException e)
@@ -173,7 +200,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="mentorId">The ID of the mentor to assign.</param>
         /// <returns>The updated project details.</returns>
         [HttpPut("{projectId}/mentor")]
-        public async Task<IActionResult> AssignMentor(Guid projectId, [FromQuery] Guid mentorId)
+        public async Task<ActionResult<UserProjectViewModel>> AssignMentor(Guid projectId, [FromQuery] Guid mentorId)
         {
             if (projectId == Guid.Empty || mentorId == Guid.Empty)
             {
@@ -182,8 +209,11 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                ProjectViewModel updatedProject = await r_ProjectService.AssignMentorAsync(projectId, mentorId);
-                return Ok(updatedProject);
+                UserProject updatedProject = await r_ProjectService.AssignMentorAsync(projectId, mentorId);
+
+                UserProjectViewModel updatedProjectViewModel = new UserProjectViewModel(updatedProject);
+
+                return Ok(updatedProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
@@ -197,7 +227,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="projectId">The ID of the project.</param>
         /// <returns>The updated project details.</returns>
         [HttpDelete("{projectId}/mentor")]
-        public async Task<IActionResult> RemoveMentor(Guid projectId)
+        public async Task<ActionResult<UserProjectViewModel>> RemoveMentor(Guid projectId)
         {
             if (projectId == Guid.Empty)
             {
@@ -206,8 +236,11 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                ProjectViewModel updatedProject = await r_ProjectService.RemoveMentorAsync(projectId);
-                return Ok(updatedProject);
+                UserProject updatedProject = await r_ProjectService.RemoveMentorAsync(projectId);
+
+                UserProjectViewModel updatedProjectViewModel = new UserProjectViewModel(updatedProject);
+
+                return Ok(updatedProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
@@ -224,19 +257,24 @@ namespace GainIt.API.Controllers.Projects
         /// </summary>
         /// <param name="projectId">The ID of the project.</param>
         /// <param name="userId">The ID of the user to add as a team member.</param>
+        /// <param name="userRole"> The Role of the user</param>
+        /// 
         /// <returns>The updated project details.</returns>
         [HttpPost("{projectId}/team-members")]
-        public async Task<IActionResult> AddTeamMember(Guid projectId, [FromQuery] Guid userId)
+        public async Task<ActionResult<UserProjectViewModel>> AddTeamMember(Guid projectId, [FromQuery] Guid userId, [FromQuery] string userRole)
         {
-            if (projectId == Guid.Empty || userId == Guid.Empty)
+            if (projectId == Guid.Empty || userId == Guid.Empty || userRole == string.Empty)
             {
-                return BadRequest(new { Message = "Project ID and User ID cannot be empty." });
+                return BadRequest(new { Message = "Project ID ot User ID or User role cannot be empty." });
             }
 
             try
             {
-                ProjectViewModel updatedProject = await r_ProjectService.AddTeamMemberAsync(projectId, userId);
-                return Ok(updatedProject);
+                UserProject updatedProject = await r_ProjectService.AddTeamMemberAsync(projectId, userId, userRole);
+
+                UserProjectViewModel updatedProjectViewModel = new UserProjectViewModel(updatedProject);
+
+                return Ok(updatedProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
@@ -255,7 +293,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="userId">The ID of the user to remove from the team.</param>
         /// <returns>The updated project details.</returns>
         [HttpDelete("{projectId}/team-members")]
-        public async Task<IActionResult> RemoveTeamMember(Guid projectId, [FromQuery] Guid userId)
+        public async Task<ActionResult<UserProjectViewModel>> RemoveTeamMember(Guid projectId, [FromQuery] Guid userId)
         {
             if (projectId == Guid.Empty || userId == Guid.Empty)
             {
@@ -264,8 +302,11 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                ProjectViewModel updatedProject = await r_ProjectService.RemoveTeamMemberAsync(projectId, userId);
-                return Ok(updatedProject);
+                UserProject updatedProject = await r_ProjectService.RemoveTeamMemberAsync(projectId, userId);
+
+                UserProjectViewModel userProjectViewModel = new UserProjectViewModel(updatedProject);
+
+                return Ok(userProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
@@ -288,16 +329,19 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="status">The new status of the project.</param>
         /// <returns>The updated project details.</returns>
         [HttpPut("{projectId}/status")]
-        public async Task<ActionResult<ProjectViewModel>> UpdateProjectStatus(Guid projectId, [FromBody] ProjectStatusOptionDTO status)
+        public async Task<ActionResult<UserProjectViewModel>> UpdateProjectStatus(Guid projectId, [FromBody] ProjectStatusOptionDTO status)
         {
             if (projectId == Guid.Empty)
-            { 
+            {
                 return BadRequest(new { Message = "Project ID cannot be empty." });
             }
-            try 
+            try
             {
-                ProjectViewModel updatedProject = await r_ProjectService.UpdateProjectStatusAsync(projectId, status.ProjectStatus);
-                return Ok(updatedProject);
+                UserProject updatedProject = await r_ProjectService.UpdateProjectStatusAsync(projectId, status.ProjectStatus);
+
+                UserProjectViewModel updatedProjectViewModel = new UserProjectViewModel(updatedProject);
+
+                return Ok(updatedProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
@@ -312,7 +356,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="repositoryLink">The new repository link.</param>
         /// <returns>The updated project details.</returns>
         [HttpPut("{projectId}/repository")]
-        public async Task<ActionResult<ProjectViewModel>> UpdateRepositoryLink(Guid projectId, [FromBody] string repositoryLink)
+        public async Task<ActionResult<UserProjectViewModel>> UpdateRepositoryLink(Guid projectId, [FromBody] string repositoryLink)
         {
             if (projectId == Guid.Empty)
             {
@@ -326,8 +370,11 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                ProjectViewModel updatedProject = await r_ProjectService.UpdateRepositoryLinkAsync(projectId, repositoryLink);
-                return Ok(updatedProject);
+                UserProject updatedProject = await r_ProjectService.UpdateRepositoryLinkAsync(projectId, repositoryLink);
+
+                UserProjectViewModel userProjectViewModel = new UserProjectViewModel(updatedProject);
+
+                return Ok(userProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
@@ -343,7 +390,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="searchQuery">The search query to match against project names or descriptions.</param>
         /// <returns>A list of matching projects.</returns>
         [HttpGet("search")]
-        public async Task<ActionResult<IEnumerable<ProjectViewModel>>> SearchActiveProjectsByNameOrDescription([FromQuery] string searchQuery)
+        public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> SearchActiveProjectsByNameOrDescription([FromQuery] string searchQuery)
         {
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
@@ -351,15 +398,18 @@ namespace GainIt.API.Controllers.Projects
             }
 
             var projects = await r_ProjectService.SearchActiveProjectsByNameOrDescriptionAsync(searchQuery);
-            return Ok(projects);
+
+            var projectViewModels = projects.Select(p => new ConciseUserProjectViewModel(p, null)).ToList();
+
+            return Ok(projectViewModels);
         }
         /// <summary>
         /// Searches for template projects by name or description.
         /// </summary>
         /// <param name="searchQuery">The search query to match against project names or descriptions.</param>
         /// <returns>A list of matching projects.</returns>
-        [HttpGet("search/template")]
-        public async Task<ActionResult<IEnumerable<ProjectViewModel>>> SearchTepmplateProjectsByNameOrDescription([FromQuery] string searchQuery)
+        [HttpGet("search/template")] 
+        public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> SearchTemplateProjectsByNameOrDescription([FromQuery] string searchQuery)
         {
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
@@ -367,7 +417,10 @@ namespace GainIt.API.Controllers.Projects
             }
 
             var projects = await r_ProjectService.SearchTemplateProjectsByNameOrDescriptionAsync(searchQuery);
-            return Ok(projects);
+
+            var projectViewModels = projects.Select(p => new TemplateProjectViewModel(p)).ToList();
+
+            return Ok(projectViewModels);
         }
 
         /// <summary>
@@ -377,22 +430,29 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="difficulty">The difficulty level of the projects to filter by.</param>
         /// <returns>A list of filtered projects.</returns>
         [HttpGet("projects/filter")]
-        public async Task<ActionResult<IEnumerable<ProjectViewModel>>> FilterProjectsByStatusAndDifficulty([FromQuery] ProjectStatusOptionDTO status, [FromQuery] ProjectDifficultyLevelOptionDTO difficulty)
+        public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> FilterProjectsByStatusAndDifficulty([FromQuery] ProjectStatusOptionDTO status, [FromQuery] ProjectDifficultyLevelOptionDTO difficulty)
         {
             var projects = await r_ProjectService.FilterActiveProjectsByStatusAndDifficultyAsync(status.ProjectStatus, difficulty.DifficultyLevel);
-            return Ok(projects);
+
+            var projectViewModels = projects.Select(p => new ConciseUserProjectViewModel(p, null)).ToList();
+
+            return Ok(projectViewModels);
         }
 
         /// <summary>
         /// Filters template projects by difficulty level.
         /// </summary>
+        /// <param name="difficulty"></param>
         /// <param name="filter">Filter criteria including difficulty level.</param>
         /// <returns>A list of filtered template projects.</returns>
         [HttpGet("templates/filter")]
-        public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> FilterTemplateProjects([FromQuery] ProjectDifficultyLevelOptionDTO difficulty)
+        public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> FilterTemplateProjectsByDifficulty([FromQuery] ProjectDifficultyLevelOptionDTO difficulty)
         {
             var templates = await r_ProjectService.FilterTemplateProjectsByDifficultyAsync(difficulty.DifficultyLevel);
-            return Ok(templates);
+
+            var templateViewModels = templates.Select(t => new TemplateProjectViewModel(t)).ToList();
+
+            return Ok(templateViewModels);
         }
         #endregion
 
@@ -405,8 +465,8 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="nonprofitOrgId">The ID of the nonprofit organization.</param>
         /// <returns>The newly created project details.</returns>
         [HttpPost("nonprofit")]
-        public async Task<ActionResult<ProjectViewModel>> CreateProjectForNonprofit(
-            [FromBody] ProjectViewModel CreateProjectForNonprofitViewModel,
+        public async Task<ActionResult<UserProjectViewModel>> CreateProjectForNonprofit(
+            [FromBody] UserProjectViewModel CreateProjectForNonprofitViewModel,
             [FromQuery] Guid nonprofitOrgId)
         {
             if (nonprofitOrgId == Guid.Empty)
@@ -421,8 +481,11 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                var o_Project = await r_ProjectService.CreateProjectForNonprofitAsync(CreateProjectForNonprofitViewModel, nonprofitOrgId);
-                return CreatedAtAction(nameof(GetActiveProjectById), new { projectId = o_Project.projectId }, o_Project);
+                UserProject o_Project = await r_ProjectService.CreateProjectForNonprofitAsync(CreateProjectForNonprofitViewModel, nonprofitOrgId);
+
+                UserProjectViewModel userProjectViewModel = new UserProjectViewModel(o_Project);
+
+                return CreatedAtAction(nameof(GetActiveProjectById), new { projectId = o_Project.ProjectId }, userProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
