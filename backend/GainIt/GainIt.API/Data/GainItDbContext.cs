@@ -438,7 +438,7 @@ namespace GainIt.API.Data
                     UserId = gainer2.UserId,
                     User = gainer2,
                     ProgrammingLanguages = new List<string> { "Python", "R", "SQL" },
-                    Frameworks = new List<string> { "TensorFlow", "PyTorch", "Scikit-learn" },
+                    Technologies = new List<string> { "TensorFlow", "PyTorch", "Scikit-learn" },
                     Tools = new List<string> { "Jupyter", "Pandas", "NumPy" }
                 };
 
@@ -448,7 +448,7 @@ namespace GainIt.API.Data
                     UserId = gainer3.UserId,
                     User = gainer3,
                     ProgrammingLanguages = new List<string> { "Kotlin", "Java", "Swift" },
-                    Frameworks = new List<string> { "Android SDK", "Jetpack Compose", "Room" },
+                    Technologies = new List<string> { "Android SDK", "Jetpack Compose", "Room" },
                     Tools = new List<string> { "Android Studio", "Firebase", "Git" }
                 };
 
@@ -458,7 +458,7 @@ namespace GainIt.API.Data
                     UserId = gainer4.UserId,
                     User = gainer4,
                     ProgrammingLanguages = new List<string> { "Python", "Bash", "C++" },
-                    Frameworks = new List<string> { "Django", "Flask", "FastAPI" },
+                    Technologies = new List<string> { "Django", "Flask", "FastAPI" },
                     Tools = new List<string> { "Wireshark", "Metasploit", "Kali Linux" }
                 };
 
@@ -468,7 +468,7 @@ namespace GainIt.API.Data
                     UserId = gainer5.UserId,
                     User = gainer5,
                     ProgrammingLanguages = new List<string> { "C#", "JavaScript", "Python" },
-                    Frameworks = new List<string> { "Unity", "Unreal Engine", "MonoGame" },
+                    Technologies = new List<string> { "Unity", "Unreal Engine", "MonoGame" },
                     Tools = new List<string> { "Visual Studio", "Git", "Blender" }
                 };
 
@@ -478,7 +478,7 @@ namespace GainIt.API.Data
                     UserId = gainer6.UserId,
                     User = gainer6,
                     ProgrammingLanguages = new List<string> { "Python", "Java", "R" },
-                    Frameworks = new List<string> { "TensorFlow", "PyTorch", "Hugging Face" },
+                    Technologies = new List<string> { "TensorFlow", "PyTorch", "Hugging Face" },
                     Tools = new List<string> { "Jupyter", "Git", "Docker" }
                 };
 
