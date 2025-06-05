@@ -7,7 +7,8 @@ namespace GainIt.API.Models.Users
     public class User
     {
         [Key]
-        public Guid UserId { get; set; }
+        public Guid UserId { get; set; } = new Guid();  
+
 
         [Required(ErrorMessage = "Full Name is required")]
         [StringLength(100, ErrorMessage = "Full Name cannot exceed 100 characters")]
