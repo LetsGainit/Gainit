@@ -576,6 +576,15 @@ namespace GainIt.API.Data
                         UserRole = "UI Designer",
                         JoinedAtUtc = DateTime.UtcNow.AddDays(-30),
                         Project = project1
+                    },
+                    new ProjectMember
+                    {
+                        UserId = mentor.UserId,
+                        User = mentor,
+                        UserRole = "Mentor",
+                        IsAdmin = true,
+                        JoinedAtUtc = DateTime.UtcNow.AddDays(-30),
+                        Project = project1
                     }
                 };
 
@@ -602,6 +611,15 @@ namespace GainIt.API.Data
                         UserId = gainer5.UserId,
                         User = gainer5,
                         UserRole = "DevOps Engineer",
+                        JoinedAtUtc = DateTime.UtcNow.AddDays(-15),
+                        Project = project2
+                    },
+                    new ProjectMember
+                    {
+                        UserId = mentor2.UserId,
+                        User = mentor2,
+                        UserRole = "Mentor",
+                        IsAdmin = true,
                         JoinedAtUtc = DateTime.UtcNow.AddDays(-15),
                         Project = project2
                     }
@@ -650,6 +668,15 @@ namespace GainIt.API.Data
                         UserId = gainer3.UserId,
                         User = gainer3,
                         UserRole = "UI/UX Designer",
+                        JoinedAtUtc = DateTime.UtcNow.AddDays(-5),
+                        Project = project4
+                    },
+                    new ProjectMember
+                    {
+                        UserId = mentor.UserId,
+                        User = mentor,
+                        UserRole = "Mentor",
+                        IsAdmin = true,
                         JoinedAtUtc = DateTime.UtcNow.AddDays(-5),
                         Project = project4
                     }
