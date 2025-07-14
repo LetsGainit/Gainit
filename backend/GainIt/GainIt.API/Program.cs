@@ -4,13 +4,15 @@ using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using System.Text.Json.Serialization;
-
+using GainIt.API.Services.Users.Interfaces;
+using GainIt.API.Services.Users.Implementations;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 
 builder.Services.AddDbContext<GainItDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("GainItPostgresDb")));

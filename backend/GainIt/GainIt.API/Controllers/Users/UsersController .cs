@@ -24,7 +24,7 @@ namespace GainIt.API.Controllers.Users
         [HttpGet("gainer/{id}/profile")]
         public async Task<IActionResult> GetGainerProfile(Guid id)
         {
-            try 
+            try
             {
                 Gainer gainer = await _userProfileService.GetGainerByIdAsync(id);
                 if (gainer == null) return NotFound();
@@ -34,7 +34,7 @@ namespace GainIt.API.Controllers.Users
             }
             catch (KeyNotFoundException)
             {
-                 return NotFound(new { Message = $"Gainer with ID {id} not found" });
+                return NotFound(new { Message = $"Gainer with ID {id} not found" });
             }
         }
 
@@ -44,11 +44,18 @@ namespace GainIt.API.Controllers.Users
         [HttpGet("mentor/{id}/profile")]
         public async Task<IActionResult> GetMentorProfile(Guid id)
         {
-            Mentor mentor = await _userProfileService.GetMentorByIdAsync(id);
-            if (mentor == null) return NotFound();
+            try
+            {
+                Mentor mentor = await _userProfileService.GetMentorByIdAsync(id);
+                if (mentor == null) return NotFound();
 
-            FullMentorViewModel mentorViewModel = new FullMentorViewModel(mentor);
-            return Ok(mentorViewModel);
+                FullMentorViewModel mentorViewModel = new FullMentorViewModel(mentor);
+                return Ok(mentorViewModel);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { Message = $"Mentor with ID {id} not found" });
+            }
         }
 
         /// <summary>
@@ -57,14 +64,20 @@ namespace GainIt.API.Controllers.Users
         [HttpGet("nonprofit/{id}/profile")]
         public async Task<IActionResult> GetNonprofitProfile(Guid id)
         {
-            NonprofitOrganization nonprofit = await _userProfileService.GetNonprofitByIdAsync(id);
-            if (nonprofit == null)
-            { 
-                return NotFound(); 
-            }
+            try
+            {
+                NonprofitOrganization nonprofit = await _userProfileService.GetNonprofitByIdAsync(id);
+                if (nonprofit == null) return NotFound();
+                
+                FullNonprofitViewModel nonprofitViewModel = new FullNonprofitViewModel(nonprofit);
+                return Ok(nonprofitViewModel);
 
-            FullNonprofitViewModel nonprofitViewModel = new FullNonprofitViewModel(nonprofit);
-            return Ok(nonprofitViewModel);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { Message = $"Nonprofit with ID {id} not found" });
+            }
+         
         }
     }
 }
