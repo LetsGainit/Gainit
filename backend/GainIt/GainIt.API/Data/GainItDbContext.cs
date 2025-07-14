@@ -265,6 +265,7 @@ namespace GainIt.API.Data
                     AreaOfExpertise = "Full Stack Development",
                     Biography = "Senior software architect with expertise in cloud technologies and microservices.",
                     GitHubURL = "https://github.com/wonntann",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/women/65.jpg",
                     LinkedInURL = "https://linkedin.com/company/mentors-in-tech",
                     FacebookPageURL = "https://facebook.com/TechCareerMentorship",
                     Achievements = new List<UserAchievement>()
@@ -279,6 +280,7 @@ namespace GainIt.API.Data
                     AreaOfExpertise = "Data Science & AI",
                     Biography = "Experienced data scientist and AI mentor, passionate about machine learning and analytics.",
                     GitHubURL = "https://github.com/hepaestus",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/men/66.jpg",
                     LinkedInURL = "https://linkedin.com/company/tech-career-mentorship",
                     FacebookPageURL = "https://facebook.com/TechCareerMentor",
                     Achievements = new List<UserAchievement>()
@@ -293,6 +295,7 @@ namespace GainIt.API.Data
                     WebsiteUrl = "https://techforgood.org",
                     Biography = "Empowering communities through technology education and digital literacy programs.",
                     GitHubURL = "https://github.com/techrityorg",
+                    ProfilePictureURL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQHIVTRK4hstoI6IBdXmslzxY96ql1mZQF6wg&s",
                     LinkedInURL = "https://linkedin.com/company/techforgood-foundation",
                     FacebookPageURL = "https://facebook.com/TechForGoodFoundation",
                     Achievements = new List<UserAchievement>()
@@ -346,6 +349,7 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Web Development", "UI/UX Design", "Cloud Computing" },
                     GitHubURL = "https://github.com/alexjwilson",
                     LinkedInURL = "https://linkedin.com/in/alexjwilson",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/men/12.jpg",
                     FacebookPageURL = "https://facebook.com/alex.j.wilson",
                     Biography = "Aspiring web developer passionate about building user-friendly applications and exploring cloud technologies.",
                     Achievements = new List<UserAchievement>()
@@ -360,6 +364,7 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Machine Learning", "Data Science", "Python" },
                     GitHubURL = "https://github.com/suecodes",
                     LinkedInURL = "https://linkedin.com/in/mariarodriguezdev",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/women/22.jpg",
                     FacebookPageURL = "https://facebook.com/maria.rodriguez.dev",
                     Biography = "Graduate student specializing in machine learning and data science, with a love for Python and analytics.",
                     Achievements = new List<UserAchievement>()
@@ -374,6 +379,7 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Mobile Development", "Android", "Kotlin" },
                     GitHubURL = "https://github.com/Tech-Educators",
                     LinkedInURL = "https://linkedin.com/in/samuelkimdev",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/men/33.jpg",
                     FacebookPageURL = "https://facebook.com/samuel.kim.dev",
                     Biography = "Mobile development enthusiast focused on Android and Kotlin, eager to create impactful mobile solutions.",
                     Achievements = new List<UserAchievement>()
@@ -388,6 +394,7 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Cybersecurity", "Networks", "Linux" },
                     GitHubURL = "https://github.com/Open-Tech-Foundation",
                     LinkedInURL = "https://linkedin.com/in/priyapateldev",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/women/44.jpg",
                     FacebookPageURL = "https://facebook.com/priya.patel.tech",
                     Biography = "Cybersecurity graduate with a strong interest in network security and Linux systems administration.",
                     Achievements = new List<UserAchievement>()
@@ -402,6 +409,7 @@ namespace GainIt.API.Data
                     AreasOfInterest = new List<string> { "Game Development", "Unity", "C#" },
                     GitHubURL = "https://github.com/SlateFoundation",
                     LinkedInURL = "https://linkedin.com/in/liamoconnordev",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/men/55.jpg",
                     FacebookPageURL = "https://facebook.com/liam.oconnor.dev",
                     Biography = "Game development student passionate about Unity and C#, aiming to create engaging interactive experiences.",
                     Achievements = new List<UserAchievement>()
@@ -417,6 +425,7 @@ namespace GainIt.API.Data
                     GitHubURL = "https://github.com/AcademySoftwareFoundation",
                     LinkedInURL = "https://linkedin.com/in/emilynguyenai",
                     FacebookPageURL = "https://facebook.com/emily.nguyen.ai",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/women/77.jpg",
                     Biography = "AI graduate with a focus on natural language processing and Python, dedicated to advancing intelligent systems.",
                     Achievements = new List<UserAchievement>()
                 };
