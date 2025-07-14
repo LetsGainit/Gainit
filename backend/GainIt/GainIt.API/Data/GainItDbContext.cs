@@ -715,6 +715,11 @@ namespace GainIt.API.Data
                     }
                 };
 
+                gainer1.ParticipatedProjects.Add(project1);
+                gainer2.ParticipatedProjects.Add(project1);
+                mentor.MentoredProjects.Add(project1);
+
+
                 project2.ProjectMembers = new List<ProjectMember>
                 {
                     new ProjectMember
@@ -752,6 +757,11 @@ namespace GainIt.API.Data
                     }
                 };
 
+                gainer3.ParticipatedProjects.Add(project2);
+                gainer4.ParticipatedProjects.Add(project2);
+                gainer5.ParticipatedProjects.Add(project2);
+                mentor2.MentoredProjects.Add(project2);
+
                 project3.ProjectMembers = new List<ProjectMember>
                 {
                     new ProjectMember
@@ -771,6 +781,9 @@ namespace GainIt.API.Data
                         Project = project3
                     }
                 };
+
+                gainer6.ParticipatedProjects.Add(project3);
+                gainer1.ParticipatedProjects.Add(project3);
 
                 project4.ProjectMembers = new List<ProjectMember>
                 {
@@ -809,6 +822,12 @@ namespace GainIt.API.Data
                     }
                 };
 
+                gainer1.ParticipatedProjects.Add(project4);
+                gainer2.ParticipatedProjects.Add(project4);
+                gainer3.ParticipatedProjects.Add(project4);
+                mentor.MentoredProjects.Add(project4);
+
+
                 project5.ProjectMembers = new List<ProjectMember>
                 {
                     new ProjectMember
@@ -836,6 +855,11 @@ namespace GainIt.API.Data
                         Project = project5
                     }
                 };
+
+                gainer4.ParticipatedProjects.Add(project5);
+                gainer5.ParticipatedProjects.Add(project5);
+                gainer6.ParticipatedProjects.Add(project5);
+
 
                 // Add all projects to the list
                 var seededProjects = new List<UserProject> { project1, project2, project3, project4, project5 };
