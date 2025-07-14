@@ -24,11 +24,18 @@ namespace GainIt.API.Controllers.Users
         [HttpGet("gainer/{id}/profile")]
         public async Task<IActionResult> GetGainerProfile(Guid id)
         {
-            Gainer gainer = await _userProfileService.GetGainerByIdAsync(id);
-            if (gainer == null) return NotFound();
+            try 
+            {
+                Gainer gainer = await _userProfileService.GetGainerByIdAsync(id);
+                if (gainer == null) return NotFound();
 
-            FullGainerViewModel gainerViewModel = new FullGainerViewModel(gainer);
-            return Ok(gainerViewModel);
+                FullGainerViewModel gainerViewModel = new FullGainerViewModel(gainer);
+                return Ok(gainerViewModel);
+            }
+            catch (KeyNotFoundException)
+            {
+                 return NotFound(new { Message = $"Gainer with ID {id} not found" });
+            }
         }
 
         /// <summary>
