@@ -201,8 +201,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 .ThenInclude(projectMember => projectMember.User)
                 .Include(project => project.OwningOrganization!)
                 .ThenInclude(org => org.NonprofitExpertise)
-                .Where(project => project.ProjectSource != eProjectSource.Template
-                                  && project.ProjectStatus == eProjectStatus.InProgress)
+                .Where(project => project.ProjectStatus == eProjectStatus.InProgress)
                 .ToListAsync();
         }
         public async Task<IEnumerable<UserProject>> GetAllPendingUserTemplatesProjectsAsync()
