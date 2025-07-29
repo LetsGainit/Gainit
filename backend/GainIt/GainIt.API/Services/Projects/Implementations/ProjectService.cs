@@ -193,6 +193,17 @@ namespace GainIt.API.Services.Projects.Implementations
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<UserProject>> GetAllActiveProjectsAsync()
+        {
+            
+            return await r_DbContext.Projects
+                .Include(project => project.ProjectMembers)
+                .ThenInclude(projectMember => projectMember.User)
+                .Include(project => project.OwningOrganization)
+                .Where(project => project.ProjectSource != eProjectSource.Template
+                                  && project.ProjectStatus == eProjectStatus.InProgress)
+                .ToListAsync();
+        }
         public async Task<IEnumerable<UserProject>> GetAllPendingUserTemplatesProjectsAsync()
         {
             return await r_DbContext.Projects

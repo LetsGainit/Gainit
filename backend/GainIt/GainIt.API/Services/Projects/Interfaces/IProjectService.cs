@@ -21,6 +21,9 @@ namespace GainIt.API.Services.Projects.Interfaces
         // Retrieve all projects that are nonprofit projects
         Task<IEnumerable<UserProject>> GetAllNonprofitProjectsAsync();
 
+        // Retrieve all active projects (in-progress non-template projects)
+        Task<IEnumerable<UserProject>> GetAllActiveProjectsAsync();
+
         // Retrieve projects by user ID
         Task<IEnumerable<UserProject>> GetProjectsByUserIdAsync(Guid i_UserId);
 

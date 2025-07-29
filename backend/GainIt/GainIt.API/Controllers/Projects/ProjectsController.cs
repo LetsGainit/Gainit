@@ -99,6 +99,20 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
+        /// Retrieves all active projects (in-progress non-template projects).
+        /// </summary>
+        /// <returns>A list of all active projects.</returns>
+        [HttpGet("active")]
+        public async Task<ActionResult<IEnumerable<UserProjectViewModel>>> GetAllActiveProjects()
+        {
+            var projects = await r_ProjectService.GetAllActiveProjectsAsync();
+
+            var activeProjectsViewModel = projects.Select(p => new UserProjectViewModel(p)).ToList();
+
+            return Ok(activeProjectsViewModel);
+        }
+
+        /// <summary>
         /// Retrieves all projects associated with a specific user.
         /// </summary>
         /// <param name="userId">The ID of the user.</param>
