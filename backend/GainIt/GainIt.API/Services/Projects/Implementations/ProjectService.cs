@@ -199,7 +199,8 @@ namespace GainIt.API.Services.Projects.Implementations
             return await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(projectMember => projectMember.User)
-                .Include(project => project.OwningOrganization)
+                .Include(project => project.OwningOrganization!)
+                .ThenInclude(org => org.NonprofitExpertise)
                 .Where(project => project.ProjectSource != eProjectSource.Template
                                   && project.ProjectStatus == eProjectStatus.InProgress)
                 .ToListAsync();
