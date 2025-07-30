@@ -368,6 +368,20 @@ namespace GainIt.API.Services.Users.Implementations
             return nonprofit?.OwnedProjects ?? Enumerable.Empty<UserProject>();
         }
 
+        public async Task<List<UserProject>> GetNonprofitOwnedProjectsAsync(Guid nonprofitUserId)
+        {
+            return await _dbContext.Projects
+                .Where(p => p.OwningOrganizationUserId == nonprofitUserId)
+                .ToListAsync();
+        }
+
+        public async Task<List<UserAchievement>> GetUserAchievementsAsync(Guid userId)
+        {
+            return await _dbContext.UserAchievements
+                .Where(a => a.UserId == userId)
+                .ToListAsync();
+        }
+
         public Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm)
         {
             throw new NotImplementedException();
