@@ -25,10 +25,17 @@ namespace GainIt.API.Services.Users.Implementations
         {
             return await _dbContext.Gainers
                 .Include(g => g.TechExpertise)
-                .Include(g => g.ParticipatedProjects)
                 .Include(g => g.Achievements)
                 .FirstOrDefaultAsync(g => g.UserId == i_userId) ?? 
                 throw new KeyNotFoundException($"Gainer with ID {i_userId} not found");
+        }
+
+        // NEW: Get all projects a user is participating in (via ProjectMembers)
+        public async Task<List<UserProject>> GetUserProjectsAsync(Guid userId)
+        {
+            return await _dbContext.Projects
+                .Where(p => p.ProjectMembers.Any(pm => pm.UserId == userId && pm.LeftAtUtc == null))
+                .ToListAsync();
         }
 
         public async Task<Mentor> GetMentorByIdAsync(Guid i_userId)

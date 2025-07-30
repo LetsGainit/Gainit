@@ -29,7 +29,8 @@ namespace GainIt.API.Controllers.Users
                 Gainer gainer = await _userProfileService.GetGainerByIdAsync(id);
                 if (gainer == null) return NotFound();
 
-                FullGainerViewModel gainerViewModel = new FullGainerViewModel(gainer);
+                var projects = await _userProfileService.GetUserProjectsAsync(id);
+                FullGainerViewModel gainerViewModel = new FullGainerViewModel(gainer, projects);
                 return Ok(gainerViewModel);
             }
             catch (KeyNotFoundException)

@@ -46,6 +46,7 @@ namespace GainIt.API.Services.Users.Interfaces
         Task<IEnumerable<UserProject>> GetGainerProjectHistoryAsync(Guid userId);
         Task<IEnumerable<UserProject>> GetMentorProjectHistoryAsync(Guid userId);
         Task<IEnumerable<UserProject>> GetNonprofitProjectHistoryAsync(Guid userId);
+        Task<List<UserProject>> GetUserProjectsAsync(Guid userId);
         
         // Search users with type-specific filtering
         Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm);
