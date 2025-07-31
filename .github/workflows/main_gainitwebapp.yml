@@ -24,12 +24,10 @@ jobs:
           dotnet-version: '3.1'
 
       - name: Build with dotnet
-        run: dotnet build backend/GainIt/GainIt.sln --configuration Release
-
+        run: dotnet build --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish backend/GainIt/GainIt.API/GainIt.API.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
-
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -53,9 +51,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_95A6703E780241C19AF33659EACF219A }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_02EDE5E42947431B8911D53FEA99E944 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_61E81EF9C47148E79B127A6C13BC8EC5 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_51F2AFA3F65240F99DB839FFBC48CD03 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_92BD9DB22FC94ED48B7EEDD63CEC6104 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_80FCFF36DC004C80A212158594C35A58 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
