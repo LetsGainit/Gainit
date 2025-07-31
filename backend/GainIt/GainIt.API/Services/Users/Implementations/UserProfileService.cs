@@ -378,6 +378,7 @@ namespace GainIt.API.Services.Users.Implementations
         public async Task<List<UserAchievement>> GetUserAchievementsAsync(Guid userId)
         {
             return await _dbContext.UserAchievements
+                .Include(ua => ua.AchievementTemplate)
                 .Where(a => a.UserId == userId)
                 .ToListAsync();
         }
