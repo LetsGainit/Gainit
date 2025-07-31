@@ -40,7 +40,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
                 .ToList();
 
             OwningOrganization = i_Project.OwningOrganization != null
-                ? new FullNonprofitViewModel(i_Project.OwningOrganization)
+                ? new FullNonprofitViewModel(i_Project.OwningOrganization, new List<UserProject>())
                 : null;
 
             ProjectPictureUrl = i_Project.ProjectPictureUrl;
