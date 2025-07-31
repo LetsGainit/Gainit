@@ -458,8 +458,7 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Filters template projects by difficulty level.
         /// </summary>
-        /// <param name="difficulty"></param>
-        /// <param name="filter">Filter criteria including difficulty level.</param>
+        /// <param name="difficulty">The difficulty level to filter by.</param>
         /// <returns>A list of filtered template projects.</returns>
         [HttpGet("templates/filter")]
         public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> FilterTemplateProjectsByDifficulty([FromQuery] ProjectDifficultyLevelOptionDTO difficulty)

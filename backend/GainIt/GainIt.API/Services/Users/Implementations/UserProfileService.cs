@@ -25,10 +25,17 @@ namespace GainIt.API.Services.Users.Implementations
         {
             return await _dbContext.Gainers
                 .Include(g => g.TechExpertise)
-                .Include(g => g.ParticipatedProjects)
                 .Include(g => g.Achievements)
                 .FirstOrDefaultAsync(g => g.UserId == i_userId) ?? 
                 throw new KeyNotFoundException($"Gainer with ID {i_userId} not found");
+        }
+
+        // NEW: Get all projects a user is participating in (via ProjectMembers)
+        public async Task<List<UserProject>> GetUserProjectsAsync(Guid userId)
+        {
+            return await _dbContext.Projects
+                .Where(p => p.ProjectMembers.Any(pm => pm.UserId == userId && pm.LeftAtUtc == null))
+                .ToListAsync();
         }
 
         public async Task<Mentor> GetMentorByIdAsync(Guid i_userId)
@@ -359,6 +366,20 @@ namespace GainIt.API.Services.Users.Implementations
         {
             var nonprofit = await GetNonprofitByIdAsync(userId);
             return nonprofit?.OwnedProjects ?? Enumerable.Empty<UserProject>();
+        }
+
+        public async Task<List<UserProject>> GetNonprofitOwnedProjectsAsync(Guid nonprofitUserId)
+        {
+            return await _dbContext.Projects
+                .Where(p => p.OwningOrganizationUserId == nonprofitUserId)
+                .ToListAsync();
+        }
+
+        public async Task<List<UserAchievement>> GetUserAchievementsAsync(Guid userId)
+        {
+            return await _dbContext.UserAchievements
+                .Where(a => a.UserId == userId)
+                .ToListAsync();
         }
 
         public Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm)

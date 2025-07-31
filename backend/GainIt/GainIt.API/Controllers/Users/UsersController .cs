@@ -29,7 +29,9 @@ namespace GainIt.API.Controllers.Users
                 Gainer gainer = await _userProfileService.GetGainerByIdAsync(id);
                 if (gainer == null) return NotFound();
 
-                FullGainerViewModel gainerViewModel = new FullGainerViewModel(gainer);
+                var projects = await _userProfileService.GetUserProjectsAsync(id);
+                var achievements = (await _userProfileService.GetUserAchievementsAsync(id)).ToList();
+                FullGainerViewModel gainerViewModel = new FullGainerViewModel(gainer, projects, achievements);
                 return Ok(gainerViewModel);
             }
             catch (KeyNotFoundException)
@@ -49,7 +51,9 @@ namespace GainIt.API.Controllers.Users
                 Mentor mentor = await _userProfileService.GetMentorByIdAsync(id);
                 if (mentor == null) return NotFound();
 
-                FullMentorViewModel mentorViewModel = new FullMentorViewModel(mentor);
+                var projects = await _userProfileService.GetUserProjectsAsync(id);
+                var achievements = (await _userProfileService.GetUserAchievementsAsync(id)).ToList();
+                FullMentorViewModel mentorViewModel = new FullMentorViewModel(mentor, projects, achievements);
                 return Ok(mentorViewModel);
             }
             catch (KeyNotFoundException)
@@ -69,7 +73,8 @@ namespace GainIt.API.Controllers.Users
                 NonprofitOrganization nonprofit = await _userProfileService.GetNonprofitByIdAsync(id);
                 if (nonprofit == null) return NotFound();
                 
-                FullNonprofitViewModel nonprofitViewModel = new FullNonprofitViewModel(nonprofit);
+                var projects = await _userProfileService.GetNonprofitOwnedProjectsAsync(id);
+                FullNonprofitViewModel nonprofitViewModel = new FullNonprofitViewModel(nonprofit, projects);
                 return Ok(nonprofitViewModel);
 
             }
