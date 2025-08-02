@@ -1,5 +1,6 @@
 using Azure;
 using Azure.AI.OpenAI;
+using Azure.Core;
 using Azure.Search.Documents;
 using GainIt.API.Data;
 using GainIt.API.Options;
@@ -11,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Reflection;
-using Azure.Core;
 using System.Text.Json.Serialization;
 
 
@@ -40,7 +40,7 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddSingleton(sp =>
 {
     var opts = sp.GetRequiredService<IOptions<OpenAIOptions>>().Value;
-    return new OpenAIClient(
+    return new AzureOpenAIClient(
         new Uri(opts.Endpoint),
         new AzureKeyCredential(opts.ApiKey)
     );

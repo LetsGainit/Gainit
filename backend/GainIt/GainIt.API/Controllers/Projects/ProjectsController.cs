@@ -457,7 +457,7 @@ namespace GainIt.API.Controllers.Projects
                 return BadRequest(new { Message = "Search query cannot be empty." });
             }
 
-            var projects = await r_ProjectMatchingService.MatchProjectsByFreeTextAsync(query, count);
+            var projects = await r_ProjectMatchingService.MatchProjectsByTextAsync(query, count);
 
             var projectViewModels = projects.Select(p => new TemplateProjectViewModel(p)).ToList();
 

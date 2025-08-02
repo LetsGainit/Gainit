@@ -2,57 +2,120 @@
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using GainIt.API.Data;
-using GainIt.API.DTOs;
 using GainIt.API.DTOs.Search;
 using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
+using GainIt.API.Models.Users.Gainers;
+using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Options;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+
 
 namespace GainIt.API.Services.Projects.Implementations
 {
     public class ProjectMatchingService : IProjectMatchingService
     {
         private readonly SearchClient r_searchClient;
-        private readonly OpenAIClient r_openAIClient;
+        private readonly AzureOpenAIClient r_azureOpenAIClient;
         private readonly string r_embeddingModelName;
         private readonly GainItDbContext r_DbContext;
-        private const double r_similarityThreshold = 0.83;
+        private readonly ChatClient r_chatClient;
+        private const double r_similarityThreshold = 0.80;
 
-        public ProjectMatchingService(SearchClient i_SearchClient, OpenAIClient i_OpenAIClient, IOptions<OpenAIOptions> i_OpenAIOptionsAccessor, GainItDbContext i_DbContext)
+        public ProjectMatchingService(SearchClient i_SearchClient, AzureOpenAIClient i_AzureOpenAIClient, IOptions<OpenAIOptions> i_OpenAIOptionsAccessor, GainItDbContext i_DbContext)
         {
             r_searchClient = i_SearchClient;
-            r_openAIClient = i_OpenAIClient;
+            r_azureOpenAIClient = i_AzureOpenAIClient;
+            r_chatClient = r_azureOpenAIClient.GetChatClient(i_OpenAIOptionsAccessor.Value.ChatDeploymentName);
             r_embeddingModelName = i_OpenAIOptionsAccessor.Value.EmbeddingDeploymentName;
             r_DbContext = i_DbContext;
         }
 
-        public async Task<IEnumerable<TemplateProject>> MatchProjectsByFreeTextAsync(string inputText, int resultCount = 3)
+        public async Task<IEnumerable<TemplateProject>> MatchProjectsByTextAsync(string i_InputText, int i_ResultCount = 3)
         {
-            var embedding = await GetEmbeddingAsync(inputText);
-            var matchedProjectIds = await RunVectorSearchAsync(embedding, resultCount);
-            var allProjects = await FetchProjectsByIdsAsync(matchedProjectIds);
+            var chatrefinedQuery = await refineQueryWithChatAsync(i_InputText);
+            var embedding = await getEmbeddingAsync(chatrefinedQuery);
+            var matchedProjectIds = await runVectorSearchAsync(embedding, i_ResultCount);
+            var matchedProjects = await fetchProjectsByIdsAsync(matchedProjectIds);
+            var filteredProjects = await filterProjectsWithChatAsync(chatrefinedQuery, matchedProjects);
+            var chatExplenation = await getChatExplanationAsync(chatrefinedQuery);
+
             return allProjects;
         }
 
-        public async Task<string> MatchWithProfileAndExplainAsync(User i_UserProfile, int i_ResultCount = 3)
+        public async Task<IEnumerable<TemplateProject>> MatchProjectsByProfileAsync(User i_UserProfile, int i_ResultCount = 3)
         {
-            return await Task.Run(() =>
+            string searchquery = buildProfileQuery(i_UserProfile);
+            var chatrefinedQuery = await refineQueryWithChatAsync(searchquery);
+            var embedding = await getEmbeddingAsync(chatrefinedQuery);
+            var matchedProjectIds = await runVectorSearchAsync(embedding, i_ResultCount);
+            var matchedProjects = await fetchProjectsByIdsAsync(matchedProjectIds);
+            var filteredProjects = await filterProjectsWithChatAsync(chatrefinedQuery, matchedProjects);
+
+            return filteredProjects;
+        }
+
+        private async Task<string> getChatExplanationAsync(string i_Query)
+        {
+
+        }
+
+        private async Task<string> refineQueryWithChatAsync(string i_OriginalQuery)
+        {
+
+        }
+
+        private async Task<List<TemplateProject>> filterProjectsWithChatAsync(string i_Query, List<TemplateProject> i_Projects)
+        {
+
+        }
+
+        private string buildProfileQuery(User i_userProfile)
+        {
+            if (i_userProfile is Gainer gainer)
             {
-                return $"Matching projects for user {i_UserProfile.UserId} with {i_ResultCount} results.";
-            });
+                var parts = new List<string>
+                {
+                    gainer.Biography,
+                    gainer.EducationStatus,
+                    string.Join(", ", gainer.AreasOfInterest ?? new List<string>())
+                };
+                if (gainer.TechExpertise != null)
+                {
+                    parts.Add(gainer.TechExpertise.ToString());
+                }
+                return string.Join(". ", parts);
+            }
+            else if (i_userProfile is Mentor mentor)
+            {
+                var parts = new List<string>
+                {
+                    mentor.Biography,
+                    mentor.AreaOfExpertise,
+                    $"{mentor.YearsOfExperience} years of experience"
+                };
+                if (mentor.TechExpertise != null)
+                {
+                    parts.Add(mentor.TechExpertise.ToString());
+                }
+                return string.Join(". ", parts);
+            }
+            else
+            {
+                throw new ArgumentException("Profile type is not supported for project matching.");
+            }
         }
 
-        private async Task<IReadOnlyList<float>> GetEmbeddingAsync(string inputText)
+        private async Task<IReadOnlyList<float>> getEmbeddingAsync(string inputText)
         {
-            var embeddingOptions = new EmbeddingsOptions(r_embeddingModelName, new List<string> { inputText });
-            var embeddingResponse = await r_openAIClient.GetEmbeddingsAsync(embeddingOptions);
-            return embeddingResponse.Value.Data.First().Embedding.ToArray();
+            var embeddingClient = r_azureOpenAIClient.GetEmbeddingClient(r_embeddingModelName);
+            var embeddingResult = await embeddingClient.GenerateEmbeddingAsync(inputText);
+            return embeddingResult.Value.ToFloats().ToArray();
         }
 
-        private async Task<List<Guid>> RunVectorSearchAsync(IReadOnlyList<float> embedding, int resultCount)
+        private async Task<List<Guid>> runVectorSearchAsync(IReadOnlyList<float> embedding, int resultCount)
         {
             var searchOptions = new SearchOptions
             {
@@ -85,7 +148,7 @@ namespace GainIt.API.Services.Projects.Implementations
             return matchedProjectIds;
         }
 
-        private async Task<List<TemplateProject>> FetchProjectsByIdsAsync(List<Guid> matchedProjectIds)
+        private async Task<List<TemplateProject>> fetchProjectsByIdsAsync(List<Guid> matchedProjectIds)
         {
             List<TemplateProject> templateProjects = await r_DbContext.TemplateProjects
                 .Where(p => matchedProjectIds.Contains(p.ProjectId))
