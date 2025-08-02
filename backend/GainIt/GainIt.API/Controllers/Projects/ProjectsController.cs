@@ -4,6 +4,7 @@ using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Runtime.CompilerServices;
 
 namespace GainIt.API.Controllers.Projects
 {
@@ -12,10 +13,13 @@ namespace GainIt.API.Controllers.Projects
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectService r_ProjectService;
+        
+        private readonly IProjectMatchingService r_ProjectMatchingService;
 
-        public ProjectsController(IProjectService i_ProjectService)
+        public ProjectsController(IProjectService i_ProjectService, IProjectMatchingService r_ProjectMatchingService)
         {
             r_ProjectService = i_ProjectService;
+            this.r_ProjectMatchingService = r_ProjectMatchingService;
         }
 
         #region Project Retrieval
@@ -433,6 +437,27 @@ namespace GainIt.API.Controllers.Projects
             }
 
             var projects = await r_ProjectService.SearchTemplateProjectsByNameOrDescriptionAsync(searchQuery);
+
+            var projectViewModels = projects.Select(p => new TemplateProjectViewModel(p)).ToList();
+
+            return Ok(projectViewModels);
+        }
+
+        /// <summary>
+        /// Performs vector-based semantic search for projects using the input query.
+        /// </summary>
+        /// <param name="query">The user's search text.</param>
+        /// <param name="count">Maximum number of results to return (default 3).</param>
+        /// <returns>A list of relevant projects based on vector similarity.</returns>
+        [HttpGet("search/vector")]
+        public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> SearchProjectsByVector([FromQuery] string query, [FromQuery] int count = 3)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return BadRequest(new { Message = "Search query cannot be empty." });
+            }
+
+            var projects = await r_ProjectMatchingService.MatchProjectsByFreeTextAsync(query, count);
 
             var projectViewModels = projects.Select(p => new TemplateProjectViewModel(p)).ToList();
 

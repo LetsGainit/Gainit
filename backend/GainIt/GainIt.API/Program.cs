@@ -1,21 +1,55 @@
+using Azure;
+using Azure.AI.OpenAI;
+using Azure.Search.Documents;
 using GainIt.API.Data;
+using GainIt.API.Options;
 using GainIt.API.Services.Projects.Implementations;
 using GainIt.API.Services.Projects.Interfaces;
-using Microsoft.EntityFrameworkCore;
-using System.Reflection;
-using System.Text.Json.Serialization;
-using GainIt.API.Services.Users.Interfaces;
 using GainIt.API.Services.Users.Implementations;
+using GainIt.API.Services.Users.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using System.Reflection;
+using Azure.Core;
+using System.Text.Json.Serialization;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddScoped<IProjectService, ProjectService>();
-builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+
 
 builder.Services.AddDbContext<GainItDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("GainItPostgresDb")));
+
+builder.Services.Configure<AzureSearchOptions>(
+    builder.Configuration.GetSection("AzureSearch"));
+builder.Services.Configure<OpenAIOptions>(
+    builder.Configuration.GetSection("OpenAI"));
+
+builder.Services.AddSingleton(sp =>
+{
+    var opts = sp.GetRequiredService<IOptions<AzureSearchOptions>>().Value;
+    return new SearchClient(
+        new Uri(opts.Endpoint),
+        opts.IndexName,
+        new Azure.AzureKeyCredential(opts.ApiKey)
+    );
+});
+
+builder.Services.AddSingleton(sp =>
+{
+    var opts = sp.GetRequiredService<IOptions<OpenAIOptions>>().Value;
+    return new OpenAIClient(
+        new Uri(opts.Endpoint),
+        new AzureKeyCredential(opts.ApiKey)
+    );
+});
+
+// Add services to the container.
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
 
 
 builder.Services.AddControllers().AddJsonOptions(options =>
