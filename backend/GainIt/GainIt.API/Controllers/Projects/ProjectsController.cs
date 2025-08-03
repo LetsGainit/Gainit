@@ -1,9 +1,13 @@
 ﻿using GainIt.API.DTOs.Requests;
+using GainIt.API.DTOs.Search;
 using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
+using GainIt.API.Models.Users;
+using GainIt.API.Services.Projects.Implementations;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Runtime.CompilerServices;
 
 namespace GainIt.API.Controllers.Projects
 {
@@ -12,10 +16,13 @@ namespace GainIt.API.Controllers.Projects
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectService r_ProjectService;
+        
+        private readonly IProjectMatchingService r_ProjectMatchingService;
 
-        public ProjectsController(IProjectService i_ProjectService)
+        public ProjectsController(IProjectService i_ProjectService, IProjectMatchingService r_ProjectMatchingService)
         {
             r_ProjectService = i_ProjectService;
+            this.r_ProjectMatchingService = r_ProjectMatchingService;
         }
 
         #region Project Retrieval
@@ -437,6 +444,61 @@ namespace GainIt.API.Controllers.Projects
             var projectViewModels = projects.Select(p => new TemplateProjectViewModel(p)).ToList();
 
             return Ok(projectViewModels);
+        }
+
+        /// <summary>
+        /// Performs vector-based semantic search for projects using the input query.
+        /// </summary>
+        /// <param name="query">The user's search text.</param>
+        /// <param name="count">Maximum number of results to return (default 3).</param>
+        /// <returns>A list of relevant projects based on vector similarity.</returns>
+        [HttpGet("search/vector")]
+        public async Task<ActionResult<ProjectMatchResultViewModel>> SearchProjectsByVector([FromQuery] string query, [FromQuery] int count = 3)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return BadRequest(new { Message = "Search query cannot be empty." });
+            }
+
+            ProjectMatchResultDto resultDto = await r_ProjectMatchingService.MatchProjectsByTextAsync(query, count);
+
+            var projectViewModels = resultDto.Projects.Select(p => new TemplateProjectViewModel(p)).ToList();
+
+            ProjectMatchResultViewModel resultViewModel = new ProjectMatchResultViewModel(projectViewModels, resultDto.Explanation);
+
+            return Ok(resultViewModel);
+        }
+
+        /// <summary>
+        /// Matches projects to a user’s profile (Gainer or Mentor).
+        /// </summary>
+        /// <param name="userId">The ID of the user whose profile to match.</param>
+        /// <param name="n">Max number of results (default 3).</param>
+        [HttpGet("match/profile")]
+        public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> MatchByProfile(
+             [FromQuery] Guid userId,
+             [FromQuery] int count = 3)
+        {
+            if (userId == Guid.Empty)
+                return BadRequest(new { Message = "User ID is required." });
+
+            try 
+            { 
+                var matchedProjects = await r_ProjectMatchingService.MatchProjectsByProfileAsync(userId, count);
+
+                if (matchedProjects == null || !matchedProjects.Any())
+                {
+                    return NotFound(new { Message = "No projects matched for the given user profile." });
+                }
+
+                var matchedProjectViewModels = matchedProjects.Select(p => new TemplateProjectViewModel(p)).ToList();
+
+                return Ok(matchedProjectViewModels);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { Message = ex.Message });
+            }
         }
 
         /// <summary>
