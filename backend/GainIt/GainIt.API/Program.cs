@@ -1,5 +1,6 @@
 using Azure;
 using Azure.AI.OpenAI;
+using Azure.Core;
 using Azure.Search.Documents;
 using GainIt.API.Data;
 using GainIt.API.Middleware;
@@ -13,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
 using System.Reflection;
-using Azure.Core;
 using System.Text.Json.Serialization;
 
 // Configure Serilog
@@ -31,6 +31,14 @@ try
     Log.Information("Starting GainIt.API application...");
 
     var builder = WebApplication.CreateBuilder(args);
+    builder.Services.AddSingleton(sp =>
+    {
+        var opts = sp.GetRequiredService<IOptions<OpenAIOptions>>().Value;
+        return new AzureOpenAIClient(
+            new Uri(opts.Endpoint),
+            new AzureKeyCredential(opts.ApiKey)
+        );
+    });
 
     // Configure Serilog for the application
     builder.Host.UseSerilog((context, services, configuration) => configuration
@@ -64,7 +72,7 @@ try
     builder.Services.AddSingleton(sp =>
     {
         var opts = sp.GetRequiredService<IOptions<OpenAIOptions>>().Value;
-        return new OpenAIClient(
+        return new AzureOpenAIClient(
             new Uri(opts.Endpoint),
             new AzureKeyCredential(opts.ApiKey)
         );
