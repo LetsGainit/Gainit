@@ -259,14 +259,13 @@ namespace GainIt.API.Services.Projects.Implementations
 
                 var messages = new ChatMessage[]
                 {
-                    new SystemChatMessage(
-                        "You are an assistant that filters projects based on user queries. " +
-                        "Return ONLY the ProjectIds of projects that match the user's query, separated by commas. " +
-                        "If no projects match, return 'none'. " +
-                        "Be selective and only include projects that truly match the user's needs."),
-                    new UserChatMessage(
-                        $"User query: {i_Query}\n\nProjects:\n{summaries}\n\n" +
-                        "Return only the ProjectIds of matching projects (comma-separated):")
+                   new SystemChatMessage(
+                    "You are an assistant that verifies project relevance based on a user query. " +
+                    "Review the projects and return a JSON array of the IDs (as strings) of all the projects that are clearly relevant. " +
+                    "Include all that are a good match — do not exclude any just to reduce the list. " +
+                    "If all are relevant, return them all. If none are relevant, return an empty array []."),
+                new UserChatMessage(
+                    $"Query: {i_Query}\n\nProjects:\n{summaries}")
                 };
 
                 var options = new ChatCompletionOptions
@@ -294,7 +293,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     }
                 }
 
-                response = response.ToLower();
+                Guid[] projectIds;
 
                 if (response == "none")
                 {
@@ -302,7 +301,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     return new List<TemplateProject>();
                 }
 
-                Guid[] projectIds;
+                
 
                 try
                 {
