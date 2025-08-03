@@ -1,4 +1,5 @@
-﻿using Azure.AI.OpenAI;
+﻿using Azure;
+using Azure.AI.OpenAI;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using GainIt.API.Data;
@@ -20,16 +21,16 @@ namespace GainIt.API.Services.Projects.Implementations
         private readonly SearchClient r_searchClient;
         private readonly AzureOpenAIClient r_azureOpenAIClient;
         private readonly string r_embeddingModelName;
+        private readonly string r_chatModelName;
         private readonly GainItDbContext r_DbContext;
-        private readonly ChatClient r_chatClient;
         private const double r_similarityThreshold = 0.80;
 
         public ProjectMatchingService(SearchClient i_SearchClient, AzureOpenAIClient i_AzureOpenAIClient, IOptions<OpenAIOptions> i_OpenAIOptionsAccessor, GainItDbContext i_DbContext)
         {
             r_searchClient = i_SearchClient;
             r_azureOpenAIClient = i_AzureOpenAIClient;
-            r_chatClient = r_azureOpenAIClient.GetChatClient(i_OpenAIOptionsAccessor.Value.ChatDeploymentName);
             r_embeddingModelName = i_OpenAIOptionsAccessor.Value.EmbeddingDeploymentName;
+            r_chatModelName = i_OpenAIOptionsAccessor.Value.ChatDeploymentName;
             r_DbContext = i_DbContext;
         }
 
@@ -59,7 +60,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
         private async Task<string> getChatExplanationAsync(string i_Query)
         {
-
+           
         }
 
         private async Task<string> refineQueryWithChatAsync(string i_OriginalQuery)
