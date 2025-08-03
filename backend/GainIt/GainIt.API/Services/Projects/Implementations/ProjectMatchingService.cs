@@ -263,8 +263,7 @@ namespace GainIt.API.Services.Projects.Implementations
                         "You are an assistant that filters projects based on user queries. " +
                         "Return ONLY the ProjectIds of projects that match the user's query, separated by commas. " +
                         "If no projects match, return 'none'. " +
-                        "Be selective and only include projects that truly match the user's needs."
-                    ),
+                        "Be selective and only include projects that truly match the user's needs."),
                     new UserChatMessage(
                         $"User query: {i_Query}\n\nProjects:\n{summaries}\n\n" +
                         "Return only the ProjectIds of matching projects (comma-separated):")
@@ -275,7 +274,8 @@ namespace GainIt.API.Services.Projects.Implementations
                     Temperature = 0f
                 };
 
-                ChatCompletion completion = await r_chatClient.CompleteChatAsync(messages, options);
+                ChatCompletion completion =
+                    await r_chatClient.CompleteChatAsync(messages, options);
                 var response = completion.Content[0].Text.Trim();
 
                 // Remove Markdown code block if present
@@ -335,49 +335,42 @@ namespace GainIt.API.Services.Projects.Implementations
 
             try
             {
-                var query = "";
-                
-
                 if (i_userProfile is Gainer gainer)
                 {
-                    query = $"Gainer profile: {gainer.FullName}, Education: {gainer.EducationStatus}, " +
-                           $"Areas of Interest: [{string.Join(", ", gainer.AreasOfInterest ?? new List<string>())}], " +
-                           $"Biography: {gainer.Biography}";
-
+                    var parts = new List<string>
+                    {
+                        gainer.Biography,
+                        gainer.EducationStatus,
+                        string.Join(", ", gainer.AreasOfInterest ?? new List<string>())
+                    };
                     if (gainer.TechExpertise != null)
                     {
-                        query += $", Programming Languages: [{string.Join(", ", gainer.TechExpertise.ProgrammingLanguages ?? new List<string>())}], " +
-                                $"Technologies: [{string.Join(", ", gainer.TechExpertise.Technologies ?? new List<string>())}], " +
-                                $"Tools: [{string.Join(", ", gainer.TechExpertise.Tools ?? new List<string>())}]";
+                        parts.Add(gainer.TechExpertise.ToString());
                     }
+                    var query = string.Join(". ", parts);
+                    r_logger.LogInformation("Profile query built successfully: UserId={UserId}, QueryLength={QueryLength}", i_userProfile.UserId, query.Length);
+                    return query;
                 }
-                                 else if (i_userProfile is Mentor mentor)
-                 {
-                     query = $"Mentor profile: {mentor.FullName}, Years of Experience: {mentor.YearsOfExperience}, " +
-                            $"Area of Expertise: {mentor.AreaOfExpertise}, " +
-                            $"Biography: {mentor.Biography}";
-
+                else if (i_userProfile is Mentor mentor)
+                {
+                    var parts = new List<string>
+                    {
+                        mentor.Biography,
+                        mentor.AreaOfExpertise,
+                        $"{mentor.YearsOfExperience} years of experience"
+                    };
                     if (mentor.TechExpertise != null)
                     {
-                        query += $", Programming Languages: [{string.Join(", ", mentor.TechExpertise.ProgrammingLanguages ?? new List<string>())}], " +
-                                $"Technologies: [{string.Join(", ", mentor.TechExpertise.Technologies ?? new List<string>())}], " +
-                                $"Tools: [{string.Join(", ", mentor.TechExpertise.Tools ?? new List<string>())}]";
+                        parts.Add(mentor.TechExpertise.ToString());
                     }
+                    var query = string.Join(". ", parts);
+                    r_logger.LogInformation("Profile query built successfully: UserId={UserId}, QueryLength={QueryLength}", i_userProfile.UserId, query.Length);
+                    return query;
                 }
-                                 else if (i_userProfile is GainIt.API.Models.Users.Nonprofits.NonprofitOrganization nonprofit)
-                 {
-                     query = $"Nonprofit profile: {nonprofit.FullName}, Website: {nonprofit.WebsiteUrl}, " +
-                            $"Biography: {nonprofit.Biography}";
-
-                    if (nonprofit.NonprofitExpertise != null)
-                    {
-                        query += $", Field of Work: {nonprofit.NonprofitExpertise.FieldOfWork}, " +
-                                $"Mission Statement: {nonprofit.NonprofitExpertise.MissionStatement}";
-                    }
+                else
+                {
+                    throw new ArgumentException("Profile type is not supported for project matching.");
                 }
-
-                r_logger.LogInformation("Profile query built successfully: UserId={UserId}, QueryLength={QueryLength}", i_userProfile.UserId, query.Length);
-                return query;
             }
             catch (Exception ex)
             {
@@ -419,20 +412,28 @@ namespace GainIt.API.Services.Projects.Implementations
                 var searchOptions = new SearchOptions
                 {
                     Size = resultCount,
-                    Select = { "ProjectId", "ProjectName", "ProjectDescription" }
+                    VectorSearch = new VectorSearchOptions
+                    {
+                        Queries =
+                        {
+                            new VectorizedQuery(embedding.ToArray())
+                            {
+                                KNearestNeighborsCount = resultCount,
+                                Fields = { "text_vector" }
+                            }
+                        }
+                    },
+                    Select = { "ProjectId" }
                 };
 
-                var searchResults = await r_searchClient.SearchAsync<SearchDocument>("*", searchOptions);
+                var results = await r_searchClient.SearchAsync<ProjectSearchResult>(null, searchOptions);
                 var matchedProjectIds = new List<Guid>();
 
-                await foreach (SearchResult<SearchDocument> result in searchResults.Value.GetResultsAsync())
+                await foreach (var result in results.Value.GetResultsAsync())
                 {
-                    if (result.Document.TryGetValue("ProjectId", out var projectIdObj) && projectIdObj != null)
+                    if (result.Score.HasValue && result.Score.Value >= r_similarityThreshold)
                     {
-                        if (Guid.TryParse(projectIdObj.ToString(), out var projectId))
-                        {
-                            matchedProjectIds.Add(projectId);
-                        }
+                        matchedProjectIds.Add(result.Document.ProjectId);
                     }
                 }
 
@@ -456,21 +457,33 @@ namespace GainIt.API.Services.Projects.Implementations
 
             try
             {
-                var projects = await r_DbContext.TemplateProjects
+                List<TemplateProject> templateProjects = await r_DbContext.TemplateProjects
                     .Where(p => matchedProjectIds.Contains(p.ProjectId))
                     .ToListAsync();
 
-                var userProjects = await r_DbContext.Projects
+                List<UserProject> userProjects = await r_DbContext.Projects
                     .Where(p => matchedProjectIds.Contains(p.ProjectId))
                     .ToListAsync();
 
-                var allProjects = new List<TemplateProject>();
-                allProjects.AddRange(projects);
-                allProjects.AddRange(userProjects.Cast<TemplateProject>());
+                Dictionary<Guid, TemplateProject> mergedProjects = new();
 
+                foreach (var userProject in userProjects)
+                {
+                    mergedProjects[userProject.ProjectId] = userProject;
+                }
+
+                foreach (var templateProject in templateProjects)
+                {
+                    if (!mergedProjects.ContainsKey(templateProject.ProjectId))
+                    {
+                        mergedProjects[templateProject.ProjectId] = templateProject;
+                    }
+                }
+
+                var result = mergedProjects.Values.ToList();
                 r_logger.LogInformation("Projects fetched successfully: RequestedCount={RequestedCount}, FetchedCount={FetchedCount}", 
-                    matchedProjectIds.Count, allProjects.Count);
-                return allProjects;
+                    matchedProjectIds.Count, result.Count);
+                return result;
             }
             catch (Exception ex)
             {

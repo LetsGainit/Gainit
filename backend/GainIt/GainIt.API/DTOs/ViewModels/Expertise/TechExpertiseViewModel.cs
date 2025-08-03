@@ -10,6 +10,14 @@ namespace GainIt.API.DTOs.ViewModels.Expertise
 
         public TechExpertiseViewModel(TechExpertise i_TechExpertise)
         {
+            if (i_TechExpertise == null)
+            {
+                ProgrammingLanguages = new List<string>();
+                Technologies = new List<string>();
+                Tools = new List<string>();
+                return;
+            }
+            
             ProgrammingLanguages = i_TechExpertise.ProgrammingLanguages;
             Technologies = i_TechExpertise.Technologies;
             Tools = i_TechExpertise.Tools;
