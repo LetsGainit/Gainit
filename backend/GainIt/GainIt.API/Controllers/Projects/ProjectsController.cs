@@ -662,13 +662,22 @@ namespace GainIt.API.Controllers.Projects
                 return BadRequest(new { Message = "Search query cannot be empty." });
             }
 
-            ProjectMatchResultDto resultDto = await r_ProjectMatchingService.MatchProjectsByTextAsync(query, count);
+            try
+            {
+                ProjectMatchResultDto resultDto = await r_ProjectMatchingService.MatchProjectsByTextAsync(query, count);
 
-            var projectViewModels = resultDto.Projects.Select(p => new TemplateProjectViewModel(p)).ToList();
+                var projectViewModels = resultDto.Projects.Select(p => new TemplateProjectViewModel(p)).ToList();
 
-            ProjectMatchResultViewModel resultViewModel = new ProjectMatchResultViewModel(projectViewModels, resultDto.Explanation);
+                ProjectMatchResultViewModel resultViewModel = new ProjectMatchResultViewModel(projectViewModels, resultDto.Explanation);
 
-            return Ok(resultViewModel);
+                r_logger.LogInformation("Vector search completed: Query={Query}, Results={Count}", query, projectViewModels.Count);
+                return Ok(resultViewModel);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error performing vector search: Query={Query}, Count={Count}", query, count);
+                throw;
+            }
         }
 
         /// <summary>
@@ -681,8 +690,13 @@ namespace GainIt.API.Controllers.Projects
              [FromQuery] Guid userId,
              [FromQuery] int count = 3)
         {
+            r_logger.LogInformation("Matching projects by profile: UserId={UserId}, Count={Count}", userId, count);
+            
             if (userId == Guid.Empty)
+            {
+                r_logger.LogWarning("Invalid user ID provided: {UserId}", userId);
                 return BadRequest(new { Message = "User ID is required." });
+            }
 
             try 
             { 
@@ -690,16 +704,24 @@ namespace GainIt.API.Controllers.Projects
 
                 if (matchedProjects == null || !matchedProjects.Any())
                 {
+                    r_logger.LogWarning("No projects matched for user profile: {UserId}", userId);
                     return NotFound(new { Message = "No projects matched for the given user profile." });
                 }
 
                 var matchedProjectViewModels = matchedProjects.Select(p => new TemplateProjectViewModel(p)).ToList();
-
+                
+                r_logger.LogInformation("Successfully matched {Count} projects for user profile: {UserId}", matchedProjectViewModels.Count, userId);
                 return Ok(matchedProjectViewModels);
             }
             catch (KeyNotFoundException ex)
             {
+                r_logger.LogWarning("User profile not found: {UserId}, Error={Error}", userId, ex.Message);
                 return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error matching projects by profile: UserId={UserId}, Count={Count}", userId, count);
+                throw;
             }
         }
 

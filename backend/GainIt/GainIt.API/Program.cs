@@ -9,6 +9,7 @@ using GainIt.API.Services.Projects.Implementations;
 using GainIt.API.Services.Projects.Interfaces;
 using GainIt.API.Services.Users.Implementations;
 using GainIt.API.Services.Users.Interfaces;
+using GainIt.API.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -31,22 +32,15 @@ try
     Log.Information("Starting GainIt.API application...");
 
     var builder = WebApplication.CreateBuilder(args);
-    builder.Services.AddSingleton(sp =>
-    {
-        var opts = sp.GetRequiredService<IOptions<OpenAIOptions>>().Value;
-        return new AzureOpenAIClient(
-            new Uri(opts.Endpoint),
-            new AzureKeyCredential(opts.ApiKey)
-        );
-    });
+
+    // Clear default logging providers to prevent duplicate logs
+    builder.Logging.ClearProviders();
 
     // Configure Serilog for the application
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .WriteTo.Console()
-        .WriteTo.File("logs/gainit-.log", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 30));
+        .Enrich.FromLogContext());
 
     // Add Application Insights
     builder.Services.AddApplicationInsightsTelemetry();
@@ -83,6 +77,10 @@ try
     builder.Services.AddScoped<IUserProfileService, UserProfileService>();
     builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
 
+    // Add health checks
+    builder.Services.AddHealthChecks()
+        .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "database", "sql" });
+
     builder.Services.AddControllers().AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -106,16 +104,40 @@ try
         app.UseSwaggerUI();
     }
 
+    app.UseCorrelationId(); // Add correlation ID to all requests
+    app.UsePerformanceMonitoring(); // Monitor performance and memory usage
     app.UseMiddleware<RequestLoggingMiddleware>(); //logs starts
     app.UseHttpsRedirection(); //redirects to https
     app.UseAuthorization(); //authorizes the request
-    app.MapControllers(); //maps the controllers to the request 
+    app.MapControllers(); //maps the controllers to the request
+    
+    // Add health check endpoint
+    app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+    {
+        ResponseWriter = async (context, report) =>
+        {
+            context.Response.ContentType = "application/json";
+            var result = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                status = report.Status.ToString(),
+                checks = report.Entries.Select(e => new
+                {
+                    name = e.Key,
+                    status = e.Value.Status.ToString(),
+                    description = e.Value.Description,
+                    duration = e.Value.Duration.TotalMilliseconds
+                })
+            });
+            await context.Response.WriteAsync(result);
+        }
+    }); 
 
     // Seed the database with initial data
     using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<GainItDbContext>();
-        GainItDbContextSeeder.SeedData(context);
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<GainItDbContext>>();
+        GainItDbContextSeeder.SeedData(context, logger);
     }
 
     Log.Information("GainIt.API application started successfully");

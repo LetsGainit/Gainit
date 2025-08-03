@@ -4,229 +4,342 @@ using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.Extensions.Logging;
 
 namespace GainIt.API.Services.Projects.Implementations
 {
     public class ProjectService : IProjectService
     {
         private readonly GainItDbContext r_DbContext;
+        private readonly ILogger<ProjectService> r_logger;
 
-        public ProjectService(GainItDbContext i_DbContext)
+        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger)
         {
             r_DbContext = i_DbContext;
+            r_logger = i_logger;
         }
 
         public async Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId, string i_Role)
         {
-            var project = await r_DbContext.Projects
-                .Include(p => p.ProjectMembers)
-                .ThenInclude(pm => pm.User)
-                .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId);
+            r_logger.LogInformation("Adding team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
+                i_ProjectId, i_UserId, i_Role);
 
-            if (project == null)
+            try
             {
-                throw new KeyNotFoundException("Project not found.");
+                var project = await r_DbContext.Projects
+                    .Include(p => p.ProjectMembers)
+                    .ThenInclude(pm => pm.User)
+                    .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId);
+
+                if (project == null)
+                {
+                    r_logger.LogWarning("Project not found: ProjectId={ProjectId}", i_ProjectId);
+                    throw new KeyNotFoundException("Project not found.");
+                }
+
+                var gainer = await r_DbContext.Gainers.FindAsync(i_UserId);
+                if (gainer == null)
+                {
+                    r_logger.LogWarning("User not found or is not a Gainer: UserId={UserId}", i_UserId);
+                    throw new KeyNotFoundException("User not found or is not a Gainer.");
+                }
+
+                // Check if the role is open in the project
+                if (!project.RequiredRoles.Contains(i_Role))
+                {
+                    r_logger.LogWarning("Role is not open in project: ProjectId={ProjectId}, Role={Role}", i_ProjectId, i_Role);
+                    throw new InvalidOperationException($"Role '{i_Role}' is not an open role in this project.");
+                }
+
+                // Check if the role is already filled
+                if (project.ProjectMembers.Any(pm =>
+                    pm.UserRole == i_Role &&
+                    pm.LeftAtUtc == null))
+                {
+                    r_logger.LogWarning("Role already filled: ProjectId={ProjectId}, Role={Role}", i_ProjectId, i_Role);
+                    throw new InvalidOperationException($"Role '{i_Role}' is already filled in this project.");
+                }
+
+                // Check if user is already a member
+                if (project.ProjectMembers.Any(pm =>
+                    pm.UserId == i_UserId &&
+                    pm.LeftAtUtc == null))
+                {
+                    r_logger.LogWarning("User already a team member: ProjectId={ProjectId}, UserId={UserId}", i_ProjectId, i_UserId);
+                    throw new InvalidOperationException("User is already a team member in this project.");
+                }
+
+                project.ProjectMembers.Add(new ProjectMember
+                {
+                    ProjectId = i_ProjectId,
+                    UserId = i_UserId,
+                    UserRole = i_Role,
+                    IsAdmin = false,
+                    Project = project,
+                    User = gainer,
+                    JoinedAtUtc = DateTime.UtcNow
+                });
+
+                await r_DbContext.SaveChangesAsync();
+                
+                r_logger.LogInformation("Successfully added team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
+                    i_ProjectId, i_UserId, i_Role);
+                return project;
             }
-
-            var gainer = await r_DbContext.Gainers.FindAsync(i_UserId);
-            if (gainer == null)
+            catch (KeyNotFoundException ex)
             {
-                throw new KeyNotFoundException("User not found or is not a Gainer.");
+                r_logger.LogWarning("Key not found while adding team member: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", 
+                    i_ProjectId, i_UserId, ex.Message);
+                throw;
             }
-
-            // Check if the role is open in the project
-            if (!project.RequiredRoles.Contains(i_Role))
+            catch (InvalidOperationException ex)
             {
-                throw new InvalidOperationException($"Role '{i_Role}' is not an open role in this project.");
+                r_logger.LogWarning("Invalid operation while adding team member: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", 
+                    i_ProjectId, i_UserId, ex.Message);
+                throw;
             }
-
-            // Check if the role is already filled
-            if (project.ProjectMembers.Any(pm =>
-                pm.UserRole == i_Role &&
-                pm.LeftAtUtc == null))
+            catch (Exception ex)
             {
-                throw new InvalidOperationException($"Role '{i_Role}' is already filled in this project.");
+                r_logger.LogError(ex, "Error adding team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
+                    i_ProjectId, i_UserId, i_Role);
+                throw;
             }
-
-            // Check if user is already a member
-            if (project.ProjectMembers.Any(pm =>
-                pm.UserId == i_UserId &&
-                pm.LeftAtUtc == null))
-            {
-                throw new InvalidOperationException("User is already a team member in this project.");
-            }
-
-            project.ProjectMembers.Add(new ProjectMember
-            {
-                ProjectId = i_ProjectId,
-                UserId = i_UserId,
-                UserRole = i_Role,
-                IsAdmin = false,
-                Project = project,
-                User = gainer,
-                JoinedAtUtc = DateTime.UtcNow
-            });
-
-            await r_DbContext.SaveChangesAsync();
-            return project;
         }
-
-
 
         public async Task<UserProject> AssignMentorAsync(Guid i_ProjectId, Guid i_MentorId)
         {
-            var project = await r_DbContext.Projects
-                .Include(project => project.ProjectMembers)
-                .ThenInclude(projectMember => projectMember.User)
-                .FirstOrDefaultAsync(project => project.ProjectId == i_ProjectId);
+            r_logger.LogInformation("Assigning mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", 
+                i_ProjectId, i_MentorId);
 
-            if (project == null)
+            try
             {
-                throw new KeyNotFoundException($"Project with ID {i_ProjectId} not found");
+                var project = await r_DbContext.Projects
+                    .Include(project => project.ProjectMembers)
+                    .ThenInclude(projectMember => projectMember.User)
+                    .FirstOrDefaultAsync(project => project.ProjectId == i_ProjectId);
+
+                if (project == null)
+                {
+                    r_logger.LogWarning("Project not found: ProjectId={ProjectId}", i_ProjectId);
+                    throw new KeyNotFoundException($"Project with ID {i_ProjectId} not found");
+                }
+
+                var mentor = await r_DbContext.Mentors.FindAsync(i_MentorId);
+                if (mentor == null)
+                {
+                    r_logger.LogWarning("Mentor not found: MentorId={MentorId}", i_MentorId);
+                    throw new KeyNotFoundException($"Mentor with ID {i_MentorId} not found");
+                }
+
+                // Check if mentor is already a project member
+                if (project.ProjectMembers.Any(member =>
+                    member.UserId == i_MentorId &&
+                    member.LeftAtUtc == null))
+                {
+                    r_logger.LogWarning("Mentor already a project member: ProjectId={ProjectId}, MentorId={MentorId}", 
+                        i_ProjectId, i_MentorId);
+                    throw new InvalidOperationException($"Mentor {i_MentorId} is already a member of project {i_ProjectId}");
+                }
+
+                // Add mentor as a project member
+                project.ProjectMembers.Add(new ProjectMember
+                {
+                    ProjectId = i_ProjectId,
+                    UserId = i_MentorId,
+                    UserRole = "Mentor",
+                    IsAdmin = false,
+                    Project = project,
+                    User = mentor,
+                    JoinedAtUtc = DateTime.UtcNow
+                });
+
+                await r_DbContext.SaveChangesAsync();
+                
+                r_logger.LogInformation("Successfully assigned mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", 
+                    i_ProjectId, i_MentorId);
+                return project;
             }
-
-            var mentor = await r_DbContext.Mentors.FindAsync(i_MentorId);
-            if (mentor == null)
+            catch (KeyNotFoundException ex)
             {
-                throw new KeyNotFoundException($"Mentor with ID {i_MentorId} not found");
+                r_logger.LogWarning("Key not found while assigning mentor: ProjectId={ProjectId}, MentorId={MentorId}, Error={Error}", 
+                    i_ProjectId, i_MentorId, ex.Message);
+                throw;
             }
-
-            // Check if mentor is already a project member
-            if (project.ProjectMembers.Any(member =>
-                member.UserId == i_MentorId &&
-                member.LeftAtUtc == null))
+            catch (InvalidOperationException ex)
             {
-                throw new InvalidOperationException($"Mentor {i_MentorId} is already a member of project {i_ProjectId}");
+                r_logger.LogWarning("Invalid operation while assigning mentor: ProjectId={ProjectId}, MentorId={MentorId}, Error={Error}", 
+                    i_ProjectId, i_MentorId, ex.Message);
+                throw;
             }
-
-            // Remove current mentor if exists
-            await RemoveMentorAsync(i_ProjectId);
-
-            // Add new mentor as a project member
-            project.ProjectMembers.Add(new ProjectMember
+            catch (Exception ex)
             {
-                ProjectId = i_ProjectId,
-                UserId = i_MentorId,
-                UserRole = "Mentor",
-                IsAdmin = true,
-                Project = project,
-                User = mentor,
-                JoinedAtUtc = DateTime.UtcNow
-            });
-
-            await r_DbContext.SaveChangesAsync();
-            return project;
+                r_logger.LogError(ex, "Error assigning mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", 
+                    i_ProjectId, i_MentorId);
+                throw;
+            }
         }
 
         public async Task<UserProject> CreateProjectForNonprofitAsync(UserProjectViewModel i_Project, Guid i_NonprofitOrgId)
         {
-            var nonprofit = await r_DbContext.Nonprofits.FindAsync(i_NonprofitOrgId);
+            r_logger.LogInformation("Creating project for nonprofit: NonprofitOrgId={NonprofitOrgId}", i_NonprofitOrgId);
 
-            if (nonprofit == null)
+            try
             {
-                throw new KeyNotFoundException($"Nonprofit organization with ID {i_NonprofitOrgId} not found");
+                var nonprofit = await r_DbContext.Nonprofits.FindAsync(i_NonprofitOrgId);
+
+                if (nonprofit == null)
+                {
+                    r_logger.LogWarning("Nonprofit organization not found: NonprofitOrgId={NonprofitOrgId}", i_NonprofitOrgId);
+                    throw new KeyNotFoundException($"Nonprofit organization with ID {i_NonprofitOrgId} not found");
+                }
+
+                var newProject = new UserProject
+                {
+                    ProjectId = Guid.NewGuid(),
+                    ProjectName = i_Project.ProjectName,
+                    ProjectDescription = i_Project.ProjectDescription,
+                    ProjectStatus = eProjectStatus.Pending,
+                    ProjectSource = eProjectSource.NonprofitOrganization,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    DifficultyLevel = (eDifficultyLevel)Enum.Parse(typeof(eDifficultyLevel), i_Project.DifficultyLevel),
+                    ProjectPictureUrl = i_Project.ProjectPictureUrl ?? "",  // what do you think ? is this mandatory ?
+                    Duration = i_Project.Duration ?? TimeSpan.Zero,
+                    Goals = i_Project.Goals,
+                    Technologies = i_Project.Technologies,
+                    RequiredRoles = i_Project.OpenRoles,
+                    ProgrammingLanguages = i_Project.ProgrammingLanguages,
+                    OwningOrganizationUserId = i_NonprofitOrgId,
+                    OwningOrganization = nonprofit,
+                    ProjectMembers = new List<ProjectMember>()
+                };
+
+                r_DbContext.Projects.Add(newProject);
+                await r_DbContext.SaveChangesAsync();
+
+                r_logger.LogInformation("Successfully created project for nonprofit: ProjectId={ProjectId}, NonprofitOrgId={NonprofitOrgId}", newProject.ProjectId, i_NonprofitOrgId);
+                return newProject;
             }
-
-            var newProject = new UserProject
+            catch (KeyNotFoundException ex)
             {
-                ProjectId = Guid.NewGuid(),
-                ProjectName = i_Project.ProjectName,
-                ProjectDescription = i_Project.ProjectDescription,
-                ProjectStatus = eProjectStatus.Pending,
-                ProjectSource = eProjectSource.NonprofitOrganization,
-                CreatedAtUtc = DateTime.UtcNow,
-                DifficultyLevel = (eDifficultyLevel)Enum.Parse(typeof(eDifficultyLevel), i_Project.DifficultyLevel),
-                ProjectPictureUrl = i_Project.ProjectPictureUrl ?? "",  // what do you think ? is this mandatory ?
-                Duration = i_Project.Duration ?? TimeSpan.Zero,
-                Goals = i_Project.Goals,
-                Technologies = i_Project.Technologies,
-                RequiredRoles = i_Project.OpenRoles,
-                ProgrammingLanguages = i_Project.ProgrammingLanguages,
-                OwningOrganizationUserId = i_NonprofitOrgId,
-                OwningOrganization = nonprofit,
-                ProjectMembers = new List<ProjectMember>()
-            };
-
-            r_DbContext.Projects.Add(newProject);
-            await r_DbContext.SaveChangesAsync();
-
-            return newProject;
+                r_logger.LogWarning("Key not found while creating project for nonprofit: NonprofitOrgId={NonprofitOrgId}, Error={Error}", i_NonprofitOrgId, ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error creating project for nonprofit: NonprofitOrgId={NonprofitOrgId}", i_NonprofitOrgId);
+                throw;
+            }
         }
 
         public async Task<IEnumerable<UserProject>> FilterActiveProjectsByStatusAndDifficultyAsync(eProjectStatus i_Status, eDifficultyLevel i_Difficulty)
         {
-            return await r_DbContext.Projects
+            r_logger.LogInformation("Filtering active projects by status and difficulty: Status={Status}, Difficulty={Difficulty}", i_Status, i_Difficulty);
+
+            var projects = await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(projectMember => projectMember.User)
                 .Where(project => project.ProjectStatus == i_Status &&
                                 project.DifficultyLevel == i_Difficulty &&
                                 project.ProjectMembers.Count(projectMember => projectMember.LeftAtUtc == null) > 0)  // Only include projects with active members
                 .ToListAsync();
+
+            r_logger.LogInformation("Filtered active projects: Count={Count}", projects.Count);
+            return projects;
         }
 
         public async Task<IEnumerable<TemplateProject>> FilterTemplateProjectsByDifficultyAsync(eDifficultyLevel i_Difficulty)
         {
-            return await r_DbContext.TemplateProjects
+            r_logger.LogInformation("Filtering template projects by difficulty: Difficulty={Difficulty}", i_Difficulty);
+
+            var projects = await r_DbContext.TemplateProjects
                 .Where(templateProject => templateProject.DifficultyLevel == i_Difficulty)
                 .ToListAsync();
+
+            r_logger.LogInformation("Filtered template projects: Count={Count}", projects.Count);
+            return projects;
         }
 
         public async Task<UserProject?> GetActiveProjectByProjectIdAsync(Guid i_ProjectId)
         {
-            return await r_DbContext.Projects
+            r_logger.LogInformation("Getting active project by ID: ProjectId={ProjectId}", i_ProjectId);
+
+            var project = await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(projectMember => projectMember.User)
                 .FirstOrDefaultAsync(project =>
                     project.ProjectId == i_ProjectId &&
                     project.ProjectMembers.Count(projectMember => projectMember.LeftAtUtc == null) > 0);
 
+            r_logger.LogInformation("Active project found: ProjectId={ProjectId}", i_ProjectId);
+            return project;
         }
 
         public async Task<IEnumerable<UserProject>> GetAllNonprofitProjectsAsync()
         {
-            return await r_DbContext.Projects
+            r_logger.LogInformation("Getting all nonprofit projects");
+
+            var projects = await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(projectMember => projectMember.User)
                 .Include(project => project.OwningOrganization)
                 .Where(project => project.ProjectSource == eProjectSource.NonprofitOrganization)
                 .ToListAsync();
+
+            r_logger.LogInformation("Retrieved all nonprofit projects: Count={Count}", projects.Count);
+            return projects;
         }
 
         public async Task<IEnumerable<UserProject>> GetAllActiveProjectsAsync()
         {
+            r_logger.LogInformation("Getting all active projects");
             
-            return await r_DbContext.Projects
+            var projects = await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(projectMember => projectMember.User)
                 .Include(project => project.OwningOrganization!)
                 .ThenInclude(org => org.NonprofitExpertise)
                 .Where(project => project.ProjectStatus == eProjectStatus.InProgress)
                 .ToListAsync();
+
+            r_logger.LogInformation("Retrieved all active projects: Count={Count}", projects.Count);
+            return projects;
         }
         public async Task<IEnumerable<UserProject>> GetAllPendingUserTemplatesProjectsAsync()
         {
-            return await r_DbContext.Projects
+            r_logger.LogInformation("Getting all pending user template projects");
+
+            var projects = await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(projectMember => projectMember.User)
                 .Where(project =>
                     project.ProjectSource == eProjectSource.Template &&
                     project.ProjectStatus == eProjectStatus.Pending)
                 .ToListAsync();
+
+            r_logger.LogInformation("Retrieved all pending user template projects: Count={Count}", projects.Count);
+            return projects;
         }
 
         public async Task<IEnumerable<TemplateProject>> GetAllTemplatesProjectsAsync()
         {
-            return await r_DbContext.TemplateProjects
+            r_logger.LogInformation("Getting all template projects");
+
+            var projects = await r_DbContext.TemplateProjects
                 .ToListAsync();
+
+            r_logger.LogInformation("Retrieved all template projects: Count={Count}", projects.Count);
+            return projects;
         }
 
         public async Task<IEnumerable<UserProject>> GetProjectsByMentorIdAsync(Guid i_MentorId)
         {
+            r_logger.LogInformation("Getting projects by mentor ID: MentorId={MentorId}", i_MentorId);
+
             // Verify mentor exists
             var mentor = await r_DbContext.Mentors.FindAsync(i_MentorId);
             if (mentor == null)
             {
+                r_logger.LogWarning("Mentor not found: MentorId={MentorId}", i_MentorId);
                 throw new KeyNotFoundException($"Mentor with ID {i_MentorId} not found");
             }
 
@@ -240,38 +353,56 @@ namespace GainIt.API.Services.Projects.Implementations
                         member.UserRole == "Mentor"))
                 .ToListAsync();
 
+            r_logger.LogInformation("Retrieved projects by mentor ID: MentorId={MentorId}, Count={Count}", i_MentorId, projects.Count);
             return projects;
         }
 
         public async Task<IEnumerable<UserProject>> GetProjectsByNonprofitIdAsync(Guid i_NonprofitId)
         {
-            return await r_DbContext.Projects
+            r_logger.LogInformation("Getting projects by nonprofit ID: NonprofitId={NonprofitId}", i_NonprofitId);
+
+            var projects = await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(projectMember => projectMember.User)
                 .Include(project => project.OwningOrganization)
                 .Where(project => project.OwningOrganizationUserId == i_NonprofitId)
                 .ToListAsync();
+
+            r_logger.LogInformation("Retrieved projects by nonprofit ID: NonprofitId={NonprofitId}, Count={Count}", i_NonprofitId, projects.Count);
+            return projects;
         }
 
         public async Task<IEnumerable<UserProject>> GetProjectsByUserIdAsync(Guid i_UserId)
         {
-            return await r_DbContext.Projects
+            r_logger.LogInformation("Getting projects by user ID: UserId={UserId}", i_UserId);
+
+            var projects = await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(projectMember => projectMember.User)
                 .Where(project => project.ProjectMembers
                     .Any(projectMember => projectMember.UserId == i_UserId))
                 .ToListAsync();
 
+            r_logger.LogInformation("Retrieved projects by user ID: UserId={UserId}, Count={Count}", i_UserId, projects.Count);
+            return projects;
+
         }
 
         public async Task<TemplateProject?> GetTemplateProjectByProjectIdAsync(Guid i_ProjectId)
         {
-            return await r_DbContext.TemplateProjects
+            r_logger.LogInformation("Getting template project by ID: ProjectId={ProjectId}", i_ProjectId);
+
+            var template = await r_DbContext.TemplateProjects
                 .FirstOrDefaultAsync(templateProject => templateProject.ProjectId == i_ProjectId);
+
+            r_logger.LogInformation("Template project found: ProjectId={ProjectId}", i_ProjectId);
+            return template;
         }
 
         public async Task<UserProject> RemoveMentorAsync(Guid i_ProjectId)
         {
+            r_logger.LogInformation("Removing mentor from project: ProjectId={ProjectId}", i_ProjectId);
+
             var project = await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(member => member.User)
@@ -279,6 +410,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
             if (project == null)
             {
+                r_logger.LogWarning("Project not found: ProjectId={ProjectId}", i_ProjectId);
                 throw new KeyNotFoundException($"Project with ID {i_ProjectId} not found");
             }
 
@@ -291,6 +423,11 @@ namespace GainIt.API.Services.Projects.Implementations
             {
                 currentMentor.LeftAtUtc = DateTime.UtcNow;
                 await r_DbContext.SaveChangesAsync();
+                r_logger.LogInformation("Successfully removed mentor from project: ProjectId={ProjectId}", i_ProjectId);
+            }
+            else
+            {
+                r_logger.LogWarning("No active mentor found to remove: ProjectId={ProjectId}", i_ProjectId);
             }
 
             return project;
@@ -298,6 +435,8 @@ namespace GainIt.API.Services.Projects.Implementations
 
         public async Task<UserProject> RemoveTeamMemberAsync(Guid i_ProjectId, Guid i_UserId)
         {
+            r_logger.LogInformation("Removing team member from project: ProjectId={ProjectId}, UserId={UserId}", i_ProjectId, i_UserId);
+
             var project = await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(member => member.User)
@@ -305,6 +444,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
             if (project == null)
             {
+                r_logger.LogWarning("Project not found: ProjectId={ProjectId}", i_ProjectId);
                 throw new KeyNotFoundException($"Project with ID {i_ProjectId} not found");
             }
 
@@ -316,19 +456,24 @@ namespace GainIt.API.Services.Projects.Implementations
 
             if (teamMember == null)
             {
+                r_logger.LogWarning("Active team member not found: ProjectId={ProjectId}, UserId={UserId}", i_ProjectId, i_UserId);
                 throw new KeyNotFoundException($"Active team member with ID {i_UserId} not found in project {i_ProjectId}");
             }
 
             teamMember.LeftAtUtc = DateTime.UtcNow;
             await r_DbContext.SaveChangesAsync();
+            r_logger.LogInformation("Successfully removed team member from project: ProjectId={ProjectId}, UserId={UserId}", i_ProjectId, i_UserId);
 
             return project;
         }
 
         public async Task<IEnumerable<UserProject>> SearchActiveProjectsByNameOrDescriptionAsync(string i_SearchQuery)
         {
+            r_logger.LogInformation("Searching active projects by name or description: SearchQuery={SearchQuery}", i_SearchQuery);
+
             if (string.IsNullOrWhiteSpace(i_SearchQuery))
             {
+                r_logger.LogWarning("Search query is empty: SearchQuery={SearchQuery}", i_SearchQuery);
                 throw new ArgumentException("Search query cannot be empty", nameof(i_SearchQuery));
             }
 
@@ -342,13 +487,17 @@ namespace GainIt.API.Services.Projects.Implementations
                      project.ProjectDescription.ToLower().Contains(searchTerm)))
                 .ToListAsync();
 
+            r_logger.LogInformation("Searched active projects: Count={Count}", projects.Count);
             return projects;
         }
 
         public async Task<IEnumerable<TemplateProject>> SearchTemplateProjectsByNameOrDescriptionAsync(string i_SearchQuery)
         {
+            r_logger.LogInformation("Searching template projects by name or description: SearchQuery={SearchQuery}", i_SearchQuery);
+
             if (string.IsNullOrWhiteSpace(i_SearchQuery))
             {
+                r_logger.LogWarning("Search query is empty: SearchQuery={SearchQuery}", i_SearchQuery);
                 throw new ArgumentException("Search query cannot be empty", nameof(i_SearchQuery));
             }
 
@@ -359,17 +508,21 @@ namespace GainIt.API.Services.Projects.Implementations
                     project.ProjectDescription.ToLower().Contains(searchTerm))
                 .ToListAsync();
 
+            r_logger.LogInformation("Searched template projects: Count={Count}", projects.Count);
             return projects;
         }
 
         public async Task<UserProject> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId)
         {
+            r_logger.LogInformation("Starting project from template: TemplateId={TemplateId}, UserId={UserId}", i_TemplateId, i_UserId);
+
             // Get the template project
             var template = await r_DbContext.TemplateProjects
                 .FirstOrDefaultAsync(t => t.ProjectId == i_TemplateId);
 
             if (template == null)
             {
+                r_logger.LogWarning("Template project not found: TemplateId={TemplateId}", i_TemplateId);
                 throw new KeyNotFoundException($"Template project with ID {i_TemplateId} not found");
             }
 
@@ -377,6 +530,7 @@ namespace GainIt.API.Services.Projects.Implementations
             var user = await r_DbContext.Users.FindAsync(i_UserId);
             if (user == null)
             {
+                r_logger.LogWarning("User not found: UserId={UserId}", i_UserId);
                 throw new KeyNotFoundException($"User with ID {i_UserId} not found");
             }
 
@@ -412,29 +566,37 @@ namespace GainIt.API.Services.Projects.Implementations
             await r_DbContext.Projects.AddAsync(newProject);
             await r_DbContext.SaveChangesAsync();
 
+            r_logger.LogInformation("Successfully started project from template: ProjectId={ProjectId}, TemplateId={TemplateId}, UserId={UserId}", newProject.ProjectId, i_TemplateId, i_UserId);
             return newProject;
         }
 
         public async Task<UserProject> UpdateProjectStatusAsync(Guid i_ProjectId, eProjectStatus i_Status)
         {
+            r_logger.LogInformation("Updating project status: ProjectId={ProjectId}, Status={Status}", i_ProjectId, i_Status);
+
             var project = await r_DbContext.Projects
                 .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId);
 
             if (project == null)
             {
+                r_logger.LogWarning("Project not found: ProjectId={ProjectId}", i_ProjectId);
                 throw new KeyNotFoundException($"Project with ID {i_ProjectId} not found");
             }
 
             project.ProjectStatus = i_Status;
             await r_DbContext.SaveChangesAsync();
 
+            r_logger.LogInformation("Successfully updated project status: ProjectId={ProjectId}, Status={Status}", i_ProjectId, i_Status);
             return project;
         }
 
         public async Task<UserProject> UpdateRepositoryLinkAsync(Guid i_ProjectId, string i_RepositoryLink)
         {
+            r_logger.LogInformation("Updating project repository link: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", i_ProjectId, i_RepositoryLink);
+
             if (string.IsNullOrWhiteSpace(i_RepositoryLink))
             {
+                r_logger.LogWarning("Repository link is empty: ProjectId={ProjectId}", i_ProjectId);
                 throw new ArgumentException("Repository link cannot be empty", nameof(i_RepositoryLink));
             }
 
@@ -443,12 +605,14 @@ namespace GainIt.API.Services.Projects.Implementations
 
             if (project == null)
             {
+                r_logger.LogWarning("Project not found: ProjectId={ProjectId}", i_ProjectId);
                 throw new KeyNotFoundException($"Project with ID {i_ProjectId} not found");
             }
 
             project.RepositoryLink = i_RepositoryLink;
             await r_DbContext.SaveChangesAsync();
 
+            r_logger.LogInformation("Successfully updated project repository link: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", i_ProjectId, i_RepositoryLink);
             return project;
         }
     }
