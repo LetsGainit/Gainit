@@ -2,7 +2,7 @@
 
 namespace GainIt.API.DTOs.ViewModels.Projects
 {
-    public class TemplateProjectViewModel
+    public class TemplateProjectViewModel 
     {
         public string ProjectId { get; set; }
         public string ProjectName { get; set; }
