@@ -43,7 +43,7 @@ try
         .Enrich.FromLogContext());
 
     // Add Application Insights
-    builder.Services.AddApplicationInsightsTelemetry();
+    builder.Configuration["ApplicationInsights:ConnectionString"] = builder.Configuration["APPINSIGHTS_CONNECTIONSTRING"];
 
     builder.Services.AddDbContext<GainItDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("GainItPostgresDb")));
