@@ -41,6 +41,7 @@ try
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext());
+        .WriteTo.Console());
 
     // Add Application Insights
     builder.Services.AddApplicationInsightsTelemetry();
