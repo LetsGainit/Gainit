@@ -97,6 +97,10 @@ try
 
     var app = builder.Build();
 
+    // Test console output for Azure Log Stream
+    Console.WriteLine("=== CONSOLE TEST: Application built successfully ===");
+    Log.Information("Application built successfully - logging is working!");
+
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
