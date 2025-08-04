@@ -6,13 +6,17 @@ using GainIt.API.Models.Users.Nonprofits;
 using Microsoft.EntityFrameworkCore;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Users.Expertise;
+using Microsoft.Extensions.Logging;
 
 namespace GainIt.API.Data
 {
     public class GainItDbContext : DbContext
     {
-        public GainItDbContext(DbContextOptions<GainItDbContext> i_Options) : base(i_Options)
+        private readonly ILogger<GainItDbContext> r_logger;
+
+        public GainItDbContext(DbContextOptions<GainItDbContext> i_Options, ILogger<GainItDbContext> i_logger) : base(i_Options)
         {
+            r_logger = i_logger;
         }
 
         #region User Hierarchy
@@ -91,166 +95,247 @@ namespace GainIt.API.Data
         public DbSet<ProjectMember> ProjectMembers { get; set; }
         #endregion
 
-        protected override void OnModelCreating(ModelBuilder i_ModelBuilder)
+        #region Database Operation Logging
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
+            var startTime = DateTime.UtcNow;
+            var changeCount = ChangeTracker.Entries().Count(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted);
+            
+            r_logger.LogInformation("Starting database save operation: ChangeCount={ChangeCount}", changeCount);
 
-            #region Inheritance Configuration
-            // Configure TPT inheritance for User hierarchy
-            i_ModelBuilder.Entity<User>().UseTptMappingStrategy();
-
-            // Configure TPC inheritance for Project hierarchy
-            i_ModelBuilder.Entity<TemplateProject>().UseTpcMappingStrategy();
-
-            // Configure TPT inheritance for UserExpertise hierarchy
-            i_ModelBuilder.Entity<UserExpertise>().UseTptMappingStrategy();
-            #endregion
-
-            #region User Configuration
-            // Configure User entity
-            i_ModelBuilder.Entity<User>(entity =>
+            try
             {
-                entity.Property(e => e.FullName)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.EmailAddress)
-                    .IsRequired()
-                    .HasMaxLength(200);
-            });
-            #endregion
-
-            #region Project Configuration
-            // Configure UserProject
-            i_ModelBuilder.Entity<UserProject>(entity =>
-            {
-              
+                var result = await base.SaveChangesAsync(cancellationToken);
+                var duration = DateTime.UtcNow - startTime;
                 
-
-                // One nonprofit → many projects
-                entity.HasOne<NonprofitOrganization>(p => p.OwningOrganization)
-                    .WithMany(n => n.OwnedProjects)
-                    .HasForeignKey("OwningOrganizationUserId")
-                    .OnDelete(DeleteBehavior.SetNull);
-
-                // Configure required fields
-                entity.Property(e => e.ProjectName)
-                    .IsRequired()
-                    .HasMaxLength(200);
-
-                entity.Property(e => e.ProjectDescription)
-                    .IsRequired()
-                    .HasMaxLength(1000);
-            });
-
-            // Configure TemplateProject
-            i_ModelBuilder.Entity<TemplateProject>(entity =>
+                r_logger.LogInformation("Database save completed successfully: ChangeCount={ChangeCount}, Duration={Duration}ms", changeCount, duration.TotalMilliseconds);
+                return result;
+            }
+            catch (Exception ex)
             {
-                entity.Property(e => e.ProjectName)
-                    .IsRequired()
-                    .HasMaxLength(200);
-
-                entity.Property(e => e.ProjectDescription)
-                    .IsRequired()
-                    .HasMaxLength(1000);
-            });
-            #endregion
-
-            #region Expertise Configuration
-            // Configure TechExpertise
-            i_ModelBuilder.Entity<TechExpertise>(entity =>
-            {
-                entity.HasOne(e => e.User)
-                    .WithOne()
-                    .HasForeignKey<TechExpertise>("UserId")
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // Configure NonprofitExpertise
-            i_ModelBuilder.Entity<NonprofitExpertise>(entity =>
-            {
-                entity.HasOne(e => e.User)
-                    .WithOne()
-                    .HasForeignKey<NonprofitExpertise>("UserId")
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-            #endregion
-
-            #region Achievement Configuration
-            // Configure UserAchievement
-            i_ModelBuilder.Entity<UserAchievement>(entity =>
-            {
-                // Ensure a user can't earn the same achievement twice
-                entity.HasIndex(e => new { e.UserId, e.AchievementTemplateId })
-                    .IsUnique();
-
-                // Configure relationships
-                entity.HasOne(e => e.User)
-                    .WithMany(u => u.Achievements)
-                    .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(e => e.AchievementTemplate)
-                    .WithMany()
-                    .HasForeignKey(e => e.AchievementTemplateId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
-
-            // Configure AchievementTemplate
-            i_ModelBuilder.Entity<AchievementTemplate>(entity =>
-            {
-                entity.Property(e => e.Title)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.Description)
-                    .IsRequired()
-                    .HasMaxLength(500);
-
-                entity.Property(e => e.IconUrl)
-                    .HasMaxLength(200);
-
-                entity.Property(e => e.UnlockCriteria)
-                    .IsRequired()
-                    .HasMaxLength(500);
-            });
-            #endregion
-
-
-            #region Project Member Configuration
-            // Configure ProjectMember entity
-            i_ModelBuilder.Entity<ProjectMember>(entity =>
-            {
-                // Configure composite key
-                entity.HasKey(e => new { e.ProjectId, e.UserId });
-
-                // Configure relationships
-                entity.HasOne(e => e.Project)
-                    .WithMany(p => p.ProjectMembers) // does it makes sense project members its a list
-                    .HasForeignKey(e => e.ProjectId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(e => e.User)
-                    .WithMany()
-                    .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                // Configure required fields
-                entity.Property(e => e.UserRole)
-                    .IsRequired();
-
-                entity.Property(e => e.JoinedAtUtc)
-                    .IsRequired();
-            });
-            #endregion
-
-            base.OnModelCreating(i_ModelBuilder);
+                var duration = DateTime.UtcNow - startTime;
+                r_logger.LogError(ex, "Database save failed: ChangeCount={ChangeCount}, Duration={Duration}ms", changeCount, duration.TotalMilliseconds);
+                throw;
+            }
         }
+
+        public override int SaveChanges()
+        {
+            var startTime = DateTime.UtcNow;
+            var changeCount = ChangeTracker.Entries().Count(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted);
+            
+            r_logger.LogInformation("Starting database save operation (sync): ChangeCount={ChangeCount}", changeCount);
+
+            try
+            {
+                var result = base.SaveChanges();
+                var duration = DateTime.UtcNow - startTime;
+                
+                r_logger.LogInformation("Database save completed successfully (sync): ChangeCount={ChangeCount}, Duration={Duration}ms", changeCount, duration.TotalMilliseconds);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                var duration = DateTime.UtcNow - startTime;
+                r_logger.LogError(ex, "Database save failed (sync): ChangeCount={ChangeCount}, Duration={Duration}ms", changeCount, duration.TotalMilliseconds);
+                throw;
+            }
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                r_logger.LogWarning("DbContext not configured, using default configuration");
+            }
+            
+            base.OnConfiguring(optionsBuilder);
+        }
+
+        public override void Dispose()
+        {
+            r_logger.LogDebug("Disposing GainItDbContext");
+            base.Dispose();
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            r_logger.LogDebug("Disposing GainItDbContext asynchronously");
+            return base.DisposeAsync();
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            r_logger.LogDebug("Configuring database model");
+            
+            try
+            {
+                #region Inheritance Configuration
+                // Configure TPT inheritance for User hierarchy
+                modelBuilder.Entity<User>().UseTptMappingStrategy();
+
+                // Configure TPC inheritance for Project hierarchy
+                modelBuilder.Entity<TemplateProject>().UseTpcMappingStrategy();
+
+                // Configure TPT inheritance for UserExpertise hierarchy
+                modelBuilder.Entity<UserExpertise>().UseTptMappingStrategy();
+                #endregion
+
+                #region User Configuration
+                // Configure User entity
+                modelBuilder.Entity<User>(entity =>
+                {
+                    entity.Property(e => e.FullName)
+                        .IsRequired()
+                        .HasMaxLength(100);
+
+                    entity.Property(e => e.EmailAddress)
+                        .IsRequired()
+                        .HasMaxLength(200);
+                });
+                #endregion
+
+                #region Project Configuration
+                // Configure UserProject
+                modelBuilder.Entity<UserProject>(entity =>
+                {
+                  
+                    
+
+                    // One nonprofit → many projects
+                    entity.HasOne<NonprofitOrganization>(p => p.OwningOrganization)
+                        .WithMany(n => n.OwnedProjects)
+                        .HasForeignKey("OwningOrganizationUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    // Configure required fields
+                    entity.Property(e => e.ProjectName)
+                        .IsRequired()
+                        .HasMaxLength(200);
+
+                    entity.Property(e => e.ProjectDescription)
+                        .IsRequired()
+                        .HasMaxLength(1000);
+                });
+
+                // Configure TemplateProject
+                modelBuilder.Entity<TemplateProject>(entity =>
+                {
+                    entity.Property(e => e.ProjectName)
+                        .IsRequired()
+                        .HasMaxLength(200);
+
+                    entity.Property(e => e.ProjectDescription)
+                        .IsRequired()
+                        .HasMaxLength(1000);
+                });
+                #endregion
+
+                #region Expertise Configuration
+                // Configure TechExpertise
+                modelBuilder.Entity<TechExpertise>(entity =>
+                {
+                    entity.HasOne(e => e.User)
+                        .WithOne()
+                        .HasForeignKey<TechExpertise>("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+                // Configure NonprofitExpertise
+                modelBuilder.Entity<NonprofitExpertise>(entity =>
+                {
+                    entity.HasOne(e => e.User)
+                        .WithOne()
+                        .HasForeignKey<NonprofitExpertise>("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+                #endregion
+
+                #region Achievement Configuration
+                // Configure UserAchievement
+                modelBuilder.Entity<UserAchievement>(entity =>
+                {
+                    // Ensure a user can't earn the same achievement twice
+                    entity.HasIndex(e => new { e.UserId, e.AchievementTemplateId })
+                        .IsUnique();
+
+                    // Configure relationships
+                    entity.HasOne(e => e.User)
+                        .WithMany(u => u.Achievements)
+                        .HasForeignKey(e => e.UserId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.HasOne(e => e.AchievementTemplate)
+                        .WithMany()
+                        .HasForeignKey(e => e.AchievementTemplateId)
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+                // Configure AchievementTemplate
+                modelBuilder.Entity<AchievementTemplate>(entity =>
+                {
+                    entity.Property(e => e.Title)
+                        .IsRequired()
+                        .HasMaxLength(100);
+
+                    entity.Property(e => e.Description)
+                        .IsRequired()
+                        .HasMaxLength(500);
+
+                    entity.Property(e => e.IconUrl)
+                        .HasMaxLength(200);
+
+                    entity.Property(e => e.UnlockCriteria)
+                        .IsRequired()
+                        .HasMaxLength(500);
+                });
+                #endregion
+
+
+                #region Project Member Configuration
+                // Configure ProjectMember entity
+                modelBuilder.Entity<ProjectMember>(entity =>
+                {
+                    // Configure composite key
+                    entity.HasKey(e => new { e.ProjectId, e.UserId });
+
+                    // Configure relationships
+                    entity.HasOne(e => e.Project)
+                        .WithMany(p => p.ProjectMembers) // does it makes sense project members its a list
+                        .HasForeignKey(e => e.ProjectId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.HasOne(e => e.User)
+                        .WithMany()
+                        .HasForeignKey(e => e.UserId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // Configure required fields
+                    entity.Property(e => e.UserRole)
+                        .IsRequired();
+
+                    entity.Property(e => e.JoinedAtUtc)
+                        .IsRequired();
+                });
+                #endregion
+
+                base.OnModelCreating(modelBuilder);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error configuring database model");
+                throw;
+            }
+        }
+        #endregion
     }
     
     public static class GainItDbContextSeeder
     {
-        public static void SeedData(GainItDbContext context)
+        public static void SeedData(GainItDbContext context, ILogger? logger = null)
         {
+            logger?.LogInformation("Starting database seeding process");
+            
             // Only seed if database is empty
             if (!context.Users.Any())
             {

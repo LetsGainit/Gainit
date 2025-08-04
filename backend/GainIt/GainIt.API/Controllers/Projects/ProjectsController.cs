@@ -8,6 +8,7 @@ using GainIt.API.Services.Projects.Implementations;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 
 namespace GainIt.API.Controllers.Projects
 {
@@ -18,11 +19,16 @@ namespace GainIt.API.Controllers.Projects
         private readonly IProjectService r_ProjectService;
         
         private readonly IProjectMatchingService r_ProjectMatchingService;
+        private readonly ILogger<ProjectsController> r_logger;
 
-        public ProjectsController(IProjectService i_ProjectService, IProjectMatchingService r_ProjectMatchingService)
+        public ProjectsController(
+            IProjectService i_ProjectService, 
+            IProjectMatchingService r_ProjectMatchingService,
+            ILogger<ProjectsController> logger)
         {
             r_ProjectService = i_ProjectService;
             this.r_ProjectMatchingService = r_ProjectMatchingService;
+            r_logger = logger;
         }
 
         #region Project Retrieval
@@ -35,21 +41,33 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("{projectId}")]
         public async Task<ActionResult<UserProjectViewModel>> GetActiveProjectById(Guid projectId)
         {
+            r_logger.LogInformation("Getting active project by ID: {ProjectId}", projectId);
+            
             if (projectId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid project ID provided: {ProjectId}", projectId);
                 return BadRequest(new { Message = "Project ID cannot be empty." });
             }
 
-            UserProject? project = await r_ProjectService.GetActiveProjectByProjectIdAsync(projectId);
-
-            if (project == null)
+            try
             {
-                return NotFound(new { Message = "Project not found." });
+                UserProject? project = await r_ProjectService.GetActiveProjectByProjectIdAsync(projectId);
+
+                if (project == null)
+                {
+                    r_logger.LogWarning("Project not found: {ProjectId}", projectId);
+                    return NotFound(new { Message = "Project not found." });
+                }
+
+                UserProjectViewModel userProjectViewModel = new UserProjectViewModel(project);
+                r_logger.LogInformation("Successfully retrieved project: {ProjectId}", projectId);
+                return Ok(userProjectViewModel);
             }
-
-            UserProjectViewModel userProjectViewModel = new UserProjectViewModel(project);
-
-            return Ok(userProjectViewModel);
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving project: {ProjectId}", projectId);
+                throw;
+            }
         }
 
         /// <summary>
@@ -60,21 +78,33 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("template/{projectId}")]
         public async Task<ActionResult<TemplateProjectViewModel>> GetTemplateProjectById(Guid projectId)
         {
+            r_logger.LogInformation("Getting template project by ID: {ProjectId}", projectId);
+            
             if (projectId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid template project ID provided: {ProjectId}", projectId);
                 return BadRequest(new { Message = "Project ID cannot be empty." });
             }
 
-            TemplateProject? project = await r_ProjectService.GetTemplateProjectByProjectIdAsync(projectId);
-
-            if (project == null)
+            try
             {
-                return NotFound(new { Message = "Project not found." });
+                TemplateProject? project = await r_ProjectService.GetTemplateProjectByProjectIdAsync(projectId);
+
+                if (project == null)
+                {
+                    r_logger.LogWarning("Template project not found: {ProjectId}", projectId);
+                    return NotFound(new { Message = "Project not found." });
+                }
+
+                TemplateProjectViewModel templateProjectViewModel = new TemplateProjectViewModel(project);
+                r_logger.LogInformation("Successfully retrieved template project: {ProjectId}", projectId);
+                return Ok(templateProjectViewModel);
             }
-
-            TemplateProjectViewModel templateProjectViewModel = new TemplateProjectViewModel(project);
-
-            return Ok(templateProjectViewModel);
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving template project: {ProjectId}", projectId);
+                throw;
+            }
         }
 
         /// <summary>
@@ -84,11 +114,21 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("templates")]
         public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> GetAllTemplatesProjects()
         {
-            var projects = await r_ProjectService.GetAllTemplatesProjectsAsync();
-
-            var templateProjectsViewModel = projects.Select(p => new TemplateProjectViewModel(p)).ToList();
-
-            return Ok(templateProjectsViewModel);
+            r_logger.LogInformation("Getting all template projects");
+            
+            try
+            {
+                var projects = await r_ProjectService.GetAllTemplatesProjectsAsync();
+                var templateProjectsViewModel = projects.Select(p => new TemplateProjectViewModel(p)).ToList();
+                
+                r_logger.LogInformation("Successfully retrieved {Count} template projects", templateProjectsViewModel.Count);
+                return Ok(templateProjectsViewModel);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving all template projects");
+                throw;
+            }
         }
 
         /// <summary>
@@ -98,11 +138,21 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("nonprofits")]
         public async Task<ActionResult<IEnumerable<UserProjectViewModel>>> GetAllNonprofitProjects()
         {
-            var projects = await r_ProjectService.GetAllNonprofitProjectsAsync();
-
-            var nonprofitProjectsViewModel = projects.Select(p => new UserProjectViewModel(p)).ToList();
-
-            return Ok(nonprofitProjectsViewModel);
+            r_logger.LogInformation("Getting all nonprofit projects");
+            
+            try
+            {
+                var projects = await r_ProjectService.GetAllNonprofitProjectsAsync();
+                var nonprofitProjectsViewModel = projects.Select(p => new UserProjectViewModel(p)).ToList();
+                
+                r_logger.LogInformation("Successfully retrieved {Count} nonprofit projects", nonprofitProjectsViewModel.Count);
+                return Ok(nonprofitProjectsViewModel);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving all nonprofit projects");
+                throw;
+            }
         }
 
         /// <summary>
@@ -112,11 +162,21 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("active")]
         public async Task<ActionResult<IEnumerable<UserProjectViewModel>>> GetAllActiveProjects()
         {
-            var projects = await r_ProjectService.GetAllActiveProjectsAsync();
-
-            var activeProjectsViewModel = projects.Select(p => new UserProjectViewModel(p)).ToList();
-
-            return Ok(activeProjectsViewModel);
+            r_logger.LogInformation("Getting all active projects");
+            
+            try
+            {
+                var projects = await r_ProjectService.GetAllActiveProjectsAsync();
+                var activeProjectsViewModel = projects.Select(p => new UserProjectViewModel(p)).ToList();
+                
+                r_logger.LogInformation("Successfully retrieved {Count} active projects", activeProjectsViewModel.Count);
+                return Ok(activeProjectsViewModel);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving all active projects");
+                throw;
+            }
         }
 
         /// <summary>
@@ -127,16 +187,27 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("user/{userId}")]
         public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetProjectsByUserId(Guid userId)
         {
+            r_logger.LogInformation("Getting projects for user: {UserId}", userId);
+            
             if (userId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid user ID provided: {UserId}", userId);
                 return BadRequest(new { Message = "User ID cannot be empty." });
             }
 
-            var projects = await r_ProjectService.GetProjectsByUserIdAsync(userId);
-
-            var conciseProjects = projects.Select(p => new ConciseUserProjectViewModel(p, userId)).ToList();
-
-            return Ok(conciseProjects);
+            try
+            {
+                var projects = await r_ProjectService.GetProjectsByUserIdAsync(userId);
+                var conciseProjects = projects.Select(p => new ConciseUserProjectViewModel(p, userId)).ToList();
+                
+                r_logger.LogInformation("Successfully retrieved {Count} projects for user: {UserId}", conciseProjects.Count, userId);
+                return Ok(conciseProjects);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving projects for user: {UserId}", userId);
+                throw;
+            }
         }
 
         /// <summary>
@@ -147,16 +218,27 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("mentor/{mentorId}")]
         public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetProjectsByMentorId(Guid mentorId)
         {
+            r_logger.LogInformation("Getting projects for mentor: {MentorId}", mentorId);
+            
             if (mentorId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid mentor ID provided: {MentorId}", mentorId);
                 return BadRequest(new { Message = "Mentor ID cannot be empty." });
             }
 
-            var projects = await r_ProjectService.GetProjectsByMentorIdAsync(mentorId);
-
-            var conciseProjects = projects.Select(p => new ConciseUserProjectViewModel(p, mentorId)).ToList();
-
-            return Ok(conciseProjects);
+            try
+            {
+                var projects = await r_ProjectService.GetProjectsByMentorIdAsync(mentorId);
+                var conciseProjects = projects.Select(p => new ConciseUserProjectViewModel(p, mentorId)).ToList();
+                
+                r_logger.LogInformation("Successfully retrieved {Count} projects for mentor: {MentorId}", conciseProjects.Count, mentorId);
+                return Ok(conciseProjects);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving projects for mentor: {MentorId}", mentorId);
+                throw;
+            }
         }
 
         /// <summary>
@@ -167,15 +249,27 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("nonprofit/{nonprofitId}")]
         public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetProjectsByNonprofitId(Guid nonprofitId)
         {
+            r_logger.LogInformation("Getting projects for nonprofit: {NonprofitId}", nonprofitId);
+            
             if (nonprofitId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid nonprofit ID provided: {NonprofitId}", nonprofitId);
                 return BadRequest(new { Message = "Nonprofit ID cannot be empty." });
             }
-            var projects = await r_ProjectService.GetProjectsByNonprofitIdAsync(nonprofitId);
 
-            var conciseProjects = projects.Select(p => new ConciseUserProjectViewModel(p, null)).ToList();
-
-            return Ok(conciseProjects);
+            try
+            {
+                var projects = await r_ProjectService.GetProjectsByNonprofitIdAsync(nonprofitId);
+                var conciseProjects = projects.Select(p => new ConciseUserProjectViewModel(p, null)).ToList();
+                
+                r_logger.LogInformation("Successfully retrieved {Count} projects for nonprofit: {NonprofitId}", conciseProjects.Count, nonprofitId);
+                return Ok(conciseProjects);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving projects for nonprofit: {NonprofitId}", nonprofitId);
+                throw;
+            }
         }
 
         #endregion
@@ -190,8 +284,11 @@ namespace GainIt.API.Controllers.Projects
         [HttpPost("start-from-template")]
         public async Task<ActionResult<UserProjectViewModel>> CreateProjectFromTemplate([FromQuery] Guid templateId, [FromQuery] Guid userId)
         {
+            r_logger.LogInformation("Creating project from template: TemplateId={TemplateId}, UserId={UserId}", templateId, userId);
+            
             if (templateId == Guid.Empty || userId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid parameters provided: TemplateId={TemplateId}, UserId={UserId}", templateId, userId);
                 return BadRequest(new { Message = "Template ID and User ID cannot be empty." });
             }
 
@@ -200,6 +297,9 @@ namespace GainIt.API.Controllers.Projects
                 UserProject o_Project = await r_ProjectService.StartProjectFromTemplateAsync(templateId, userId);
 
                 UserProjectViewModel projectViewModel = new UserProjectViewModel(o_Project);
+                
+                r_logger.LogInformation("Successfully created project from template: ProjectId={ProjectId}, TemplateId={TemplateId}, UserId={UserId}", 
+                    o_Project.ProjectId, templateId, userId);
 
                 return CreatedAtAction(
                     nameof(GetActiveProjectById),
@@ -209,7 +309,13 @@ namespace GainIt.API.Controllers.Projects
             }
             catch (KeyNotFoundException e)
             {
+                r_logger.LogWarning("Template or user not found: TemplateId={TemplateId}, UserId={UserId}, Error={Error}", templateId, userId, e.Message);
                 return NotFound(new { Message = e.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error creating project from template: TemplateId={TemplateId}, UserId={UserId}", templateId, userId);
+                throw;
             }
         }
 
@@ -225,8 +331,11 @@ namespace GainIt.API.Controllers.Projects
         [HttpPut("{projectId}/mentor")]
         public async Task<ActionResult<UserProjectViewModel>> AssignMentor(Guid projectId, [FromQuery] Guid mentorId)
         {
+            r_logger.LogInformation("Assigning mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", projectId, mentorId);
+            
             if (projectId == Guid.Empty || mentorId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid parameters provided: ProjectId={ProjectId}, MentorId={MentorId}", projectId, mentorId);
                 return BadRequest(new { Message = "Project ID and Mentor ID cannot be empty." });
             }
 
@@ -235,12 +344,20 @@ namespace GainIt.API.Controllers.Projects
                 UserProject updatedProject = await r_ProjectService.AssignMentorAsync(projectId, mentorId);
 
                 UserProjectViewModel updatedProjectViewModel = new UserProjectViewModel(updatedProject);
+                
+                r_logger.LogInformation("Successfully assigned mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", projectId, mentorId);
 
                 return Ok(updatedProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
+                r_logger.LogWarning("Project or mentor not found: ProjectId={ProjectId}, MentorId={MentorId}, Error={Error}", projectId, mentorId, e.Message);
                 return NotFound(new { Message = e.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error assigning mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", projectId, mentorId);
+                throw;
             }
         }
 
@@ -252,8 +369,11 @@ namespace GainIt.API.Controllers.Projects
         [HttpDelete("{projectId}/mentor")]
         public async Task<ActionResult<UserProjectViewModel>> RemoveMentor(Guid projectId)
         {
+            r_logger.LogInformation("Removing mentor from project: {ProjectId}", projectId);
+            
             if (projectId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid project ID provided: {ProjectId}", projectId);
                 return BadRequest(new { Message = "Project ID cannot be empty." });
             }
 
@@ -262,12 +382,20 @@ namespace GainIt.API.Controllers.Projects
                 UserProject updatedProject = await r_ProjectService.RemoveMentorAsync(projectId);
 
                 UserProjectViewModel updatedProjectViewModel = new UserProjectViewModel(updatedProject);
+                
+                r_logger.LogInformation("Successfully removed mentor from project: {ProjectId}", projectId);
 
                 return Ok(updatedProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
+                r_logger.LogWarning("Project not found: ProjectId={ProjectId}, Error={Error}", projectId, e.Message);
                 return NotFound(new { Message = e.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error removing mentor from project: {ProjectId}", projectId);
+                throw;
             }
         }
 
@@ -286,8 +414,11 @@ namespace GainIt.API.Controllers.Projects
         [HttpPost("{projectId}/team-members")]
         public async Task<ActionResult<UserProjectViewModel>> AddTeamMember(Guid projectId, [FromQuery] Guid userId, [FromQuery] string userRole)
         {
+            r_logger.LogInformation("Adding team member to project: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", projectId, userId, userRole);
+            
             if (projectId == Guid.Empty || userId == Guid.Empty || userRole == string.Empty)
             {
+                r_logger.LogWarning("Invalid parameters provided: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", projectId, userId, userRole);
                 return BadRequest(new { Message = "Project ID ot User ID or User role cannot be empty." });
             }
 
@@ -296,16 +427,25 @@ namespace GainIt.API.Controllers.Projects
                 UserProject updatedProject = await r_ProjectService.AddTeamMemberAsync(projectId, userId, userRole);
 
                 UserProjectViewModel updatedProjectViewModel = new UserProjectViewModel(updatedProject);
+                
+                r_logger.LogInformation("Successfully added team member to project: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", projectId, userId, userRole);
 
                 return Ok(updatedProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
+                r_logger.LogWarning("Project or user not found: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", projectId, userId, e.Message);
                 return NotFound(new { Message = e.Message });
             }
             catch (InvalidOperationException e)
             {
+                r_logger.LogWarning("Invalid operation: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", projectId, userId, e.Message);
                 return BadRequest(new { Message = e.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error adding team member to project: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", projectId, userId, userRole);
+                throw;
             }
         }
 
@@ -318,8 +458,11 @@ namespace GainIt.API.Controllers.Projects
         [HttpDelete("{projectId}/team-members")]
         public async Task<ActionResult<UserProjectViewModel>> RemoveTeamMember(Guid projectId, [FromQuery] Guid userId)
         {
+            r_logger.LogInformation("Removing team member from project: ProjectId={ProjectId}, UserId={UserId}", projectId, userId);
+            
             if (projectId == Guid.Empty || userId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid parameters provided: ProjectId={ProjectId}, UserId={UserId}", projectId, userId);
                 return BadRequest(new { Message = "Project ID and User ID cannot be empty." });
             }
 
@@ -328,16 +471,25 @@ namespace GainIt.API.Controllers.Projects
                 UserProject updatedProject = await r_ProjectService.RemoveTeamMemberAsync(projectId, userId);
 
                 UserProjectViewModel userProjectViewModel = new UserProjectViewModel(updatedProject);
+                
+                r_logger.LogInformation("Successfully removed team member from project: ProjectId={ProjectId}, UserId={UserId}", projectId, userId);
 
                 return Ok(userProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
+                r_logger.LogWarning("Project or user not found: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", projectId, userId, e.Message);
                 return NotFound(new { Message = e.Message });
             }
             catch (InvalidOperationException e)
             {
+                r_logger.LogWarning("Invalid operation: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", projectId, userId, e.Message);
                 return BadRequest(new { Message = e.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error removing team member from project: ProjectId={ProjectId}, UserId={UserId}", projectId, userId);
+                throw;
             }
         }
 
@@ -354,21 +506,33 @@ namespace GainIt.API.Controllers.Projects
         [HttpPut("{projectId}/status")]
         public async Task<ActionResult<UserProjectViewModel>> UpdateProjectStatus(Guid projectId, [FromBody] ProjectStatusOptionDTO status)
         {
+            r_logger.LogInformation("Updating project status: ProjectId={ProjectId}, Status={Status}", projectId, status.ProjectStatus);
+            
             if (projectId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid project ID provided: {ProjectId}", projectId);
                 return BadRequest(new { Message = "Project ID cannot be empty." });
             }
+            
             try
             {
                 UserProject updatedProject = await r_ProjectService.UpdateProjectStatusAsync(projectId, status.ProjectStatus);
 
                 UserProjectViewModel updatedProjectViewModel = new UserProjectViewModel(updatedProject);
+                
+                r_logger.LogInformation("Successfully updated project status: ProjectId={ProjectId}, Status={Status}", projectId, status.ProjectStatus);
 
                 return Ok(updatedProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
+                r_logger.LogWarning("Project not found: ProjectId={ProjectId}, Error={Error}", projectId, e.Message);
                 return NotFound(new { Message = e.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error updating project status: ProjectId={ProjectId}, Status={Status}", projectId, status.ProjectStatus);
+                throw;
             }
         }
 
@@ -381,13 +545,17 @@ namespace GainIt.API.Controllers.Projects
         [HttpPut("{projectId}/repository")]
         public async Task<ActionResult<UserProjectViewModel>> UpdateRepositoryLink(Guid projectId, [FromBody] string repositoryLink)
         {
+            r_logger.LogInformation("Updating repository link: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", projectId, repositoryLink);
+            
             if (projectId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid project ID provided: {ProjectId}", projectId);
                 return BadRequest(new { Message = "Project ID cannot be empty." });
             }
 
             if (string.IsNullOrWhiteSpace(repositoryLink))
             {
+                r_logger.LogWarning("Invalid repository link provided: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", projectId, repositoryLink);
                 return BadRequest(new { Message = "Repository link cannot be empty." });
             }
 
@@ -396,12 +564,20 @@ namespace GainIt.API.Controllers.Projects
                 UserProject updatedProject = await r_ProjectService.UpdateRepositoryLinkAsync(projectId, repositoryLink);
 
                 UserProjectViewModel userProjectViewModel = new UserProjectViewModel(updatedProject);
+                
+                r_logger.LogInformation("Successfully updated repository link: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", projectId, repositoryLink);
 
                 return Ok(userProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
+                r_logger.LogWarning("Project not found: ProjectId={ProjectId}, Error={Error}", projectId, e.Message);
                 return NotFound(new { Message = e.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error updating repository link: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", projectId, repositoryLink);
+                throw;
             }
         }
         #endregion 
@@ -415,17 +591,29 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("search")]
         public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> SearchActiveProjectsByNameOrDescription([FromQuery] string searchQuery)
         {
+            r_logger.LogInformation("Searching active projects: Query={Query}", searchQuery);
+            
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
+                r_logger.LogWarning("Empty search query provided");
                 return BadRequest(new { Message = "Search query cannot be empty." });
             }
 
-            var projects = await r_ProjectService.SearchActiveProjectsByNameOrDescriptionAsync(searchQuery);
-
-            var projectViewModels = projects.Select(p => new ConciseUserProjectViewModel(p, null)).ToList();
-
-            return Ok(projectViewModels);
+            try
+            {
+                var projects = await r_ProjectService.SearchActiveProjectsByNameOrDescriptionAsync(searchQuery);
+                var projectViewModels = projects.Select(p => new ConciseUserProjectViewModel(p, null)).ToList();
+                
+                r_logger.LogInformation("Search completed: Query={Query}, Results={Count}", searchQuery, projectViewModels.Count);
+                return Ok(projectViewModels);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error searching active projects: Query={Query}", searchQuery);
+                throw;
+            }
         }
+        
         /// <summary>
         /// Searches for template projects by name or description.
         /// </summary>
@@ -434,16 +622,27 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("search/template")] 
         public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> SearchTemplateProjectsByNameOrDescription([FromQuery] string searchQuery)
         {
+            r_logger.LogInformation("Searching template projects: Query={Query}", searchQuery);
+            
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
+                r_logger.LogWarning("Empty search query provided");
                 return BadRequest(new { Message = "Search query cannot be empty." });
             }
 
-            var projects = await r_ProjectService.SearchTemplateProjectsByNameOrDescriptionAsync(searchQuery);
-
-            var projectViewModels = projects.Select(p => new TemplateProjectViewModel(p)).ToList();
-
-            return Ok(projectViewModels);
+            try
+            {
+                var projects = await r_ProjectService.SearchTemplateProjectsByNameOrDescriptionAsync(searchQuery);
+                var projectViewModels = projects.Select(p => new TemplateProjectViewModel(p)).ToList();
+                
+                r_logger.LogInformation("Template search completed: Query={Query}, Results={Count}", searchQuery, projectViewModels.Count);
+                return Ok(projectViewModels);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error searching template projects: Query={Query}", searchQuery);
+                throw;
+            }
         }
 
         /// <summary>
@@ -455,32 +654,49 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("search/vector")]
         public async Task<ActionResult<ProjectMatchResultViewModel>> SearchProjectsByVector([FromQuery] string query, [FromQuery] int count = 3)
         {
+            r_logger.LogInformation("Performing vector search: Query={Query}, Count={Count}", query, count);
+            
             if (string.IsNullOrWhiteSpace(query))
             {
+                r_logger.LogWarning("Empty vector search query provided");
                 return BadRequest(new { Message = "Search query cannot be empty." });
             }
 
-            ProjectMatchResultDto resultDto = await r_ProjectMatchingService.MatchProjectsByTextAsync(query, count);
+            try
+            {
+                ProjectMatchResultDto resultDto = await r_ProjectMatchingService.MatchProjectsByTextAsync(query, count);
 
-            var projectViewModels = resultDto.Projects.Select(p => new TemplateProjectViewModel(p)).ToList();
+                var projectViewModels = resultDto.Projects.Select(p => new TemplateProjectViewModel(p)).ToList();
 
-            ProjectMatchResultViewModel resultViewModel = new ProjectMatchResultViewModel(projectViewModels, resultDto.Explanation);
+                ProjectMatchResultViewModel resultViewModel = new ProjectMatchResultViewModel(projectViewModels, resultDto.Explanation);
 
-            return Ok(resultViewModel);
+                r_logger.LogInformation("Vector search completed: Query={Query}, Results={Count}", query, projectViewModels.Count);
+                return Ok(resultViewModel);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error performing vector search: Query={Query}, Count={Count}", query, count);
+                throw;
+            }
         }
 
         /// <summary>
         /// Matches projects to a user’s profile (Gainer or Mentor).
         /// </summary>
         /// <param name="userId">The ID of the user whose profile to match.</param>
-        /// <param name="n">Max number of results (default 3).</param>
+        /// <param name="count">Max number of results (default 3).</param>
         [HttpGet("match/profile")]
         public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> MatchByProfile(
              [FromQuery] Guid userId,
              [FromQuery] int count = 3)
         {
+            r_logger.LogInformation("Matching projects by profile: UserId={UserId}, Count={Count}", userId, count);
+            
             if (userId == Guid.Empty)
+            {
+                r_logger.LogWarning("Invalid user ID provided: {UserId}", userId);
                 return BadRequest(new { Message = "User ID is required." });
+            }
 
             try 
             { 
@@ -488,16 +704,24 @@ namespace GainIt.API.Controllers.Projects
 
                 if (matchedProjects == null || !matchedProjects.Any())
                 {
+                    r_logger.LogWarning("No projects matched for user profile: {UserId}", userId);
                     return NotFound(new { Message = "No projects matched for the given user profile." });
                 }
 
                 var matchedProjectViewModels = matchedProjects.Select(p => new TemplateProjectViewModel(p)).ToList();
-
+                
+                r_logger.LogInformation("Successfully matched {Count} projects for user profile: {UserId}", matchedProjectViewModels.Count, userId);
                 return Ok(matchedProjectViewModels);
             }
             catch (KeyNotFoundException ex)
             {
+                r_logger.LogWarning("User profile not found: {UserId}, Error={Error}", userId, ex.Message);
                 return NotFound(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error matching projects by profile: UserId={UserId}, Count={Count}", userId, count);
+                throw;
             }
         }
 
@@ -510,11 +734,21 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("projects/filter")]
         public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> FilterProjectsByStatusAndDifficulty([FromQuery] ProjectStatusOptionDTO status, [FromQuery] ProjectDifficultyLevelOptionDTO difficulty)
         {
-            var projects = await r_ProjectService.FilterActiveProjectsByStatusAndDifficultyAsync(status.ProjectStatus, difficulty.DifficultyLevel);
-
-            var projectViewModels = projects.Select(p => new ConciseUserProjectViewModel(p, null)).ToList();
-
-            return Ok(projectViewModels);
+            r_logger.LogInformation("Filtering projects: Status={Status}, Difficulty={Difficulty}", status.ProjectStatus, difficulty.DifficultyLevel);
+            
+            try
+            {
+                var projects = await r_ProjectService.FilterActiveProjectsByStatusAndDifficultyAsync(status.ProjectStatus, difficulty.DifficultyLevel);
+                var projectViewModels = projects.Select(p => new ConciseUserProjectViewModel(p, null)).ToList();
+                
+                r_logger.LogInformation("Filter completed: Status={Status}, Difficulty={Difficulty}, Results={Count}", status.ProjectStatus, difficulty.DifficultyLevel, projectViewModels.Count);
+                return Ok(projectViewModels);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error filtering projects: Status={Status}, Difficulty={Difficulty}", status.ProjectStatus, difficulty.DifficultyLevel);
+                throw;
+            }
         }
 
         /// <summary>
@@ -525,11 +759,21 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("templates/filter")]
         public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> FilterTemplateProjectsByDifficulty([FromQuery] ProjectDifficultyLevelOptionDTO difficulty)
         {
-            var templates = await r_ProjectService.FilterTemplateProjectsByDifficultyAsync(difficulty.DifficultyLevel);
-
-            var templateViewModels = templates.Select(t => new TemplateProjectViewModel(t)).ToList();
-
-            return Ok(templateViewModels);
+            r_logger.LogInformation("Filtering template projects: Difficulty={Difficulty}", difficulty.DifficultyLevel);
+            
+            try
+            {
+                var templates = await r_ProjectService.FilterTemplateProjectsByDifficultyAsync(difficulty.DifficultyLevel);
+                var templateViewModels = templates.Select(t => new TemplateProjectViewModel(t)).ToList();
+                
+                r_logger.LogInformation("Template filter completed: Difficulty={Difficulty}, Results={Count}", difficulty.DifficultyLevel, templateViewModels.Count);
+                return Ok(templateViewModels);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error filtering template projects: Difficulty={Difficulty}", difficulty.DifficultyLevel);
+                throw;
+            }
         }
         #endregion
 
@@ -546,13 +790,18 @@ namespace GainIt.API.Controllers.Projects
             [FromBody] UserProjectViewModel CreateProjectForNonprofitViewModel,
             [FromQuery] Guid nonprofitOrgId)
         {
+            r_logger.LogInformation("Creating nonprofit project: NonprofitOrgId={NonprofitOrgId}, ProjectName={ProjectName}", 
+                nonprofitOrgId, CreateProjectForNonprofitViewModel.ProjectName);
+            
             if (nonprofitOrgId == Guid.Empty)
             {
+                r_logger.LogWarning("Invalid nonprofit organization ID provided: {NonprofitOrgId}", nonprofitOrgId);
                 return BadRequest(new { Message = "Nonprofit organization ID cannot be empty." });
             }
 
             if (CreateProjectForNonprofitViewModel == null)
             {
+                r_logger.LogWarning("Project details are null");
                 return BadRequest(new { Message = "Project details cannot be null." });
             }
 
@@ -561,12 +810,22 @@ namespace GainIt.API.Controllers.Projects
                 UserProject o_Project = await r_ProjectService.CreateProjectForNonprofitAsync(CreateProjectForNonprofitViewModel, nonprofitOrgId);
 
                 UserProjectViewModel userProjectViewModel = new UserProjectViewModel(o_Project);
+                
+                r_logger.LogInformation("Successfully created nonprofit project: ProjectId={ProjectId}, NonprofitOrgId={NonprofitOrgId}, ProjectName={ProjectName}", 
+                    o_Project.ProjectId, nonprofitOrgId, CreateProjectForNonprofitViewModel.ProjectName);
 
                 return CreatedAtAction(nameof(GetActiveProjectById), new { projectId = o_Project.ProjectId }, userProjectViewModel);
             }
             catch (KeyNotFoundException e)
             {
+                r_logger.LogWarning("Nonprofit organization not found: NonprofitOrgId={NonprofitOrgId}, Error={Error}", nonprofitOrgId, e.Message);
                 return NotFound(new { Message = e.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error creating nonprofit project: NonprofitOrgId={NonprofitOrgId}, ProjectName={ProjectName}", 
+                    nonprofitOrgId, CreateProjectForNonprofitViewModel.ProjectName);
+                throw;
             }
         }
         #endregion
