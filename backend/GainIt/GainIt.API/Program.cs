@@ -40,7 +40,7 @@ try
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
-        .Enrich.FromLogContext())
+        .Enrich.FromLogContext()
         .WriteTo.Console());
 
     // Add Application Insights
