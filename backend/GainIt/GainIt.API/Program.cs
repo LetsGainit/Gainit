@@ -40,11 +40,10 @@ try
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .WriteTo.Console());
+        .Enrich.FromLogContext());
 
     // Add Application Insights
-    builder.Configuration["ApplicationInsights:ConnectionString"] = builder.Configuration["APPINSIGHTS_CONNECTIONSTRING"];
+    builder.Services.AddApplicationInsightsTelemetry();
 
     builder.Services.AddDbContext<GainItDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("GainItPostgresDb")));
@@ -97,10 +96,6 @@ try
     });
 
     var app = builder.Build();
-
-    // Test console output for Azure Log Stream
-    Console.WriteLine("=== CONSOLE TEST: Application built successfully ===");
-    Log.Information("Application built successfully - logging is working!");
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
