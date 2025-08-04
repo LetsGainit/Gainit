@@ -63,10 +63,15 @@ namespace GainIt.API.Services.Projects.Implementations
                 r_logger.LogInformation("Projects filtered with chat: FilteredCount={FilteredCount}", filteredProjects.Count);
 
                 var chatExplenation = await getChatExplanationAsync(chatrefinedQuery, filteredProjects);
-                r_logger.LogInformation("Chat explanation generated: ExplanationLength={ExplanationLength}", chatExplenation.Length);
+                r_logger.LogInformation("Chat explanation generated: Chat Explanation={Explanation}", chatExplenation);
 
                 var result = new ProjectMatchResultDto(filteredProjects, chatExplenation);
-                r_logger.LogInformation("Project matching completed successfully: FinalResultCount={FinalResultCount}", filteredProjects.Count);
+                // Replace the existing logging line with colored project names using ANSI escape codes for green
+                r_logger.LogInformation(
+                    "Project matching completed successfully: FinalResultCount={FinalResultCount}, ProjectNames={ProjectNames}",
+                    filteredProjects.Count,
+                    string.Join(", ", filteredProjects.Select(p => $"\u001b[32m{p.ProjectName}\u001b[0m"))
+                );
                 return result;
             }
             catch (Exception ex)
@@ -109,7 +114,13 @@ namespace GainIt.API.Services.Projects.Implementations
                 r_logger.LogInformation("Profile projects fetched: UserId={UserId}, FetchedCount={FetchedCount}", i_UserId, matchedProjects.Count);
 
                 var filteredProjects = await filterProjectsWithChatAsync(chatrefinedQuery, matchedProjects);
-                r_logger.LogInformation("Profile projects filtered: UserId={UserId}, FilteredCount={FilteredCount}", i_UserId, filteredProjects.Count);
+                // Replace the existing logging line with the following to log project names as well:
+                r_logger.LogInformation(
+                    "Profile projects filtered: UserId={UserId}, FilteredCount={FilteredCount}, ProjectNames={ProjectNames}",
+                    i_UserId,
+                    filteredProjects.Count,
+                    string.Join(", ", filteredProjects.Select(p => $"\u001b[32m{p.ProjectName}\u001b[0m"))
+                );
 
                 return filteredProjects;
             }
@@ -212,7 +223,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
                 ChatCompletion completion = await r_chatClient.CompleteChatAsync(messages, options);
                 var refinedQuery = completion.Content[0].Text.Trim();
-                
+
                 r_logger.LogInformation("Query refined successfully: OriginalQuery={OriginalQuery}, RefinedQuery={RefinedQuery}", i_OriginalQuery, refinedQuery);
                 return refinedQuery;
             }
@@ -301,7 +312,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     return new List<TemplateProject>();
                 }
 
-                
+
 
                 try
                 {
@@ -316,8 +327,8 @@ namespace GainIt.API.Services.Projects.Implementations
                 var filteredProjects = i_Projects
                     .Where(p => projectIds.Contains(p.ProjectId))
                     .ToList();
-                
-                r_logger.LogInformation("Projects filtered successfully: Query={Query}, OriginalCount={OriginalCount}, FilteredCount={FilteredCount}", 
+
+                r_logger.LogInformation("Projects filtered successfully: Query={Query}, OriginalCount={OriginalCount}, FilteredCount={FilteredCount}",
                     i_Query, i_Projects.Count, filteredProjects.Count);
                 return filteredProjects;
             }
@@ -389,7 +400,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 var embeddingResult = await embeddingClient.GenerateEmbeddingAsync(inputText);
                 var embedding = embeddingResult.Value.ToFloats().ToArray();
                 var duration = DateTime.UtcNow - startTime;
-                
+
                 r_logger.LogInformation("Embedding generated successfully: EmbeddingSize={EmbeddingSize}, Duration={Duration}ms", embedding.Length, duration.TotalMilliseconds);
                 return embedding;
             }
@@ -437,7 +448,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 }
 
                 var duration = DateTime.UtcNow - startTime;
-                r_logger.LogInformation("Vector search completed: MatchedProjectIds={MatchedProjectIds}, Count={Count}, Duration={Duration}ms", 
+                r_logger.LogInformation("Vector search completed: MatchedProjectIds={MatchedProjectIds}, Count={Count}, Duration={Duration}ms",
                     string.Join(",", matchedProjectIds), matchedProjectIds.Count, duration.TotalMilliseconds);
                 return matchedProjectIds;
             }
@@ -451,7 +462,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
         private async Task<List<TemplateProject>> fetchProjectsByIdsAsync(List<Guid> matchedProjectIds)
         {
-            r_logger.LogInformation("Fetching projects by IDs: ProjectIds={ProjectIds}, Count={Count}", 
+            r_logger.LogInformation("Fetching projects by IDs: ProjectIds={ProjectIds}, Count={Count}",
                 string.Join(",", matchedProjectIds), matchedProjectIds.Count);
 
             try
@@ -480,13 +491,13 @@ namespace GainIt.API.Services.Projects.Implementations
                 }
 
                 var result = mergedProjects.Values.ToList();
-                r_logger.LogInformation("Projects fetched successfully: RequestedCount={RequestedCount}, FetchedCount={FetchedCount}", 
+                r_logger.LogInformation("Projects fetched successfully: RequestedCount={RequestedCount}, FetchedCount={FetchedCount}",
                     matchedProjectIds.Count, result.Count);
                 return result;
             }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error fetching projects by IDs: ProjectIds={ProjectIds}, Count={Count}", 
+                r_logger.LogError(ex, "Error fetching projects by IDs: ProjectIds={ProjectIds}, Count={Count}",
                     string.Join(",", matchedProjectIds), matchedProjectIds.Count);
                 throw;
             }
