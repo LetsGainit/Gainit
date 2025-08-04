@@ -17,15 +17,34 @@ using Serilog;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-// Configure Serilog
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(new ConfigurationBuilder()
-        .SetBasePath(Directory.GetCurrentDirectory())
-        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-        .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true, reloadOnChange: true)
-        .AddEnvironmentVariables()
-        .Build())
-    .CreateLogger();
+// Build configuration first
+var configBuilder = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
+var configuration = configBuilder.Build();
+
+// Configure Serilog with Application Insights connection string handling
+var loggerConfig = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration);
+
+// Check if Application Insights connection string is in config, otherwise use environment variable
+var appInsightsConnectionString = configuration["Serilog:WriteTo:2:Args:connectionString"];
+if (string.IsNullOrEmpty(appInsightsConnectionString))
+{
+    appInsightsConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+}
+
+// Update the Application Insights connection string if found
+if (!string.IsNullOrEmpty(appInsightsConnectionString))
+{
+    loggerConfig = loggerConfig.WriteTo.ApplicationInsights(appInsightsConnectionString, 
+        new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+}
+
+Log.Logger = loggerConfig.CreateLogger();
 
 try
 {
