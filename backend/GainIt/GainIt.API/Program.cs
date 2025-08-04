@@ -40,8 +40,7 @@ try
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .WriteTo.Console());
+        .Enrich.FromLogContext());
 
     // Add Application Insights
     builder.Services.AddApplicationInsightsTelemetry();
@@ -97,6 +96,10 @@ try
     });
 
     var app = builder.Build();
+
+    // Test console output for Azure Log Stream
+    Console.WriteLine("=== CONSOLE TEST: Application built successfully ===");
+    Log.Information("Application built successfully - logging is working!");
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
