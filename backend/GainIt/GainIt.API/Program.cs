@@ -26,23 +26,9 @@ var configBuilder = new ConfigurationBuilder()
 
 var configuration = configBuilder.Build();
 
-// Configure Serilog with Application Insights connection string handling
+// Bootstrap Serilog from configuration only (avoid adding sinks programmatically here to prevent duplicates)
 var loggerConfig = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration);
-
-// Check if Application Insights connection string is in config, otherwise use environment variable
-var appInsightsConnectionString = configuration["Serilog:WriteTo:2:Args:connectionString"];
-if (string.IsNullOrEmpty(appInsightsConnectionString))
-{
-    appInsightsConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
-}
-
-// Update the Application Insights connection string if found
-if (!string.IsNullOrEmpty(appInsightsConnectionString))
-{
-    loggerConfig = loggerConfig.WriteTo.ApplicationInsights(appInsightsConnectionString, 
-        new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
-}
 
 Log.Logger = loggerConfig.CreateLogger();
 
@@ -63,31 +49,30 @@ try
             .ReadFrom.Services(services)
             .Enrich.FromLogContext();
 
-        // Ensure Application Insights sink is added in all environments (incl. Azure)
-        // Try multiple sources for the connection string: Serilog config, standard Application Insights config, env vars
-        var appInsightsConnectionStringFinal = context.Configuration["Serilog:WriteTo:2:Args:connectionString"];
-        if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+        // Ensure Application Insights sink is added exactly once.
+        // If Serilog sink is already configured via configuration (e.g., Development), do NOT add it again here.
+        var configuredSerilogAiConnection = context.Configuration["Serilog:WriteTo:2:Args:connectionString"];
+        if (string.IsNullOrWhiteSpace(configuredSerilogAiConnection))
         {
-            appInsightsConnectionStringFinal = context.Configuration["ApplicationInsights:ConnectionString"];
-        }
-        if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
-        {
-            appInsightsConnectionStringFinal = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
-        }
-        if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
-        {
-            var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-            if (!string.IsNullOrWhiteSpace(instrumentationKey))
-            {
-                appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
-            }
-        }
+            // No sink configured in Serilog settings → add via code using fallbacks
+            var appInsightsConnectionStringFinal = context.Configuration["ApplicationInsights:ConnectionString"]
+                ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
 
-        if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
-        {
-            loggerConfiguration.WriteTo.ApplicationInsights(
-                appInsightsConnectionStringFinal,
-                new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+            if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+            {
+                var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+                if (!string.IsNullOrWhiteSpace(instrumentationKey))
+                {
+                    appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+            {
+                loggerConfiguration.WriteTo.ApplicationInsights(
+                    appInsightsConnectionStringFinal,
+                    new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+            }
         }
     });
 
