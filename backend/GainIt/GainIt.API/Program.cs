@@ -56,10 +56,40 @@ try
     builder.Logging.ClearProviders();
 
     // Configure Serilog for the application
-    builder.Host.UseSerilog((context, services, configuration) => configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext());
+    builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+    {
+        loggerConfiguration
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext();
+
+        // Ensure Application Insights sink is added in all environments (incl. Azure)
+        // Try multiple sources for the connection string: Serilog config, standard Application Insights config, env vars
+        var appInsightsConnectionStringFinal = context.Configuration["Serilog:WriteTo:2:Args:connectionString"];
+        if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+        {
+            appInsightsConnectionStringFinal = context.Configuration["ApplicationInsights:ConnectionString"];
+        }
+        if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+        {
+            appInsightsConnectionStringFinal = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+        }
+        if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+        {
+            var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+            if (!string.IsNullOrWhiteSpace(instrumentationKey))
+            {
+                appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+        {
+            loggerConfiguration.WriteTo.ApplicationInsights(
+                appInsightsConnectionStringFinal,
+                new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+        }
+    });
 
     // Add Application Insights
     builder.Services.AddApplicationInsightsTelemetry();
