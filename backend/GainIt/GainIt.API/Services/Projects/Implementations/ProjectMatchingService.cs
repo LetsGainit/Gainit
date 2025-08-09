@@ -341,7 +341,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
         private string buildProfileQuery(User i_userProfile)
         {
-            r_logger.LogInformation("Building profile query: UserId={UserId}, UserType={UserType}", i_userProfile.UserId, i_userProfile.GetType().Name);
+            r_logger.LogInformation("Building profile query: UserId={UserId}, UserType={UserType}, FullName={FullName}", i_userProfile.UserId, i_userProfile.GetType().Name, i_userProfile.FullName);
 
             try
             {
@@ -355,7 +355,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     };
                     if (gainer.TechExpertise != null)
                     {
-                        parts.Add(gainer.TechExpertise.ToString());
+                        parts.Add(gainer.TechExpertise?.ToString() ?? string.Empty);
                     }
                     var query = string.Join(". ", parts);
                     r_logger.LogInformation("Profile query built successfully: UserId={UserId}, QueryLength={QueryLength}", i_userProfile.UserId, query.Length);
@@ -371,7 +371,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     };
                     if (mentor.TechExpertise != null)
                     {
-                        parts.Add(mentor.TechExpertise.ToString());
+                        parts.Add(mentor.TechExpertise?.ToString() ?? string.Empty);
                     }
                     var query = string.Join(". ", parts);
                     r_logger.LogInformation("Profile query built successfully: UserId={UserId}, QueryLength={QueryLength}", i_userProfile.UserId, query.Length);
