@@ -26,62 +26,122 @@ namespace GainIt.API.Services.Users.Implementations
         
         public async Task<UserProfileDto> GetOrCreateFromExternalAsync(ExternalUserDto i_externalUserDto)
         {
-            if (i_externalUserDto is null) throw new ArgumentNullException(nameof(i_externalUserDto));
+            var startTime = DateTimeOffset.UtcNow;
+            r_logger.LogInformation("Starting external user provisioning: ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
+                i_externalUserDto.ExternalId, i_externalUserDto.Email, i_externalUserDto.FullName);
+
+            if (i_externalUserDto is null) 
+            {
+                r_logger.LogError("ExternalUserDto is null");
+                throw new ArgumentNullException(nameof(i_externalUserDto));
+            }
+            
             if (string.IsNullOrWhiteSpace(i_externalUserDto.ExternalId))
+            {
+                r_logger.LogError("ExternalId (OID) is required but was empty or null");
                 throw new ArgumentException("ExternalId (OID) is required.", nameof(i_externalUserDto.ExternalId));
+            }
 
             var email = i_externalUserDto.Email?.Trim();
             var fullName = i_externalUserDto.FullName!.Trim();
 
+            r_logger.LogInformation("Processing user data - Email: {Email}, FullName: {FullName}, Country: {Country}", 
+                email, fullName, i_externalUserDto.Country);
+
             // Try find by ExternalId (OID)
+            r_logger.LogInformation("Searching for existing user by ExternalId: {ExternalId}", i_externalUserDto.ExternalId);
+            var dbSearchStartTime = DateTimeOffset.UtcNow;
             var user = await r_DbContext.Users.SingleOrDefaultAsync(u => u.ExternalId == i_externalUserDto.ExternalId);
+            var dbSearchTime = DateTimeOffset.UtcNow.Subtract(dbSearchStartTime).TotalMilliseconds;
+            r_logger.LogInformation("Database search completed: ExternalId={ExternalId}, UserFound={UserFound}, SearchTime={SearchTime}ms", 
+                i_externalUserDto.ExternalId, user != null, dbSearchTime);
 
             if (user is null)
             {
+                r_logger.LogInformation("User not found, creating new user: ExternalId={ExternalId}", i_externalUserDto.ExternalId);
+                
                 // For first-time provisioning your User requires EmailAddress:
                 if (string.IsNullOrWhiteSpace(email))
+                {
+                    r_logger.LogError("Email is required for new user provisioning but was not provided: ExternalId={ExternalId}", i_externalUserDto.ExternalId);
                     throw new InvalidOperationException("Email is required for new user provisioning.");
+                }
+
+                var newUserId = Guid.NewGuid();
+                r_logger.LogInformation("Creating new user with ID: {UserId}, ExternalId={ExternalId}, Email={Email}", 
+                    newUserId, i_externalUserDto.ExternalId, email);
 
                 user = new User
                 {
-                    UserId = Guid.NewGuid(),
+                    UserId = newUserId,
                     ExternalId = i_externalUserDto.ExternalId,
                     EmailAddress = email!,
-                    FullName = fullName,
+                    FullName = fullName ?? "Unknown",
                     Country = string.IsNullOrWhiteSpace(i_externalUserDto.Country) ? null : i_externalUserDto.Country,
                     CreatedAt = DateTimeOffset.UtcNow,
                     LastLoginAt = DateTimeOffset.UtcNow
                 };
 
                 r_DbContext.Users.Add(user);
+                var dbCreateStartTime = DateTimeOffset.UtcNow;
                 await r_DbContext.SaveChangesAsync();
+                var dbCreateTime = DateTimeOffset.UtcNow.Subtract(dbCreateStartTime).TotalMilliseconds;
+                
+                r_logger.LogInformation("Successfully created new user: UserId={UserId}, ExternalId={ExternalId}, Email={Email}, CreatedAt={CreatedAt}, DbCreateTime={DbCreateTime}ms", 
+                    user.UserId, user.ExternalId, user.EmailAddress, user.CreatedAt, dbCreateTime);
             }
             else
             {
+                r_logger.LogInformation("Found existing user, updating profile: UserId={UserId}, ExternalId={ExternalId}, CurrentEmail={CurrentEmail}", 
+                    user.UserId, user.ExternalId, user.EmailAddress);
+                
+                var changes = new List<string>();
+                
                 // Update basic fields if provided/changed
                 if (!string.IsNullOrWhiteSpace(email) &&
                     !string.Equals(user.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 {
+                    r_logger.LogInformation("Updating email from {OldEmail} to {NewEmail}", user.EmailAddress, email);
                     user.EmailAddress = email!;
+                    changes.Add("Email");
                 }
 
                 if (!string.IsNullOrWhiteSpace(fullName) &&
                     !string.Equals(user.FullName, fullName, StringComparison.Ordinal))
                 {
+                    r_logger.LogInformation("Updating full name from {OldName} to {NewName}", user.FullName, fullName);
                     user.FullName = fullName;
+                    changes.Add("FullName");
                 }
 
                 if (!string.IsNullOrWhiteSpace(i_externalUserDto.Country))
                 {
+                    r_logger.LogInformation("Updating country from {OldCountry} to {NewCountry}", user.Country, i_externalUserDto.Country);
                     user.Country = i_externalUserDto.Country;
+                    changes.Add("Country");
                 }
 
                 user.LastLoginAt = DateTimeOffset.UtcNow;
-                await r_DbContext.SaveChangesAsync();
+                changes.Add("LastLoginAt");
+                
+                if (changes.Any())
+                {
+                    var dbUpdateStartTime = DateTimeOffset.UtcNow;
+                    await r_DbContext.SaveChangesAsync();
+                    var dbUpdateTime = DateTimeOffset.UtcNow.Subtract(dbUpdateStartTime).TotalMilliseconds;
+                    
+                    r_logger.LogInformation("Successfully updated existing user: UserId={UserId}, Changes={Changes}, LastLoginAt={LastLoginAt}, DbUpdateTime={DbUpdateTime}ms", 
+                        user.UserId, string.Join(", ", changes), user.LastLoginAt, dbUpdateTime);
+                }
+                else
+                {
+                    r_logger.LogInformation("No changes detected for existing user: UserId={UserId}, ExternalId={ExternalId}", 
+                        user.UserId, user.ExternalId);
+                }
             }
 
             // Return minimal profile DTO
-            return new UserProfileDto
+            var profileDto = new UserProfileDto
             {
                 UserId = user.UserId,
                 ExternalId = user.ExternalId,
@@ -89,6 +149,12 @@ namespace GainIt.API.Services.Users.Implementations
                 FullName = user.FullName,
                 Country = user.Country
             };
+
+            var totalTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+            r_logger.LogInformation("Returning user profile DTO: UserId={UserId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}, TotalProcessingTime={TotalTime}ms", 
+                profileDto.UserId, profileDto.ExternalId, profileDto.EmailAddress, profileDto.FullName, totalTime);
+
+            return profileDto;
         }
 
         public async Task<Gainer> GetGainerByIdAsync(Guid i_userId)

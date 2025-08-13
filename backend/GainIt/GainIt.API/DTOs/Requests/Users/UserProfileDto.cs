@@ -15,5 +15,9 @@ namespace GainIt.API.DTOs.Requests.Users
 
         public string? Country { get; set; }
 
+        public override string ToString()
+        {
+            return $"UserProfileDto{{UserId={UserId}, ExternalId='{ExternalId}', EmailAddress='{EmailAddress}', FullName='{FullName}', Country='{Country}'}}";
+        }
     }
 }

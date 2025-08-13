@@ -11,5 +11,10 @@
         public string? IdentityProvider { get; init; }
 
         public string? Country { get; init; }
+
+        public override string ToString()
+        {
+            return $"ExternalUserDto{{ExternalId='{ExternalId}', Email='{Email}', FullName='{FullName}', IdentityProvider='{IdentityProvider}', Country='{Country}'}}";
+        }
     }
 }

@@ -47,34 +47,73 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<UserProfileDto>> ProvisionCurrentUser()
         {
-            // Required identity
-            var oid = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(oid))
-                return Unauthorized(new { Message = "Missing oid claim" });
-
-            var email = tryGetClaim(User, "emails", ClaimTypes.Email, "email");
-            var name = tryGetClaim(User, "name")
-                        ?? string.Join(' ',
-                            new[] { tryGetClaim(User, "given_name"), tryGetClaim(User, "family_name") }
-                            .Where(s => !string.IsNullOrWhiteSpace(s)));
-
-            var idp = tryGetClaim(User, "idp");
-            var country = tryGetClaim(User, "country")
-                          ?? User.Claims.FirstOrDefault(c =>
-                                c.Type.StartsWith("extension_", StringComparison.OrdinalIgnoreCase) &&
-                                c.Type.EndsWith("country", StringComparison.OrdinalIgnoreCase))?.Value;
-
-            var dto = new ExternalUserDto
+            var correlationId = HttpContext.TraceIdentifier;
+            var startTime = DateTimeOffset.UtcNow;
+            
+            r_logger.LogInformation("Starting user provisioning process. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}", 
+                correlationId, Request.Headers.UserAgent.ToString(), HttpContext.Connection.RemoteIpAddress, User.Identity?.Name);
+            
+            // Log all available claims for security monitoring
+            var allClaims = User.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
+            r_logger.LogDebug("All available claims for user provisioning: CorrelationId={CorrelationId}, Claims={Claims}", 
+                correlationId, string.Join(", ", allClaims));
+            
+            try
             {
-                ExternalId = oid!,
-                Email = email,
-                FullName = string.IsNullOrWhiteSpace(name) ? null : name,
-                IdentityProvider = idp,
-                Country = country
-            };
+                // Required identity
+                var oid = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(oid))
+                {
+                    r_logger.LogWarning("Missing OID claim during user provisioning. CorrelationId={CorrelationId}, Available claims: {ClaimTypes}, RemoteIP={RemoteIP}", 
+                        correlationId, string.Join(", ", allClaims), HttpContext.Connection.RemoteIpAddress);
+                    return Unauthorized(new { Message = "Missing oid claim" });
+                }
 
-            var profile = await r_userProfileService.GetOrCreateFromExternalAsync(dto);
-            return Ok(profile);
+                r_logger.LogInformation("Extracted OID claim. CorrelationId={CorrelationId}, OID={OID}", correlationId, oid);
+
+                var email = tryGetClaim(User, "emails", ClaimTypes.Email, "email");
+                var name = tryGetClaim(User, "name")
+                            ?? string.Join(' ',
+                                new[] { tryGetClaim(User, "given_name"), tryGetClaim(User, "family_name") }
+                                .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+                var idp = tryGetClaim(User, "idp");
+                var country = tryGetClaim(User, "country")
+                              ?? User.Claims.FirstOrDefault(c =>
+                                    c.Type.StartsWith("extension_", StringComparison.OrdinalIgnoreCase) &&
+                                    c.Type.EndsWith("country", StringComparison.OrdinalIgnoreCase))?.Value;
+
+                r_logger.LogInformation("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}, Country={Country}", 
+                    correlationId, email, name, idp, country);
+
+                var dto = new ExternalUserDto
+                {
+                    ExternalId = oid!,
+                    Email = email,
+                    FullName = string.IsNullOrWhiteSpace(name) ? null : name,
+                    IdentityProvider = idp,
+                    Country = country
+                };
+
+                r_logger.LogInformation("Created ExternalUserDto for provisioning. CorrelationId={CorrelationId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
+                    correlationId, dto.ExternalId, dto.Email, dto.FullName);
+
+                var profile = await r_userProfileService.GetOrCreateFromExternalAsync(dto);
+                
+                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                r_logger.LogInformation("Successfully provisioned user. CorrelationId={CorrelationId}, UserId={UserId}, ExternalId={ExternalId}, Email={Email}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
+                    correlationId, profile.UserId, profile.ExternalId, profile.EmailAddress, processingTime, HttpContext.Connection.RemoteIpAddress);
+                
+                return Ok(profile);
+            }
+            catch (Exception ex)
+            {
+                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                r_logger.LogError(ex, "Error during user provisioning process. CorrelationId={CorrelationId}, ProcessingTime={ProcessingTime}ms, OID: {OID}, Available claims: {ClaimTypes}, RemoteIP={RemoteIP}", 
+                    correlationId, processingTime, tryGetClaim(User, "oid", ClaimTypes.NameIdentifier),
+                    string.Join(", ", allClaims), HttpContext.Connection.RemoteIpAddress);
+                throw;
+            }
         }
 
 
