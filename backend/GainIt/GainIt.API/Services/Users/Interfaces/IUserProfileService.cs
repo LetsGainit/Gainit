@@ -29,9 +29,9 @@ namespace GainIt.API.Services.Users.Interfaces
         Task<IEnumerable<NonprofitExpertise>> GetNonprofitExpertiseAsync(Guid userId);
         
         // Add expertise with type-specific handling
-        Task<TechExpertise> AddExpertiseToGainerAsync(Guid userId, TechExpertise expertise);
-        Task<TechExpertise> AddExpertiseToMentorAsync(Guid userId, TechExpertise expertise);
-        Task<NonprofitExpertise> AddExpertiseToNonprofitAsync(Guid userId, NonprofitExpertise expertise);
+        Task<TechExpertise> AddExpertiseToGainerAsync(Guid userId, AddTechExpertiseDto expertiseDto);
+        Task<TechExpertise> AddExpertiseToMentorAsync(Guid userId, AddTechExpertiseDto expertiseDto);
+        Task<NonprofitExpertise> AddExpertiseToNonprofitAsync(Guid userId, AddNonprofitExpertiseDto expertiseDto);
         
         // Get achievements with type-specific context
         Task<IEnumerable<UserAchievement>> GetGainerAchievementsAsync(Guid userId);

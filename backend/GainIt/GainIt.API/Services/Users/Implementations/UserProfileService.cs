@@ -488,7 +488,7 @@ namespace GainIt.API.Services.Users.Implementations
             }
         }
 
-        public async Task<TechExpertise> AddExpertiseToGainerAsync(Guid userId, TechExpertise expertise)
+        public async Task<TechExpertise> AddExpertiseToGainerAsync(Guid userId, AddTechExpertiseDto expertiseDto)
         {
             r_logger.LogInformation("Adding expertise to Gainer: UserId={UserId}", userId);
 
@@ -512,9 +512,9 @@ namespace GainIt.API.Services.Users.Implementations
                 }
 
                 // Add expertise details to the respective lists  
-                gainer.TechExpertise.ProgrammingLanguages.AddRange(expertise.ProgrammingLanguages);
-                gainer.TechExpertise.Technologies.AddRange(expertise.Technologies);
-                gainer.TechExpertise.Tools.AddRange(expertise.Tools);
+                gainer.TechExpertise.ProgrammingLanguages.AddRange(expertiseDto.ProgrammingLanguages ?? new List<string>());
+                gainer.TechExpertise.Technologies.AddRange(expertiseDto.Technologies ?? new List<string>());
+                gainer.TechExpertise.Tools.AddRange(expertiseDto.Tools ?? new List<string>());
 
                 await r_DbContext.SaveChangesAsync();
 
@@ -537,7 +537,7 @@ namespace GainIt.API.Services.Users.Implementations
 
 
 
-        public async Task<TechExpertise> AddExpertiseToMentorAsync(Guid userId, TechExpertise expertise)
+        public async Task<TechExpertise> AddExpertiseToMentorAsync(Guid userId, AddTechExpertiseDto expertiseDto)
         {
             r_logger.LogInformation("Adding expertise to Mentor: UserId={UserId}", userId);
 
@@ -561,9 +561,9 @@ namespace GainIt.API.Services.Users.Implementations
                 }
 
                 // Add expertise details to the respective lists  
-                mentor.TechExpertise.ProgrammingLanguages.AddRange(expertise.ProgrammingLanguages);
-                mentor.TechExpertise.Technologies.AddRange(expertise.Technologies);
-                mentor.TechExpertise.Tools.AddRange(expertise.Tools);
+                mentor.TechExpertise.ProgrammingLanguages.AddRange(expertiseDto.ProgrammingLanguages ?? new List<string>());
+                mentor.TechExpertise.Technologies.AddRange(expertiseDto.Technologies ?? new List<string>());
+                mentor.TechExpertise.Tools.AddRange(expertiseDto.Tools ?? new List<string>());
 
                 await r_DbContext.SaveChangesAsync();
 
@@ -577,9 +577,9 @@ namespace GainIt.API.Services.Users.Implementations
             }
         }
 
-        public async Task<NonprofitExpertise> AddExpertiseToNonprofitAsync(Guid userId, NonprofitExpertise expertise)
+        public async Task<NonprofitExpertise> AddExpertiseToNonprofitAsync(Guid userId, AddNonprofitExpertiseDto expertiseDto)
         {
-            r_logger.LogInformation("Adding expertise to Nonprofit: UserId={UserId}, FieldOfWork={FieldOfWork}", userId, expertise.FieldOfWork);
+            r_logger.LogInformation("Adding expertise to Nonprofit: UserId={UserId}, FieldOfWork={FieldOfWork}", userId, expertiseDto.FieldOfWork);
 
             try
             {
@@ -594,25 +594,25 @@ namespace GainIt.API.Services.Users.Implementations
                     nonprofit.NonprofitExpertise = new NonprofitExpertise
                     {
                         User = nonprofit, // Set the required 'User' property to the current nonprofit instance  
-                        FieldOfWork = expertise.FieldOfWork,
-                        MissionStatement = expertise.MissionStatement
+                        FieldOfWork = expertiseDto.FieldOfWork,
+                        MissionStatement = expertiseDto.MissionStatement
                     };
                 }
                 else
                 {
                     // Update existing NonprofitExpertise with new data
-                    nonprofit.NonprofitExpertise.FieldOfWork = expertise.FieldOfWork;
-                    nonprofit.NonprofitExpertise.MissionStatement = expertise.MissionStatement;
+                    nonprofit.NonprofitExpertise.FieldOfWork = expertiseDto.FieldOfWork;
+                    nonprofit.NonprofitExpertise.MissionStatement = expertiseDto.MissionStatement;
                 }
 
                 await r_DbContext.SaveChangesAsync();
 
-                r_logger.LogInformation("Successfully added expertise to Nonprofit: UserId={UserId}, FieldOfWork={FieldOfWork}", userId, expertise.FieldOfWork);
+                r_logger.LogInformation("Successfully added expertise to Nonprofit: UserId={UserId}, FieldOfWork={FieldOfWork}", userId, expertiseDto.FieldOfWork);
                 return nonprofit.NonprofitExpertise;
             }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error adding expertise to Nonprofit: UserId={UserId}, FieldOfWork={FieldOfWork}", userId, expertise.FieldOfWork);
+                r_logger.LogError(ex, "Error adding expertise to Nonprofit: UserId={UserId}, FieldOfWork={FieldOfWork}", userId, expertiseDto.MissionStatement);
                 throw;
             }
         }
@@ -901,101 +901,89 @@ namespace GainIt.API.Services.Users.Implementations
             }
         }
 
-        public Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm)
+        public async Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm)
         {
-            r_logger.LogWarning("SearchGainersAsync not implemented: SearchTerm={SearchTerm}", searchTerm);
-            throw new NotImplementedException();
-        }
+            r_logger.LogInformation("Searching Gainers: SearchTerm={SearchTerm}", searchTerm);
 
-        public Task<IEnumerable<Mentor>> SearchMentorsAsync(string searchTerm)
-        {
-            r_logger.LogWarning("SearchMentorsAsync not implemented: SearchTerm={SearchTerm}", searchTerm);
-            throw new NotImplementedException();
-        }
+            try
+            {
+                var results = await r_DbContext.Gainers
+                    .Include(g => g.TechExpertise)
+                    .Include(g => g.Achievements)
+                    .Where(g => (g.FullName != null && g.FullName.Contains(searchTerm)) || 
+                               (g.Biography != null && g.Biography.Contains(searchTerm)) ||
+                               (g.AreasOfInterest != null && g.AreasOfInterest.Any(area => area.Contains(searchTerm))) ||
+                               (g.TechExpertise != null && 
+                                (g.TechExpertise.ProgrammingLanguages != null && g.TechExpertise.ProgrammingLanguages.Any(lang => lang.Contains(searchTerm)) ||
+                                 g.TechExpertise.Technologies != null && g.TechExpertise.Technologies.Any(tech => tech.Contains(searchTerm)) ||
+                                 g.TechExpertise.Tools != null && g.TechExpertise.Tools.Any(tool => tool.Contains(searchTerm)))))
+                    .ToListAsync();
 
-        public Task<IEnumerable<NonprofitOrganization>> SearchNonprofitsAsync(string searchTerm)
-        {
-            r_logger.LogWarning("SearchNonprofitsAsync not implemented: SearchTerm={SearchTerm}", searchTerm);
-            throw new NotImplementedException();
-        }
-
-        /*public async Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm)
-        {
-            return await _dbContext.Gainers
-                .Include(g => g.TechExpertise)
-                .Where(g => g.FullName.Contains(searchTerm) || 
-                           g.Biography.Contains(searchTerm) ||
-                           g.TechExpertise.Any(e => e.Name.Contains(searchTerm)))
-                .ToListAsync();
+                r_logger.LogInformation("Successfully searched Gainers: SearchTerm={SearchTerm}, ResultsCount={ResultsCount}", searchTerm, results.Count);
+                return results;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error searching Gainers: SearchTerm={SearchTerm}", searchTerm);
+                throw;
+            }
         }
 
         public async Task<IEnumerable<Mentor>> SearchMentorsAsync(string searchTerm)
         {
-            return await _dbContext.Mentors
-                .Include(m => m.TechExpertise)
-                .Where(m => m.FullName.Contains(searchTerm) || 
-                           m.Biography.Contains(searchTerm) ||
-                           m.TechExpertise.Any(e => e.Name.Contains(searchTerm)))
-                .ToListAsync();
+            r_logger.LogInformation("Searching Mentors: SearchTerm={SearchTerm}", searchTerm);
+
+            try
+            {
+                var results = await r_DbContext.Mentors
+                    .Include(m => m.TechExpertise)
+                    .Include(m => m.Achievements)
+                    .Where(m => (m.FullName != null && m.FullName.Contains(searchTerm)) || 
+                               (m.Biography != null && m.Biography.Contains(searchTerm)) ||
+                               (m.AreaOfExpertise != null && m.AreaOfExpertise.Contains(searchTerm)) ||
+                               (m.TechExpertise != null && 
+                                (m.TechExpertise.ProgrammingLanguages != null && m.TechExpertise.ProgrammingLanguages.Any(lang => lang.Contains(searchTerm)) ||
+                                 m.TechExpertise.Technologies != null && m.TechExpertise.Technologies.Any(tech => tech.Contains(searchTerm)) ||
+                                 m.TechExpertise.Tools != null && m.TechExpertise.Tools.Any(tool => tool.Contains(searchTerm)))))
+                    .ToListAsync();
+
+                r_logger.LogInformation("Successfully searched Mentors: SearchTerm={SearchTerm}, ResultsCount={ResultsCount}", searchTerm, results.Count);
+                return results;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error searching Mentors: SearchTerm={SearchTerm}", searchTerm);
+                throw;
+            }
         }
 
         public async Task<IEnumerable<NonprofitOrganization>> SearchNonprofitsAsync(string searchTerm)
         {
-            return await _dbContext.Nonprofits
-                .Include(n => n.NonprofitExpertise)
-                .Where(n => n.FullName.Contains(searchTerm) || 
-                           n.Biography.Contains(searchTerm) ||
-                           n.NonprofitExpertise.Any(e => e.Name.Contains(searchTerm)))
-                .ToListAsync();
-        }*/
+            r_logger.LogInformation("Searching Nonprofits: SearchTerm={SearchTerm}", searchTerm);
 
-
-
-        ////////////////////   the stats sevice? ///////////////////////////////////////////////////
-
-        /*public async Task<GainerStats> GetGainerStatsAsync(Guid userId)
-        {
-            var gainer = await GetGainerByIdAsync(userId);
-            if (gainer == null)
-                throw new KeyNotFoundException($"Gainer with ID {userId} not found");
-
-            return new GainerStats
+            try
             {
-                TotalProjects = gainer.ParticipatedProjects.Count,
-                CompletedProjects = gainer.ParticipatedProjects.Count(p => p.ProjectStatus == eProjectStatus.Completed),
-                TotalAchievements = gainer.Achievements.Count,
-                ExpertiseCount = gainer.TechExpertise.Count
-            };
+                var results = await r_DbContext.Nonprofits
+                    .Include(n => n.NonprofitExpertise)
+                    .Include(n => n.Achievements)
+                    .Where(n => (n.FullName != null && n.FullName.Contains(searchTerm)) || 
+                               (n.Biography != null && n.Biography.Contains(searchTerm)) ||
+                               (n.WebsiteUrl != null && n.WebsiteUrl.Contains(searchTerm)) ||
+                               (n.NonprofitExpertise != null && 
+                                (n.NonprofitExpertise.FieldOfWork != null && n.NonprofitExpertise.FieldOfWork.Contains(searchTerm) ||
+                                 n.NonprofitExpertise.MissionStatement != null && n.NonprofitExpertise.MissionStatement.Contains(searchTerm))))
+                    .ToListAsync();
+
+                r_logger.LogInformation("Successfully searched Nonprofits: SearchTerm={SearchTerm}, ResultsCount={ResultsCount}", searchTerm, results.Count);
+                return results;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error searching Nonprofits: SearchTerm={SearchTerm}", searchTerm);
+                throw;
+            }
         }
 
-        public async Task<MentorStats> GetMentorStatsAsync(Guid userId)
-        {
-            var mentor = await GetMentorByIdAsync(userId);
-            if (mentor == null)
-                throw new KeyNotFoundException($"Mentor with ID {userId} not found");
-
-            return new MentorStats
-            {
-                TotalMentoredProjects = mentor.MentoredProjects.Count,
-                CompletedMentoredProjects = mentor.MentoredProjects.Count(p => p.ProjectStatus == eProjectStatus.Completed),
-                TotalAchievements = mentor.Achievements.Count,
-                ExpertiseCount = mentor.TechExpertise.Count
-            };
-        }
-
-        public async Task<NonprofitStats> GetNonprofitStatsAsync(Guid userId)
-        {
-            var nonprofit = await GetNonprofitByIdAsync(userId);
-            if (nonprofit == null)
-                throw new KeyNotFoundException($"Nonprofit with ID {userId} not found");
-
-            return new NonprofitStats
-            {
-                TotalOwnedProjects = nonprofit.OwnedProjects.Count,
-                CompletedProjects = nonprofit.OwnedProjects.Count(p => p.ProjectStatus == eProjectStatus.Completed),
-                TotalAchievements = nonprofit.Achievements.Count,
-                ExpertiseCount = nonprofit.NonprofitExpertise.Count
-            };
-        }*/
+        
     }
 }
