@@ -23,6 +23,73 @@ namespace GainIt.API.Services.Users.Implementations
             r_DbContext = i_dbContext;
             r_logger = i_logger;
         }
+        
+        public async Task<UserProfileDto> GetOrCreateFromExternalAsync(ExternalUserDto i_externalUserDto)
+        {
+            if (i_externalUserDto is null) throw new ArgumentNullException(nameof(i_externalUserDto));
+            if (string.IsNullOrWhiteSpace(i_externalUserDto.ExternalId))
+                throw new ArgumentException("ExternalId (OID) is required.", nameof(i_externalUserDto.ExternalId));
+
+            var email = i_externalUserDto.Email?.Trim();
+            var fullName = i_externalUserDto.FullName!.Trim();
+
+            // Try find by ExternalId (OID)
+            var user = await r_DbContext.Users.SingleOrDefaultAsync(u => u.ExternalId == i_externalUserDto.ExternalId);
+
+            if (user is null)
+            {
+                // For first-time provisioning your User requires EmailAddress:
+                if (string.IsNullOrWhiteSpace(email))
+                    throw new InvalidOperationException("Email is required for new user provisioning.");
+
+                user = new User
+                {
+                    UserId = Guid.NewGuid(),
+                    ExternalId = i_externalUserDto.ExternalId,
+                    EmailAddress = email!,
+                    FullName = fullName,
+                    Country = string.IsNullOrWhiteSpace(i_externalUserDto.Country) ? null : i_externalUserDto.Country,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow
+                };
+
+                r_DbContext.Users.Add(user);
+                await r_DbContext.SaveChangesAsync();
+            }
+            else
+            {
+                // Update basic fields if provided/changed
+                if (!string.IsNullOrWhiteSpace(email) &&
+                    !string.Equals(user.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
+                {
+                    user.EmailAddress = email!;
+                }
+
+                if (!string.IsNullOrWhiteSpace(fullName) &&
+                    !string.Equals(user.FullName, fullName, StringComparison.Ordinal))
+                {
+                    user.FullName = fullName;
+                }
+
+                if (!string.IsNullOrWhiteSpace(i_externalUserDto.Country))
+                {
+                    user.Country = i_externalUserDto.Country;
+                }
+
+                user.LastLoginAt = DateTimeOffset.UtcNow;
+                await r_DbContext.SaveChangesAsync();
+            }
+
+            // Return minimal profile DTO
+            return new UserProfileDto
+            {
+                UserId = user.UserId,
+                ExternalId = user.ExternalId,
+                EmailAddress = user.EmailAddress,
+                FullName = user.FullName,
+                Country = user.Country
+            };
+        }
 
         public async Task<Gainer> GetGainerByIdAsync(Guid i_userId)
         {
