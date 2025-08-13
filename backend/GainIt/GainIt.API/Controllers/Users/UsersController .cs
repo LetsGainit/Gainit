@@ -1,10 +1,13 @@
-﻿using GainIt.API.DTOs.ViewModels.Users;
+﻿using GainIt.API.DTOs.Requests.Users;
+using GainIt.API.DTOs.ViewModels.Users;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
 using GainIt.API.Services.Users.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace GainIt.API.Controllers.Users
 {
@@ -23,6 +26,96 @@ namespace GainIt.API.Controllers.Users
             r_userProfileService = i_userProfileService;
             r_logger = i_logger;
         }
+        private static string? tryGetClaim(ClaimsPrincipal user, params string[] types)
+        {
+            foreach (var t in types)
+            {
+                var v = user.FindFirstValue(t);
+                if (!string.IsNullOrWhiteSpace(v)) return v;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Ensure a local user exists for the current external identity (OID).
+        /// Builds the identity DTO from the access-token claims (server-side),
+        /// then creates/updates the user and returns a minimal profile.
+        /// </summary>
+        [HttpPost("me/ensure")]
+        [Authorize(Policy = "RequireAccessAsUser")]
+        [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<UserProfileDto>> ProvisionCurrentUser()
+        {
+            var correlationId = HttpContext.TraceIdentifier;
+            var startTime = DateTimeOffset.UtcNow;
+            
+            r_logger.LogInformation("Starting user provisioning process. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}", 
+                correlationId, Request.Headers.UserAgent.ToString(), HttpContext.Connection.RemoteIpAddress, User.Identity?.Name);
+            
+            // Log all available claims for security monitoring
+            var allClaims = User.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
+            r_logger.LogDebug("All available claims for user provisioning: CorrelationId={CorrelationId}, Claims={Claims}", 
+                correlationId, string.Join(", ", allClaims));
+            
+            try
+            {
+                // Required identity
+                var oid = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(oid))
+                {
+                    r_logger.LogWarning("Missing OID claim during user provisioning. CorrelationId={CorrelationId}, Available claims: {ClaimTypes}, RemoteIP={RemoteIP}", 
+                        correlationId, string.Join(", ", allClaims), HttpContext.Connection.RemoteIpAddress);
+                    return Unauthorized(new { Message = "Missing oid claim" });
+                }
+
+                r_logger.LogDebug("Extracted OID claim. CorrelationId={CorrelationId}, OID={OID}", correlationId, oid);
+
+                var email = tryGetClaim(User, "emails", ClaimTypes.Email, "email");
+                var name = tryGetClaim(User, "name")
+                            ?? string.Join(' ',
+                                new[] { tryGetClaim(User, "given_name"), tryGetClaim(User, "family_name") }
+                                .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+                var idp = tryGetClaim(User, "idp");
+                var country = tryGetClaim(User, "country")
+                              ?? User.Claims.FirstOrDefault(c =>
+                                    c.Type.StartsWith("extension_", StringComparison.OrdinalIgnoreCase) &&
+                                    c.Type.EndsWith("country", StringComparison.OrdinalIgnoreCase))?.Value;
+
+                r_logger.LogDebug("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}, Country={Country}", 
+                    correlationId, email, name, idp, country);
+
+                var dto = new ExternalUserDto
+                {
+                    ExternalId = oid!,
+                    Email = email,
+                    FullName = string.IsNullOrWhiteSpace(name) ? null : name,
+                    IdentityProvider = idp,
+                    Country = country
+                };
+
+                r_logger.LogDebug("Created ExternalUserDto for provisioning. CorrelationId={CorrelationId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
+                    correlationId, dto.ExternalId, dto.Email, dto.FullName);
+
+                var profile = await r_userProfileService.GetOrCreateFromExternalAsync(dto);
+                
+                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                r_logger.LogInformation("Successfully provisioned user. CorrelationId={CorrelationId}, UserId={UserId}, ExternalId={ExternalId}, Email={Email}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
+                    correlationId, profile.UserId, profile.ExternalId, profile.EmailAddress, processingTime, HttpContext.Connection.RemoteIpAddress);
+                
+                return Ok(profile);
+            }
+            catch (Exception ex)
+            {
+                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                r_logger.LogError(ex, "Error during user provisioning process. CorrelationId={CorrelationId}, ProcessingTime={ProcessingTime}ms, OID: {OID}, Available claims: {ClaimTypes}, RemoteIP={RemoteIP}", 
+                    correlationId, processingTime, tryGetClaim(User, "oid", ClaimTypes.NameIdentifier),
+                    string.Join(", ", allClaims), HttpContext.Connection.RemoteIpAddress);
+                throw;
+            }
+        }
+
 
         /// <summary>
         /// Retrieves a complete Gainer profile by their ID.
@@ -32,7 +125,7 @@ namespace GainIt.API.Controllers.Users
         /// The complete Gainer profile including personal information, projects, and achievements.
         /// Returns 200 OK if found, 400 Bad Request if ID is invalid, or 404 Not Found if Gainer doesn't exist.
         /// </returns>
-        
+
         [HttpGet("gainer/{id}/profile")]
         [ProducesResponseType(typeof(FullGainerViewModel), 200)]
         [ProducesResponseType(typeof(object), 400)]

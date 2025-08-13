@@ -16,6 +16,10 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+
 
 // Build configuration first
 var configBuilder = new ConfigurationBuilder()
@@ -106,6 +110,30 @@ try
         );
     });
 
+    var b2c = builder.Configuration.GetSection("AzureAdB2C");
+    var authority = $"{b2c["Instance"]!.TrimEnd('/')}/{b2c["Domain"]}/{b2c["SignUpSignInPolicyId"]}/v2.0";
+
+    builder.Services
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(o =>
+        {
+            o.Authority = authority;                                            // https://gainitauth.ciamlogin.com/.../GainitauthUF1/v2.0
+            o.Audience = b2c["Audience"];                                      // api://gainitwebapp-...azurewebsites.net
+            o.TokenValidationParameters = new TokenValidationParameters
+            {
+                NameClaimType = "name",
+                ValidateIssuer = true,
+                ValidateAudience = true
+            };
+        });
+
+    builder.Services.AddAuthorization(options =>
+    {
+        // ????????? ??? ?????: ????? ?????? ???? ?? ?-scope ?? ?-API
+        options.AddPolicy("RequireAccessAsUser",
+            p => p.RequireClaim("scp", "access_as_user"));
+    });
+
     // Add services to the container.
     builder.Services.AddScoped<IProjectService, ProjectService>();
     builder.Services.AddScoped<IUserProfileService, UserProfileService>();
@@ -127,6 +155,25 @@ try
         var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
         var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
         options.IncludeXmlComments(xmlPath);
+
+        // JWT Bearer in Swagger (Authorize button)
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Enter: Bearer {your_access_token}"
+        });
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement {
+        {
+            new OpenApiSecurityScheme {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            Array.Empty<string>()
+        }
+    });
     });
 
     var app = builder.Build();
@@ -146,6 +193,7 @@ try
     app.UsePerformanceMonitoring(); // Monitor performance and memory usage
     app.UseMiddleware<RequestLoggingMiddleware>(); //logs starts
     app.UseHttpsRedirection(); //redirects to https
+    app.UseAuthentication(); //authenticates the request
     app.UseAuthorization(); //authorizes the request
     app.MapControllers(); //maps the controllers to the request
     

@@ -21,7 +21,8 @@ namespace GainIt.API.Services.Users.Interfaces
         Task<Gainer> UpdateGainerProfileAsync(Guid userId, GainerProfileUpdateDTO updateDto);
         Task<Mentor> UpdateMentorProfileAsync(Guid userId, MentorProfileUpdateDTO updateDto);
         Task<NonprofitOrganization> UpdateNonprofitProfileAsync(Guid userId, NonprofitProfileUpdateDTO updateDto);
-        
+        Task<UserProfileDto> GetOrCreateFromExternalAsync(ExternalUserDto dto);
+
         // Get expertise with type-specific details
         Task<IEnumerable<TechExpertise>> GetGainerExpertiseAsync(Guid userId);
         Task<IEnumerable<TechExpertise>> GetMentorExpertiseAsync(Guid userId);
