@@ -344,30 +344,38 @@ namespace GainIt.API.Data
                 var mentor = new Mentor
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Dr. Sarah Chen-Martinez",
-                    EmailAddress = "sarah.chen@techmentor.dev",
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Dr. Noa Cohen",
+                    EmailAddress = "noa.cohen@techmentor.dev",
                     YearsOfExperience = 15,
                     AreaOfExpertise = "Full Stack Development",
                     Biography = "Senior software architect with expertise in cloud technologies and microservices.",
-                    GitHubURL = "https://github.com/wonntann",
+                    GitHubURL = "https://github.com/noacohen",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/65.jpg",
                     LinkedInURL = "https://linkedin.com/company/mentors-in-tech",
                     FacebookPageURL = "https://facebook.com/TechCareerMentorship",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
                     Achievements = new List<UserAchievement>()
                 };
 
                 var mentor2 = new Mentor
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "David Lee-Thompson",
-                    EmailAddress = "david.lee@mentorspace.io",
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "David Levy",
+                    EmailAddress = "david.levy@mentorspace.io",
                     YearsOfExperience = 10,
                     AreaOfExpertise = "Data Science & AI",
                     Biography = "Experienced data scientist and AI mentor, passionate about machine learning and analytics.",
-                    GitHubURL = "https://github.com/hepaestus",
+                    GitHubURL = "https://github.com/davidlevy",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/66.jpg",
                     LinkedInURL = "https://linkedin.com/company/tech-career-mentorship",
                     FacebookPageURL = "https://facebook.com/TechCareerMentor",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
                     Achievements = new List<UserAchievement>()
                 };
 
@@ -375,14 +383,18 @@ namespace GainIt.API.Data
                 var nonprofit = new NonprofitOrganization
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "TechForGood Foundation",
-                    EmailAddress = "contact@techforgood.org",
-                    WebsiteUrl = "https://techforgood.org",
-                    Biography = "Empowering communities through technology education and digital literacy programs.",
-                    GitHubURL = "https://github.com/techrityorg",
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "TechForGood Israel",
+                    EmailAddress = "contact@techforgood.co.il",
+                    WebsiteUrl = "https://techforgood.co.il",
+                    Biography = "Empowering Israeli communities through technology education and digital literacy programs.",
+                    GitHubURL = "https://github.com/techforgood-israel",
                     ProfilePictureURL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQHIVTRK4hstoI6IBdXmslzxY96ql1mZQF6wg&s",
-                    LinkedInURL = "https://linkedin.com/company/techforgood-foundation",
-                    FacebookPageURL = "https://facebook.com/TechForGoodFoundation",
+                    LinkedInURL = "https://linkedin.com/company/techforgood-israel",
+                    FacebookPageURL = "https://facebook.com/TechForGoodIsrael",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
                     Achievements = new List<UserAchievement>()
                 };
 
@@ -428,90 +440,114 @@ namespace GainIt.API.Data
                 var gainer1 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Alexander J. Wilson",
-                    EmailAddress = "alex.wilson@techlearner.dev",
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Yossi Rosenberg",
+                    EmailAddress = "yossi.rosenberg@techlearner.dev",
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Web Development", "UI/UX Design", "Cloud Computing" },
-                    GitHubURL = "https://github.com/alexjwilson",
-                    LinkedInURL = "https://linkedin.com/in/alexjwilson",
+                    GitHubURL = "https://github.com/yossirosenberg",
+                    LinkedInURL = "https://linkedin.com/in/yossirosenberg",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/12.jpg",
-                    FacebookPageURL = "https://facebook.com/alex.j.wilson",
+                    FacebookPageURL = "https://facebook.com/yossi.rosenberg",
                     Biography = "Aspiring web developer passionate about building user-friendly applications and exploring cloud technologies.",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
                     Achievements = new List<UserAchievement>()
                 };
 
                 var gainer2 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Maria Rodriguez-Silva",
-                    EmailAddress = "maria.rodriguez@innovatelearn.net",
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Maya Goldstein",
+                    EmailAddress = "maya.goldstein@innovatelearn.net",
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "Machine Learning", "Data Science", "Python" },
-                    GitHubURL = "https://github.com/suecodes",
-                    LinkedInURL = "https://linkedin.com/in/mariarodriguezdev",
+                    GitHubURL = "https://github.com/mayagoldstein",
+                    LinkedInURL = "https://linkedin.com/in/mayagoldstein",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/22.jpg",
-                    FacebookPageURL = "https://facebook.com/maria.rodriguez.dev",
+                    FacebookPageURL = "https://facebook.com/maya.goldstein",
                     Biography = "Graduate student specializing in machine learning and data science, with a love for Python and analytics.",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
                     Achievements = new List<UserAchievement>()
                 };
 
                 var gainer3 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Samuel Kim-Park",
-                    EmailAddress = "samuel.kim@codelearner.io",
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Amit Ben-David",
+                    EmailAddress = "amit.bendavid@codelearner.io",
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Mobile Development", "Android", "Kotlin" },
-                    GitHubURL = "https://github.com/Tech-Educators",
-                    LinkedInURL = "https://linkedin.com/in/samuelkimdev",
+                    GitHubURL = "https://github.com/amitbendavid",
+                    LinkedInURL = "https://linkedin.com/in/amitbendavid",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/33.jpg",
-                    FacebookPageURL = "https://facebook.com/samuel.kim.dev",
+                    FacebookPageURL = "https://facebook.com/amit.bendavid",
                     Biography = "Mobile development enthusiast focused on Android and Kotlin, eager to create impactful mobile solutions.",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
                     Achievements = new List<UserAchievement>()
                 };
 
                 var gainer4 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Priya Patel-Shah",
-                    EmailAddress = "priya.patel@securitylearn.dev",
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Tamar Weiss",
+                    EmailAddress = "tamar.weiss@securitylearn.dev",
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "Cybersecurity", "Networks", "Linux" },
-                    GitHubURL = "https://github.com/Open-Tech-Foundation",
-                    LinkedInURL = "https://linkedin.com/in/priyapateldev",
+                    GitHubURL = "https://github.com/tamarweiss",
+                    LinkedInURL = "https://linkedin.com/in/tamarweiss",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/44.jpg",
-                    FacebookPageURL = "https://facebook.com/priya.patel.tech",
+                    FacebookPageURL = "https://facebook.com/tamar.weiss",
                     Biography = "Cybersecurity graduate with a strong interest in network security and Linux systems administration.",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
                     Achievements = new List<UserAchievement>()
                 };
 
                 var gainer5 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Liam O'Connor-Walsh",
-                    EmailAddress = "liam.oconnor@gamedev.net",
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Eli Shalom",
+                    EmailAddress = "eli.shalom@gamedev.net",
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Game Development", "Unity", "C#" },
-                    GitHubURL = "https://github.com/SlateFoundation",
-                    LinkedInURL = "https://linkedin.com/in/liamoconnordev",
+                    GitHubURL = "https://github.com/elishalom",
+                    LinkedInURL = "https://linkedin.com/in/elishalom",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/55.jpg",
-                    FacebookPageURL = "https://facebook.com/liam.oconnor.dev",
+                    FacebookPageURL = "https://facebook.com/eli.shalom",
                     Biography = "Game development student passionate about Unity and C#, aiming to create engaging interactive experiences.",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
                     Achievements = new List<UserAchievement>()
                 };
 
                 var gainer6 = new Gainer
                 {
                     UserId = Guid.NewGuid(),
-                    FullName = "Emily Nguyen-Tran",
-                    EmailAddress = "emily.nguyen@ailearner.dev",
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Liora Barak",
+                    EmailAddress = "liora.barak@ailearner.dev",
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "AI", "Natural Language Processing", "Python" },
-                    GitHubURL = "https://github.com/AcademySoftwareFoundation",
-                    LinkedInURL = "https://linkedin.com/in/emilynguyenai",
-                    FacebookPageURL = "https://facebook.com/emily.nguyen.ai",
+                    GitHubURL = "https://github.com/liorabarak",
+                    LinkedInURL = "https://linkedin.com/in/liorabarak",
+                    FacebookPageURL = "https://facebook.com/liora.barak",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/77.jpg",
                     Biography = "AI graduate with a focus on natural language processing and Python, dedicated to advancing intelligent systems.",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
                     Achievements = new List<UserAchievement>()
                 };
 
@@ -658,7 +694,7 @@ namespace GainIt.API.Data
                 {
                     ProjectId = Guid.NewGuid(),
                     ProjectName = "TechForGood Learning Platform",
-                    ProjectDescription = "An online learning platform for TechForGood Foundation to provide free coding courses to underprivileged communities. Features include course management, progress tracking, and interactive coding exercises.",
+                    ProjectDescription = "An online learning platform for TechForGood Israel to provide free coding courses to underprivileged communities. Features include course management, progress tracking, and interactive coding exercises.",
                     ProjectStatus = eProjectStatus.InProgress,
                     ProjectSource = eProjectSource.NonprofitOrganization,
                     CreatedAtUtc = DateTime.UtcNow.AddDays(-30),
