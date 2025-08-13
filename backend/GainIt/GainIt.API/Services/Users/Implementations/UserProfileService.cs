@@ -43,17 +43,17 @@ namespace GainIt.API.Services.Users.Implementations
             }
 
             var email = i_externalUserDto.Email?.Trim();
-            var fullName = i_externalUserDto.FullName!.Trim();
+            var fullName = i_externalUserDto.FullName?.Trim();
 
-            r_logger.LogInformation("Processing user data - Email: {Email}, FullName: {FullName}, Country: {Country}", 
+            r_logger.LogDebug("Processing user data - Email: {Email}, FullName: {FullName}, Country: {Country}", 
                 email, fullName, i_externalUserDto.Country);
 
             // Try find by ExternalId (OID)
-            r_logger.LogInformation("Searching for existing user by ExternalId: {ExternalId}", i_externalUserDto.ExternalId);
+            r_logger.LogDebug("Searching for existing user by ExternalId: {ExternalId}", i_externalUserDto.ExternalId);
             var dbSearchStartTime = DateTimeOffset.UtcNow;
             var user = await r_DbContext.Users.SingleOrDefaultAsync(u => u.ExternalId == i_externalUserDto.ExternalId);
             var dbSearchTime = DateTimeOffset.UtcNow.Subtract(dbSearchStartTime).TotalMilliseconds;
-            r_logger.LogInformation("Database search completed: ExternalId={ExternalId}, UserFound={UserFound}, SearchTime={SearchTime}ms", 
+            r_logger.LogDebug("Database search completed: ExternalId={ExternalId}, UserFound={UserFound}, SearchTime={SearchTime}ms", 
                 i_externalUserDto.ExternalId, user != null, dbSearchTime);
 
             if (user is null)
@@ -68,7 +68,7 @@ namespace GainIt.API.Services.Users.Implementations
                 }
 
                 var newUserId = Guid.NewGuid();
-                r_logger.LogInformation("Creating new user with ID: {UserId}, ExternalId={ExternalId}, Email={Email}", 
+                r_logger.LogDebug("Creating new user with ID: {UserId}, ExternalId={ExternalId}, Email={Email}", 
                     newUserId, i_externalUserDto.ExternalId, email);
 
                 user = new User
@@ -101,7 +101,7 @@ namespace GainIt.API.Services.Users.Implementations
                 if (!string.IsNullOrWhiteSpace(email) &&
                     !string.Equals(user.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
                 {
-                    r_logger.LogInformation("Updating email from {OldEmail} to {NewEmail}", user.EmailAddress, email);
+                    r_logger.LogDebug("Updating email from {OldEmail} to {NewEmail}", user.EmailAddress, email);
                     user.EmailAddress = email!;
                     changes.Add("Email");
                 }
@@ -109,14 +109,14 @@ namespace GainIt.API.Services.Users.Implementations
                 if (!string.IsNullOrWhiteSpace(fullName) &&
                     !string.Equals(user.FullName, fullName, StringComparison.Ordinal))
                 {
-                    r_logger.LogInformation("Updating full name from {OldName} to {NewName}", user.FullName, fullName);
+                    r_logger.LogDebug("Updating full name from {OldName} to {NewName}", user.FullName, fullName);
                     user.FullName = fullName;
                     changes.Add("FullName");
                 }
 
                 if (!string.IsNullOrWhiteSpace(i_externalUserDto.Country))
                 {
-                    r_logger.LogInformation("Updating country from {OldCountry} to {NewCountry}", user.Country, i_externalUserDto.Country);
+                    r_logger.LogDebug("Updating country from {OldCountry} to {NewCountry}", user.Country, i_externalUserDto.Country);
                     user.Country = i_externalUserDto.Country;
                     changes.Add("Country");
                 }
@@ -135,7 +135,7 @@ namespace GainIt.API.Services.Users.Implementations
                 }
                 else
                 {
-                    r_logger.LogInformation("No changes detected for existing user: UserId={UserId}, ExternalId={ExternalId}", 
+                    r_logger.LogDebug("No changes detected for existing user: UserId={UserId}, ExternalId={ExternalId}", 
                         user.UserId, user.ExternalId);
                 }
             }
@@ -151,7 +151,7 @@ namespace GainIt.API.Services.Users.Implementations
             };
 
             var totalTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
-            r_logger.LogInformation("Returning user profile DTO: UserId={UserId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}, TotalProcessingTime={TotalTime}ms", 
+            r_logger.LogDebug("Returning user profile DTO: UserId={UserId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}, TotalProcessingTime={TotalTime}ms", 
                 profileDto.UserId, profileDto.ExternalId, profileDto.EmailAddress, profileDto.FullName, totalTime);
 
             return profileDto;

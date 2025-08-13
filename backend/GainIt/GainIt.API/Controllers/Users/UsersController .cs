@@ -69,7 +69,7 @@ namespace GainIt.API.Controllers.Users
                     return Unauthorized(new { Message = "Missing oid claim" });
                 }
 
-                r_logger.LogInformation("Extracted OID claim. CorrelationId={CorrelationId}, OID={OID}", correlationId, oid);
+                r_logger.LogDebug("Extracted OID claim. CorrelationId={CorrelationId}, OID={OID}", correlationId, oid);
 
                 var email = tryGetClaim(User, "emails", ClaimTypes.Email, "email");
                 var name = tryGetClaim(User, "name")
@@ -83,7 +83,7 @@ namespace GainIt.API.Controllers.Users
                                     c.Type.StartsWith("extension_", StringComparison.OrdinalIgnoreCase) &&
                                     c.Type.EndsWith("country", StringComparison.OrdinalIgnoreCase))?.Value;
 
-                r_logger.LogInformation("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}, Country={Country}", 
+                r_logger.LogDebug("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}, Country={Country}", 
                     correlationId, email, name, idp, country);
 
                 var dto = new ExternalUserDto
@@ -95,7 +95,7 @@ namespace GainIt.API.Controllers.Users
                     Country = country
                 };
 
-                r_logger.LogInformation("Created ExternalUserDto for provisioning. CorrelationId={CorrelationId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
+                r_logger.LogDebug("Created ExternalUserDto for provisioning. CorrelationId={CorrelationId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
                     correlationId, dto.ExternalId, dto.Email, dto.FullName);
 
                 var profile = await r_userProfileService.GetOrCreateFromExternalAsync(dto);
