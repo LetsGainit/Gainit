@@ -472,6 +472,7 @@ namespace GainIt.API.Controllers.Users
             }
             catch (KeyNotFoundException ex)
             {
+                
                 r_logger.LogWarning("Gainer or Achievement Template not found: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}, Error={Error}", id, achievementTemplateId, ex.Message);
                 return NotFound(new { Message = ex.Message });
             }

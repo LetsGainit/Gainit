@@ -74,9 +74,21 @@ try
 
             if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
             {
-                loggerConfiguration.WriteTo.ApplicationInsights(
-                    appInsightsConnectionStringFinal,
-                    new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+                try
+                {
+                    loggerConfiguration.WriteTo.ApplicationInsights(
+                        appInsightsConnectionStringFinal,
+                        new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+                    Log.Information("Application Insights sink added to Serilog configuration");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Failed to add Application Insights sink to Serilog configuration");
+                }
+            }
+            else
+            {
+                Log.Warning("No Application Insights connection string or instrumentation key found. Application Insights logging will be disabled.");
             }
         }
     });
