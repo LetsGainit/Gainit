@@ -30,6 +30,8 @@ namespace GainIt.API.Services.Users.Implementations
             r_logger.LogInformation("Starting external user provisioning: ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
                 i_externalUserDto.ExternalId, i_externalUserDto.Email, i_externalUserDto.FullName);
 
+            bool isNewUser = false;
+
             if (i_externalUserDto is null) 
             {
                 r_logger.LogError("ExternalUserDto is null");
@@ -81,6 +83,8 @@ namespace GainIt.API.Services.Users.Implementations
                     CreatedAt = DateTimeOffset.UtcNow,
                     LastLoginAt = DateTimeOffset.UtcNow
                 };
+
+                isNewUser = true;
 
                 r_DbContext.Users.Add(user);
                 var dbCreateStartTime = DateTimeOffset.UtcNow;
@@ -147,7 +151,8 @@ namespace GainIt.API.Services.Users.Implementations
                 ExternalId = user.ExternalId,
                 EmailAddress = user.EmailAddress,
                 FullName = user.FullName,
-                Country = user.Country
+                Country = user.Country,
+                IsNewUser = isNewUser
             };
 
             var totalTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
