@@ -467,7 +467,7 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var result = await r_userProfileService.AddAchievementToGainerAsync(id, achievementTemplateId);
-                r_logger.LogInformation("Successfully added achievement to Gainer: UserId={UserId}, AchievementId={AchievementId}", id, result.UserId);
+                r_logger.LogInformation("Successfully added achievement to Gainer: UserId={UserId}, AchievementId={AchievementId}", id, result.Id);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -512,7 +512,7 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var result = await r_userProfileService.AddAchievementToMentorAsync(id, achievementTemplateId);
-                r_logger.LogInformation("Successfully added achievement to Mentor: UserId={UserId}, AchievementId={AchievementId}", id, result.UserId);
+                r_logger.LogInformation("Successfully added achievement to Mentor: UserId={UserId}, AchievementId={AchievementId}", id, result.Id);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -557,7 +557,7 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var result = await r_userProfileService.AddAchievementToNonprofitAsync(id, achievementTemplateId);
-                r_logger.LogInformation("Successfully added achievement to Nonprofit: NonprofitId={NonprofitId}, AchievementId={AchievementId}", id, result.UserId);
+                r_logger.LogInformation("Successfully added achievement to Nonprofit: NonprofitId={NonprofitId}, AchievementId={AchievementId}", id, result.Id);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)

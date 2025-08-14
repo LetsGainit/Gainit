@@ -215,10 +215,8 @@ namespace GainIt.API.Services.Users.Implementations
 
             try
             {
+                // Load basic mentor data first
                 var mentor = await r_DbContext.Mentors
-                    .Include(m => m.TechExpertise)
-                    .Include(m => m.MentoredProjects)
-                    .Include(m => m.Achievements)
                     .FirstOrDefaultAsync(m => m.UserId == i_userId);
 
                 if (mentor == null)
@@ -226,6 +224,19 @@ namespace GainIt.API.Services.Users.Implementations
                     r_logger.LogWarning("Mentor not found: UserId={UserId}", i_userId);
                     throw new KeyNotFoundException($"Mentor with ID {i_userId} not found");
                 }
+
+                // Load collections separately to avoid the warning
+                await r_DbContext.Entry(mentor)
+                    .Reference(m => m.TechExpertise)
+                    .LoadAsync();
+
+                await r_DbContext.Entry(mentor)
+                    .Collection(m => m.MentoredProjects)
+                    .LoadAsync();
+
+                await r_DbContext.Entry(mentor)
+                    .Collection(m => m.Achievements)
+                    .LoadAsync();
 
                 r_logger.LogInformation("Successfully retrieved Mentor: UserId={UserId}", i_userId);
                 return mentor;
@@ -511,19 +522,24 @@ namespace GainIt.API.Services.Users.Implementations
                     };
                 }
 
-                // Add expertise details to the respective lists  
+                // Clear existing and add new expertise (replaces instead of appending)
+                gainer.TechExpertise.ProgrammingLanguages.Clear();
                 gainer.TechExpertise.ProgrammingLanguages.AddRange(expertiseDto.ProgrammingLanguages ?? new List<string>());
+                
+                gainer.TechExpertise.Technologies.Clear();
                 gainer.TechExpertise.Technologies.AddRange(expertiseDto.Technologies ?? new List<string>());
+                
+                gainer.TechExpertise.Tools.Clear();
                 gainer.TechExpertise.Tools.AddRange(expertiseDto.Tools ?? new List<string>());
 
                 await r_DbContext.SaveChangesAsync();
 
-                r_logger.LogInformation("Successfully added expertise to Gainer: UserId={UserId}", userId);
+                r_logger.LogInformation("Successfully updated expertise for Gainer: UserId={UserId}", userId);
                 return gainer.TechExpertise;
             }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error adding expertise to Gainer: UserId={UserId}", userId);
+                r_logger.LogError(ex, "Error updating expertise for Gainer: UserId={UserId}", userId);
                 throw;
             }
         }
@@ -560,19 +576,24 @@ namespace GainIt.API.Services.Users.Implementations
                     };
                 }
 
-                // Add expertise details to the respective lists  
+                // Clear existing and add new expertise (replaces instead of appending)
+                mentor.TechExpertise.ProgrammingLanguages.Clear();
                 mentor.TechExpertise.ProgrammingLanguages.AddRange(expertiseDto.ProgrammingLanguages ?? new List<string>());
+                
+                mentor.TechExpertise.Technologies.Clear();
                 mentor.TechExpertise.Technologies.AddRange(expertiseDto.Technologies ?? new List<string>());
+                
+                mentor.TechExpertise.Tools.Clear();
                 mentor.TechExpertise.Tools.AddRange(expertiseDto.Tools ?? new List<string>());
 
                 await r_DbContext.SaveChangesAsync();
 
-                r_logger.LogInformation("Successfully added expertise to Mentor: UserId={UserId}", userId);
+                r_logger.LogInformation("Successfully updated expertise for Mentor: UserId={UserId}", userId);
                 return mentor.TechExpertise;
             }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error adding expertise to Mentor: UserId={UserId}", userId);
+                r_logger.LogError(ex, "Error updating expertise for Mentor: UserId={UserId}", userId);
                 throw;
             }
         }
@@ -600,14 +621,14 @@ namespace GainIt.API.Services.Users.Implementations
                 }
                 else
                 {
-                    // Update existing NonprofitExpertise with new data
+                    // Update existing NonprofitExpertise with new data (replaces instead of appending)
                     nonprofit.NonprofitExpertise.FieldOfWork = expertiseDto.FieldOfWork;
                     nonprofit.NonprofitExpertise.MissionStatement = expertiseDto.MissionStatement;
                 }
 
                 await r_DbContext.SaveChangesAsync();
 
-                r_logger.LogInformation("Successfully added expertise to Nonprofit: UserId={UserId}, FieldOfWork={FieldOfWork}", userId, expertiseDto.FieldOfWork);
+                r_logger.LogInformation("Successfully updated expertise for Nonprofit: UserId={UserId}, FieldOfWork={FieldOfWork}", userId, expertiseDto.FieldOfWork);
                 return nonprofit.NonprofitExpertise;
             }
             catch (Exception ex)
@@ -700,16 +721,27 @@ namespace GainIt.API.Services.Users.Implementations
                     throw new KeyNotFoundException($"Achievement template with ID {achievementTemplateId} not found");
                 }
 
+                // Prevent duplicate (UserId, AchievementTemplateId)
+                var existing = await r_DbContext.UserAchievements
+                    .FirstOrDefaultAsync(a => a.UserId == userId && a.AchievementTemplateId == achievementTemplateId);
+                if (existing != null)
+                {
+                    r_logger.LogInformation("Achievement already exists for Gainer. No changes: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", userId, achievementTemplateId);
+                    return existing;
+                }
+
                 var achievement = new UserAchievement
                 {
                     UserId = userId,
                     AchievementTemplateId = achievementTemplateId,
                     EarnedAtUtc = DateTime.UtcNow,
                     User = gainer,
-                    AchievementTemplate = achievementTemplate
+                    AchievementTemplate = achievementTemplate,
+                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}"
                 };
 
-                gainer.Achievements.Add(achievement);
+                // Add to DbContext explicitly to ensure proper tracking and ID generation
+                r_DbContext.UserAchievements.Add(achievement);
                 await r_DbContext.SaveChangesAsync();
 
                 r_logger.LogInformation("Successfully added achievement to Gainer: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", userId, achievementTemplateId);
@@ -742,16 +774,27 @@ namespace GainIt.API.Services.Users.Implementations
                     throw new KeyNotFoundException($"Achievement template with ID {achievementTemplateId} not found");
                 }
 
+                // Prevent duplicate (UserId, AchievementTemplateId)
+                var existing = await r_DbContext.UserAchievements
+                    .FirstOrDefaultAsync(a => a.UserId == userId && a.AchievementTemplateId == achievementTemplateId);
+                if (existing != null)
+                {
+                    r_logger.LogInformation("Achievement already exists for Mentor. No changes: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", userId, achievementTemplateId);
+                    return existing;
+                }
+
                 var achievement = new UserAchievement
                 {
                     UserId = userId,
                     AchievementTemplateId = achievementTemplateId,
                     EarnedAtUtc = DateTime.UtcNow,
                     User = mentor,
-                    AchievementTemplate = achievementTemplate
+                    AchievementTemplate = achievementTemplate,
+                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}"
                 };
 
-                mentor.Achievements.Add(achievement);
+                // Add to DbContext explicitly to ensure proper tracking and ID generation
+                r_DbContext.UserAchievements.Add(achievement);
                 await r_DbContext.SaveChangesAsync();
 
                 r_logger.LogInformation("Successfully added achievement to Mentor: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", userId, achievementTemplateId);
@@ -784,16 +827,27 @@ namespace GainIt.API.Services.Users.Implementations
                     throw new KeyNotFoundException($"Achievement template with ID {achievementTemplateId} not found");
                 }
 
+                // Prevent duplicate (UserId, AchievementTemplateId)
+                var existing = await r_DbContext.UserAchievements
+                    .FirstOrDefaultAsync(a => a.UserId == userId && a.AchievementTemplateId == achievementTemplateId);
+                if (existing != null)
+                {
+                    r_logger.LogInformation("Achievement already exists for Nonprofit. No changes: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", userId, achievementTemplateId);
+                    return existing;
+                }
+
                 var achievement = new UserAchievement
                 {
                     UserId = userId,
                     AchievementTemplateId = achievementTemplateId,
                     EarnedAtUtc = DateTime.UtcNow,
                     User = nonprofit,
-                    AchievementTemplate = achievementTemplate
+                    AchievementTemplate = achievementTemplate,
+                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}"
                 };
 
-                nonprofit.Achievements.Add(achievement);
+                // Add to DbContext explicitly to ensure proper tracking and ID generation
+                r_DbContext.UserAchievements.Add(achievement);
                 await r_DbContext.SaveChangesAsync();
 
                 r_logger.LogInformation("Successfully added achievement to Nonprofit: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", userId, achievementTemplateId);
