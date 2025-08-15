@@ -3,23 +3,25 @@ using Azure.AI.OpenAI;
 using Azure.Core;
 using Azure.Search.Documents;
 using GainIt.API.Data;
+using GainIt.API.HealthChecks;
 using GainIt.API.Middleware;
 using GainIt.API.Options;
+using GainIt.API.Services.Email.Implementations;
+using GainIt.API.Services.Email.Interfaces;
 using GainIt.API.Services.Projects.Implementations;
 using GainIt.API.Services.Projects.Interfaces;
 using GainIt.API.Services.Users.Implementations;
 using GainIt.API.Services.Users.Interfaces;
-using GainIt.API.HealthChecks;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Serilog;
-using System.Reflection;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 
 // Build configuration first
@@ -91,6 +93,8 @@ try
         builder.Configuration.GetSection("AzureSearch"));
     builder.Services.Configure<OpenAIOptions>(
         builder.Configuration.GetSection("OpenAI"));
+    builder.Services.Configure<AcsEmailOptions>(
+        builder.Configuration.GetSection("ACS:Email"));
 
     builder.Services.AddSingleton(sp =>
     {
@@ -109,6 +113,13 @@ try
             new Uri(opts.Endpoint),
             new AzureKeyCredential(opts.ApiKey)
         );
+    });
+
+    builder.Services.AddSingleton(sp =>
+    {
+        var cfg = sp.GetRequiredService<IOptions<AcsEmailOptions>>().Value;
+        // cfg.ConnectionString נטען מ-ACS__Email__ConnectionString (App Settings בענן)
+        return new Azure.Communication.Email.EmailClient(cfg.ConnectionString);
     });
 
     var b2c = builder.Configuration.GetSection("AzureAdB2C");
@@ -139,6 +150,7 @@ try
     builder.Services.AddScoped<IProjectService, ProjectService>();
     builder.Services.AddScoped<IUserProfileService, UserProfileService>();
     builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
+    builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
 
     // Add health checks
     builder.Services.AddHealthChecks()
