@@ -12,6 +12,7 @@ namespace GainIt.API.DTOs.ViewModels.Users
 
         public ConciseUserViewModel(ProjectMember i_ProjectMember)
         {
+            // Extract user data before JsonIgnore takes effect
             UserId = i_ProjectMember.User.UserId.ToString();
             FullName = i_ProjectMember.User.FullName;
             ProfilePictureUrl = i_ProjectMember.User.ProfilePictureURL;

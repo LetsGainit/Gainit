@@ -19,7 +19,9 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             ProjectName = i_Project.ProjectName;
             ProjectDescription = i_Project.ProjectDescription;
             ProjectPictureUrl = i_Project.ProjectPictureUrl;
-            Technologies = i_Project.Technologies;
+            
+            // Extract data before JsonIgnore takes effect
+            Technologies = i_Project.Technologies.ToList();
             ProjectStatus = i_Project.ProjectStatus.ToString();
 
             if (i_TeamMemberId.HasValue && i_Project.RoleToIdMap.Count > 0)
@@ -37,6 +39,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
                 MyRoleInProject = string.Empty;
             }
 
+            // Extract team member data before JsonIgnore takes effect
             TeamMembersPictureUrls = i_Project.ProjectMembers?
                    .Select(member => member.User.ProfilePictureURL ?? string.Empty)
                    .Where(url => !string.IsNullOrEmpty(url))

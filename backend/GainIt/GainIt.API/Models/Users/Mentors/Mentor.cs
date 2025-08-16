@@ -20,6 +20,7 @@ namespace GainIt.API.Models.Users.Mentors
         [StringLength(200, ErrorMessage = "Area of Expertise cannot exceed 200 characters")]
         public string AreaOfExpertise { get; set; }
 
+        [JsonIgnore]
         public TechExpertise TechExpertise { get; set; }
 
         [JsonIgnore]

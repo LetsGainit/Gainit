@@ -19,6 +19,7 @@ namespace GainIt.API.Models.Users.Gainers
         
         public List<string> AreasOfInterest { get; set; }
 
+        [JsonIgnore]
         public TechExpertise TechExpertise { get; set; }
 
         [JsonIgnore]

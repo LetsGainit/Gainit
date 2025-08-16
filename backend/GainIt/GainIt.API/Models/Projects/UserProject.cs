@@ -23,6 +23,7 @@ namespace GainIt.API.Models.Projects
         public string? RepositoryLink { get; set; }
 
         public Guid? OwningOrganizationUserId { get; set; }
+        [JsonIgnore]
         public NonprofitOrganization? OwningOrganization { get; set; }
 
         [Required(ErrorMessage = "Programming Languages are required")]
@@ -30,6 +31,7 @@ namespace GainIt.API.Models.Projects
 
 
         // Add this property
+        [JsonIgnore]
         public List<ProjectMember> ProjectMembers { get; set; } = new();
 
         // Helper property to work with dictionary

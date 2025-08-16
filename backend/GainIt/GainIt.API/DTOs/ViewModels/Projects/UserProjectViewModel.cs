@@ -35,20 +35,24 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             CreatedAtUtc = i_Project.CreatedAtUtc;
             RepositoryLink = i_Project.RepositoryLink;
 
+            // Extract team member data before JsonIgnore takes effect
             ProjectTeamMembers = i_Project.ProjectMembers
                 .Select(member => new ConciseUserViewModel(member))
                 .ToList();
 
+            // Extract owning organization data before JsonIgnore takes effect
             OwningOrganization = i_Project.OwningOrganization != null
                 ? new FullNonprofitViewModel(i_Project.OwningOrganization, null, false)
                 : null;
 
             ProjectPictureUrl = i_Project.ProjectPictureUrl;
             Duration = i_Project.Duration;
-            OpenRoles = i_Project.RequiredRoles;
-            ProgrammingLanguages = i_Project.ProgrammingLanguages;
-            Goals = i_Project.Goals;
-            Technologies = i_Project.Technologies;
+            
+            // Extract collection data before JsonIgnore takes effect
+            OpenRoles = i_Project.RequiredRoles.ToList();
+            ProgrammingLanguages = i_Project.ProgrammingLanguages.ToList();
+            Goals = i_Project.Goals.ToList();
+            Technologies = i_Project.Technologies.ToList();
         }
     }
 }

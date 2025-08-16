@@ -21,7 +21,9 @@ namespace GainIt.API.Models.Projects
         public DateTime? LeftAtUtc { get; set; }
 
         // Navigation properties
+        [JsonIgnore]
         public required UserProject Project { get; set; }
+        [JsonIgnore]
         public required User User { get; set; }
     }
 }

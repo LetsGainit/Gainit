@@ -17,6 +17,7 @@ namespace GainIt.API.Models.Users.Nonprofits
         [Url(ErrorMessage = "Invalid Website URL")]
         public string WebsiteUrl { get; set; }
 
+        [JsonIgnore]
         public NonprofitExpertise NonprofitExpertise { get; set; }
 
         [JsonIgnore]
