@@ -5,6 +5,7 @@ using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace GainIt.API.Models.Projects
 {

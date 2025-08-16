@@ -2,6 +2,7 @@
 using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users.Expertise;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace GainIt.API.Models.Users.Nonprofits
 {
@@ -18,6 +19,7 @@ namespace GainIt.API.Models.Users.Nonprofits
 
         public NonprofitExpertise NonprofitExpertise { get; set; }
 
+        [JsonIgnore]
         public List<UserProject> OwnedProjects { get; set; } = new();
 
     }

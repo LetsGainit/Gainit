@@ -2,6 +2,7 @@
 using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users.Expertise;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace GainIt.API.Models.Users.Gainers
 {
@@ -20,8 +21,10 @@ namespace GainIt.API.Models.Users.Gainers
 
         public TechExpertise TechExpertise { get; set; }
 
+        [JsonIgnore]
         public List<UserProject> ParticipatedProjects { get; set; } = new();
 
-        public List<UserAchievement> Achievements { get; set; } = new();
+        [JsonIgnore]
+        public new List<UserAchievement> Achievements { get; set; } = new();
     }
 }

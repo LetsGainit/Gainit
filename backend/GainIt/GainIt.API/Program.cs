@@ -147,8 +147,7 @@ try
     builder.Services.AddControllers().AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        // Add this line to handle your intentional circular references (users->achievements->user)
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+        // Removed ReferenceHandler.Preserve for consistent clean JSON across all endpoints
     });
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

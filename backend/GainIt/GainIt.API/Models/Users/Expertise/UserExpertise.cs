@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace GainIt.API.Models.Users.Expertise
 {
@@ -14,6 +15,7 @@ namespace GainIt.API.Models.Users.Expertise
 
         // navigation back to its owner
         [Required]
-        public required User User { get; set; }
+        [JsonIgnore]
+        public User User { get; set; } = null!; // tells EF to not ignore the User property
     }
 }

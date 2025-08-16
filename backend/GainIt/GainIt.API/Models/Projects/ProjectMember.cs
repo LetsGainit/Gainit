@@ -1,5 +1,6 @@
 ﻿using GainIt.API.Models.Users;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace GainIt.API.Models.Projects
 {
