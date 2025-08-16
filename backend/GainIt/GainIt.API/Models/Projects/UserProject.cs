@@ -27,6 +27,7 @@ namespace GainIt.API.Models.Projects
         public NonprofitOrganization? OwningOrganization { get; set; }
 
         [Required(ErrorMessage = "Programming Languages are required")]
+        [JsonIgnore]
         public List<string> ProgrammingLanguages { get; set; } = new();
 
 
