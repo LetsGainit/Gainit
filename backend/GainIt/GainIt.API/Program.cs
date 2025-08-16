@@ -18,6 +18,7 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
@@ -157,6 +158,8 @@ try
     builder.Services.AddHealthChecks()
         .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "database", "sql" });
 
+
+
     builder.Services.AddControllers().AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -165,6 +168,16 @@ try
         options.JsonSerializerOptions.WriteIndented = true;
         // Ensure we're using System.Text.Json, not JSON.NET
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        // Force System.Text.Json to be the default serializer
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
+
+    // Force System.Text.Json to be the default JSON serializer for the entire application
+    // This prevents Entity Framework from using JSON.NET internally
+    builder.Services.Configure<JsonOptions>(options =>
+    {
+        options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.SerializerOptions.WriteIndented = true;
     });
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
