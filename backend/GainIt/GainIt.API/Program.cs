@@ -16,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -159,7 +160,11 @@ try
     builder.Services.AddControllers().AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        // Removed ReferenceHandler.Preserve for consistent clean JSON across all endpoints
+        // Configure System.Text.Json to handle circular references without adding $id/$values
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
+        // Ensure we're using System.Text.Json, not JSON.NET
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
