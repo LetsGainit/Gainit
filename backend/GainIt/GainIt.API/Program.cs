@@ -21,7 +21,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Text.Json;
 
 
 // Build configuration first
@@ -158,6 +157,23 @@ try
     builder.Services.AddHealthChecks()
         .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "database", "sql" });
 
+    // Configure JSON serialization to handle circular references without adding $id/$values
+    builder.Services.AddControllers().AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
+
+    // Force System.Text.Json globally to prevent Entity Framework from using JSON.NET
+    builder.Services.Configure<JsonOptions>(options =>
+    {
+        options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.SerializerOptions.WriteIndented = true;
+    });
+
 
 
     builder.Services.AddControllers().AddJsonOptions(options =>
@@ -179,6 +195,8 @@ try
         options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.SerializerOptions.WriteIndented = true;
     });
+
+
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
