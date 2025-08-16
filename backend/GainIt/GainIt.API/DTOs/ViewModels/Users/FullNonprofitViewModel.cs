@@ -11,14 +11,15 @@ namespace GainIt.API.DTOs.ViewModels.Users
         public NonprofitExpertiseViewModel NonprofitExpertise { get; set; }
         public List<ConciseUserProjectViewModel> OwnedProjects { get; set; } = new List<ConciseUserProjectViewModel>(); 
 
-        public FullNonprofitViewModel(NonprofitOrganization nonprofit, List<UserProject> projects) : base(nonprofit)
+        public FullNonprofitViewModel(NonprofitOrganization nonprofit, List<UserProject>? projects, bool includeProjects = true) : base(nonprofit)
         {
             WebsiteUrl = nonprofit.WebsiteUrl;
             NonprofitExpertise = new NonprofitExpertiseViewModel(nonprofit.NonprofitExpertise);
 
-            OwnedProjects = projects
-                .Select(UserProject => new ConciseUserProjectViewModel(UserProject, nonprofit.UserId))
-                .ToList();
+            // Only include projects if explicitly requested and provided
+            OwnedProjects = (includeProjects && projects != null)
+                ? projects.Select(UserProject => new ConciseUserProjectViewModel(UserProject, nonprofit.UserId)).ToList()
+                : new List<ConciseUserProjectViewModel>();
         }
     }
 }

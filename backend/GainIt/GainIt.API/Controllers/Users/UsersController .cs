@@ -209,7 +209,7 @@ namespace GainIt.API.Controllers.Users
 
                 var projects = await r_userProfileService.GetUserProjectsAsync(id);
                 var achievements = (await r_userProfileService.GetUserAchievementsAsync(id)).ToList();
-                FullMentorViewModel mentorViewModel = new FullMentorViewModel(mentor, projects, achievements);
+                FullMentorViewModel mentorViewModel = new FullMentorViewModel(mentor, projects, achievements, true, true);
                 
                 r_logger.LogInformation("Successfully retrieved Mentor profile: UserId={UserId}, ProjectsCount={ProjectsCount}, AchievementsCount={AchievementsCount}", 
                     id, projects.Count(), achievements.Count);
