@@ -2,6 +2,7 @@
 using GainIt.API.Models.Projects;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace GainIt.API.Models.Users
 {
@@ -34,6 +35,7 @@ namespace GainIt.API.Models.Users
         [Url, StringLength(200)] public string? GitHubURL { get; set; }
         [Url, StringLength(200)] public string? ProfilePictureURL { get; set; }
 
+        [JsonIgnore]
         public List<UserAchievement> Achievements { get; set; } = new();
 
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

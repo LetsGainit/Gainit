@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace GainIt.API.Models.Users
 {
@@ -10,12 +11,13 @@ namespace GainIt.API.Models.Users
         // Reference to the achievement template
         [Required]
         public Guid AchievementTemplateId { get; set; }
-        public AchievementTemplate AchievementTemplate { get; set; }
+        public AchievementTemplate AchievementTemplate { get; set; } = null!;
 
         // The user who earned this achievement
         [Required]
         public Guid UserId { get; set; }
-        public User User { get; set; }
+        [JsonIgnore]
+        public User User { get; set; } = null!; // tells EF to not ignore the User property
 
         // When the achievement was earned
         [Required]
