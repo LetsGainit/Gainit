@@ -55,12 +55,12 @@ try
             .ReadFrom.Services(services)
             .Enrich.FromLogContext();
 
-        // Configure Application Insights during Serilog setup
-        // Use both context.Configuration and Environment.GetEnvironmentVariable for maximum compatibility
-        var appInsightsConnectionString = context.Configuration["ApplicationInsights:ConnectionString"]
-            ?? context.Configuration["APPINSIGHTS_INSTRUMENTATIONKEY"]
-            ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")
-            ?? Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+            // Configure Application Insights during Serilog setup
+    // PRIORITIZE instrumentation key over complex connection string to avoid parsing errors
+    var appInsightsConnectionString = context.Configuration["APPINSIGHTS_INSTRUMENTATIONKEY"]
+        ?? Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY")
+        ?? context.Configuration["ApplicationInsights:ConnectionString"]
+        ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
 
         if (!string.IsNullOrWhiteSpace(appInsightsConnectionString))
         {
