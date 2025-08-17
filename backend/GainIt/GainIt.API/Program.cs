@@ -47,13 +47,16 @@ try
     // Clear default logging providers to prevent duplicate logs
     builder.Logging.ClearProviders();
 
-    // Configure Serilog for the application
-    builder.Host.UseSerilog((context, services, loggerConfiguration) =>
-    {
-        loggerConfiguration
-            .ReadFrom.Configuration(context.Configuration)
-            .ReadFrom.Services(services)
-            .Enrich.FromLogContext();
+            // Configure Serilog for the application
+        builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+        {
+            loggerConfiguration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext();
+            
+            // OVERRIDE any Application Insights configuration from config files
+            // to ensure we use our safe instrumentation key approach
 
         // Always run our custom setup to ensure proper configuration
         Log.Information("Starting custom Application Insights configuration...");
@@ -69,9 +72,13 @@ try
         var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
         if (!string.IsNullOrWhiteSpace(instrumentationKey))
         {
+            // Clean the instrumentation key to remove any hidden characters
+            var cleanInstrumentationKey = instrumentationKey.Trim().Replace("\"", "").Replace("'", "");
+            
             // Use simple format: "InstrumentationKey=value" - this never causes parsing errors
-            appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
+            appInsightsConnectionStringFinal = $"InstrumentationKey={cleanInstrumentationKey}";
             Log.Information("Using APPINSIGHTS_INSTRUMENTATIONKEY: SET (SAFE FORMAT)");
+            Log.Information($"Original key length: {instrumentationKey.Length}, Cleaned key length: {cleanInstrumentationKey.Length}");
         }
         else
         {
@@ -80,6 +87,16 @@ try
         }
         
         Log.Information($"FINAL SELECTED: {(appInsightsConnectionStringFinal != null ? "HAS VALUE" : "NO VALUE")}");
+        
+        // DEBUG: Check for hidden characters and formatting issues
+        if (appInsightsConnectionStringFinal != null)
+        {
+            Log.Information($"AppInsights connection string value: '{appInsightsConnectionStringFinal}' (length: {appInsightsConnectionStringFinal.Length})");
+            Log.Information($"Contains semicolons: {appInsightsConnectionStringFinal.Contains(';')}");
+            Log.Information($"Contains quotes: {appInsightsConnectionStringFinal.Contains('"')}");
+            Log.Information($"Contains newlines: {appInsightsConnectionStringFinal.Contains('\n')}");
+            Log.Information($"Contains carriage returns: {appInsightsConnectionStringFinal.Contains('\r')}");
+        }
 
         // Now use the final connection string we determined above
         if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
@@ -111,8 +128,8 @@ try
         }
     });
 
-    // Add Application Insights
-    builder.Services.AddApplicationInsightsTelemetry();
+    // Application Insights is configured via Serilog above - don't add it again here
+    // builder.Services.AddApplicationInsightsTelemetry(); // DISABLED to prevent conflicts
 
     builder.Services.AddDbContext<GainItDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("GainItPostgresDb")));
@@ -233,7 +250,6 @@ try
     Log.Information($"=== .NET Version: {Environment.Version} ===");
     Log.Information($"=== Target Framework: {AppContext.TargetFrameworkName} ===");
     Log.Information($"=== Environment: {app.Environment.EnvironmentName} ===");
-    Log.Information("Application built successfully - logging is working!");
     Log.Information($"Running on .NET {Environment.Version} in {app.Environment.EnvironmentName} environment");
 
     // Configure the HTTP request pipeline.
