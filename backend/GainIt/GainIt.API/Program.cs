@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Linq;
 
 
 // Build configuration first
@@ -32,9 +33,56 @@ var configBuilder = new ConfigurationBuilder()
 
 var configuration = configBuilder.Build();
 
-// Bootstrap Serilog from configuration only (avoid adding sinks programmatically here to prevent duplicates)
+// Configure Serilog with Application Insights
 var loggerConfig = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration);
+
+// Add Application Insights sink if instrumentation key is available
+var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+var connectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+
+if (!string.IsNullOrWhiteSpace(connectionString))
+{
+    // Use the full connection string if available
+    var cleanConnectionString = connectionString.Trim().Replace("\"", "").Replace("'", "");
+    
+    loggerConfig.WriteTo.ApplicationInsights(
+        cleanConnectionString,
+        new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+    
+    Log.Information("Application Insights sink added using full connection string");
+    Log.Information($"Connection String: {cleanConnectionString.Substring(0, Math.Min(50, cleanConnectionString.Length))}...");
+    
+    // Test the Application Insights sink immediately
+    var testLogger = loggerConfig.CreateLogger();
+    testLogger.Information("=== IMMEDIATE TEST: Application Insights sink test ===");
+    testLogger.Warning("=== IMMEDIATE TEST: This warning should appear in Application Insights ===");
+    testLogger.Error("=== IMMEDIATE TEST: This error should appear in Application Insights ===");
+}
+else if (!string.IsNullOrWhiteSpace(instrumentationKey))
+{
+    // Fallback to instrumentation key only
+    var cleanInstrumentationKey = instrumentationKey.Trim().Replace("\"", "").Replace("'", "");
+    var appInsightsConnectionString = $"InstrumentationKey={cleanInstrumentationKey}";
+    
+    loggerConfig.WriteTo.ApplicationInsights(
+        appInsightsConnectionString,
+        new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+    
+    Log.Information("Application Insights sink added using instrumentation key only");
+    Log.Information($"Instrumentation Key: {cleanInstrumentationKey.Substring(0, Math.Min(10, cleanInstrumentationKey.Length))}...");
+    
+    // Test the Application Insights sink immediately
+    var testLogger = loggerConfig.CreateLogger();
+    testLogger.Information("=== IMMEDIATE TEST: Application Insights sink test ===");
+    testLogger.Warning("=== IMMEDIATE TEST: This warning should appear in Application Insights ===");
+    testLogger.Error("=== IMMEDIATE TEST: This error should appear in Application Insights ===");
+}
+else
+{
+    Log.Warning("No Application Insights environment variables found");
+    Log.Warning("Available environment variables: " + string.Join(", ", Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(k => k.Contains("APPINSIGHTS") || k.Contains("INSTRUMENTATION") || k.Contains("APPLICATIONINSIGHTS"))));
+}
 
 Log.Logger = loggerConfig.CreateLogger();
 
@@ -47,86 +95,48 @@ try
     // Clear default logging providers to prevent duplicate logs
     builder.Logging.ClearProviders();
 
-            // Configure Serilog for the application
-        builder.Host.UseSerilog((context, services, loggerConfiguration) =>
-        {
-            loggerConfiguration
-                .ReadFrom.Configuration(context.Configuration)
-                .ReadFrom.Services(services)
-                .Enrich.FromLogContext();
-            
-            // OVERRIDE any Application Insights configuration from config files
-            // to ensure we use our safe instrumentation key approach
+    // Use the pre-configured Serilog
+    builder.Host.UseSerilog();
 
-        // Always run our custom setup to ensure proper configuration
-        Log.Information("Starting custom Application Insights configuration...");
-        
-        // IMPLEMENT THE ULTRA-SAFE PATTERN - ONLY USE SIMPLE FORMAT:
-        // 1. ONLY use APPINSIGHTS_INSTRUMENTATIONKEY (simple format)
-        // 2. NEVER use complex connection strings that cause parsing errors
-        // This completely eliminates the System.ArgumentException
-        
-        string? appInsightsConnectionStringFinal = null;
-        
-        // ONLY use instrumentation key - this format never fails
-        var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-        if (!string.IsNullOrWhiteSpace(instrumentationKey))
-        {
-            // Clean the instrumentation key to remove any hidden characters
-            var cleanInstrumentationKey = instrumentationKey.Trim().Replace("\"", "").Replace("'", "");
-            
-            // Use simple format: "InstrumentationKey=value" - this never causes parsing errors
-            appInsightsConnectionStringFinal = $"InstrumentationKey={cleanInstrumentationKey}";
-            Log.Information("Using APPINSIGHTS_INSTRUMENTATIONKEY: SET (SAFE FORMAT)");
-            Log.Information($"Original key length: {instrumentationKey.Length}, Cleaned key length: {cleanInstrumentationKey.Length}");
-        }
-        else
-        {
-            // Log that we're not using complex connection strings to prevent exceptions
-            Log.Warning("No APPINSIGHTS_INSTRUMENTATIONKEY found - skipping complex connection strings to prevent parsing errors");
-        }
-        
-        Log.Information($"FINAL SELECTED: {(appInsightsConnectionStringFinal != null ? "HAS VALUE" : "NO VALUE")}");
-        
-        // DEBUG: Check for hidden characters and formatting issues
-        if (appInsightsConnectionStringFinal != null)
-        {
-            Log.Information($"AppInsights connection string value: '{appInsightsConnectionStringFinal}' (length: {appInsightsConnectionStringFinal.Length})");
-            Log.Information($"Contains semicolons: {appInsightsConnectionStringFinal.Contains(';')}");
-            Log.Information($"Contains quotes: {appInsightsConnectionStringFinal.Contains('"')}");
-            Log.Information($"Contains newlines: {appInsightsConnectionStringFinal.Contains('\n')}");
-            Log.Information($"Contains carriage returns: {appInsightsConnectionStringFinal.Contains('\r')}");
-        }
+    // Debug: Check environment variables for Application Insights
+    var appInsightsKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+    var appInsightsConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+    
+    Log.Information("=== ENVIRONMENT VARIABLES DEBUG ===");
+    Log.Information($"APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrEmpty(appInsightsKey) ? "NOT SET" : "SET")}");
+    Log.Information($"APPLICATIONINSIGHTS_CONNECTION_STRING: {(string.IsNullOrEmpty(appInsightsConnectionString) ? "NOT SET" : "SET")}");
+    
+    if (!string.IsNullOrEmpty(appInsightsConnectionString))
+    {
+        Log.Information("Will use APPLICATIONINSIGHTS_CONNECTION_STRING for Application Insights configuration");
+    }
+    else if (!string.IsNullOrEmpty(appInsightsKey))
+    {
+        Log.Information("Will use APPINSIGHTS_INSTRUMENTATIONKEY for Application Insights configuration");
+    }
+    else
+    {
+        Log.Warning("No Application Insights environment variables found - logging will be limited to console/file");
+    }
 
-        // Now use the final connection string we determined above
-        if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
-        {
-            Log.Information("Using connection string: HAS VALUE");
+    // Check for other possible environment variable names
+    var allEnvVars = Environment.GetEnvironmentVariables();
+    var appInsightsVars = allEnvVars.Keys.Cast<string>()
+        .Where(k => k.Contains("APPINSIGHTS") || k.Contains("INSTRUMENTATION") || k.Contains("APPLICATIONINSIGHTS"))
+        .ToList();
+    
+    Log.Information($"Found {appInsightsVars.Count} Application Insights related environment variables: {string.Join(", ", appInsightsVars)}");
 
-            try
-            {
-                loggerConfiguration.WriteTo.ApplicationInsights(
-                    appInsightsConnectionStringFinal!,
-                    new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
-                
-                // Log success
-                Log.Information("Application Insights sink added successfully!");
-                
-                // Also log to Serilog once the sink is configured
-                Log.Information("=== APPLICATION INSIGHTS CONFIGURATION SUCCESS ===");
-                Log.Information("Connection string source: HAS VALUE");
-                Log.Information("Application Insights sink configured successfully - all logs will now go to Application Insights");
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to configure Application Insights sink");
-            }
-        }
-        else
-        {
-            Log.Warning("No Application Insights configuration found - logging will be limited to console/file");
-        }
-    });
+    // Debug: Check Serilog configuration
+    Log.Information("=== SERILOG CONFIGURATION DEBUG ===");
+    var serilogSection = configuration.GetSection("Serilog");
+    Log.Information($"Serilog section exists: {serilogSection.Exists()}");
+    Log.Information($"Serilog WriteTo count: {serilogSection.GetSection("WriteTo").GetChildren().Count()}");
+    
+    foreach (var sink in serilogSection.GetSection("WriteTo").GetChildren())
+    {
+        Log.Information($"Sink: {sink["Name"]}");
+    }
 
     // Application Insights is configured via Serilog above - don't add it again here
     // builder.Services.AddApplicationInsightsTelemetry(); // DISABLED to prevent conflicts
@@ -287,6 +297,17 @@ try
             await context.Response.WriteAsync(result);
         }
     }); 
+
+    // Add a simple test endpoint to verify logging
+    app.MapGet("/test-logging", () =>
+    {
+        Log.Debug("Test DEBUG log from minimal API endpoint");
+        Log.Information("Test INFORMATION log from minimal API endpoint");
+        Log.Warning("Test WARNING log from minimal API endpoint");
+        Log.Error("Test ERROR log from minimal API endpoint");
+        
+        return "Logging test completed - check Application Insights for log messages";
+    });
 
     // Seed the database with initial data
     using (var scope = app.Services.CreateScope())
