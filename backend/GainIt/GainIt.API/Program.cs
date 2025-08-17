@@ -58,39 +58,47 @@ try
         // Force our custom Application Insights setup to run
         // This ensures we use the correct connection string format
         {
-            // Force our custom Application Insights setup to run
-            var appInsightsConnectionStringFinal = context.Configuration["ApplicationInsights:ConnectionString"]
-                ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
-            Log.Information($"Application Insights connection string chosen: {appInsightsConnectionStringFinal}");
-
-            // Check if the connection string is valid
-            if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+            // Check each configuration source individually for better logging
+            var configConnectionString = context.Configuration["ApplicationInsights:ConnectionString"];
+            var configInstrumentationKey = context.Configuration["APPINSIGHTS_INSTRUMENTATIONKEY"];
+            var envConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+            var envInstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+            
+            Log.Information("=== Application Insights Configuration Sources ===");
+            Log.Information($"appsettings.json ApplicationInsights:ConnectionString: {(string.IsNullOrWhiteSpace(configConnectionString) ? "NOT SET" : "SET")}");
+            Log.Information($"appsettings.json APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrWhiteSpace(configInstrumentationKey) ? "NOT SET" : "SET")}");
+            Log.Information($"Environment variable APPLICATIONINSIGHTS_CONNECTION_STRING: {(string.IsNullOrWhiteSpace(envConnectionString) ? "NOT SET" : "SET")}");
+            Log.Information($"Environment variable APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrWhiteSpace(envInstrumentationKey) ? "NOT SET" : "SET")}");
+            
+            // Determine which source to use
+            string? appInsightsConnectionStringFinal = null;
+            string sourceUsed = "None";
+            
+            if (!string.IsNullOrWhiteSpace(configConnectionString))
             {
-                // Use just the instrumentation key to avoid connection string parsing issues
-                var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-                Log.Information($"APPINSIGHTS_INSTRUMENTATIONKEY found: {!string.IsNullOrWhiteSpace(instrumentationKey)}");
-                
-                if (!string.IsNullOrWhiteSpace(instrumentationKey))
-                {
-                    appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
-                    Log.Information("Using instrumentation key format for Application Insights");
-                }
-                else
-                {
-                    // Fallback to full connection string if instrumentation key not available
-                    var azureConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
-                    Log.Information($"APPLICATIONINSIGHTS_CONNECTION_STRING found: {!string.IsNullOrWhiteSpace(azureConnectionString)}");
-                    
-                    if (!string.IsNullOrWhiteSpace(azureConnectionString))
-                    {
-                        appInsightsConnectionStringFinal = azureConnectionString;
-                        Log.Information("Using full connection string format for Application Insights");
-                    }
-                }
+                appInsightsConnectionStringFinal = configConnectionString;
+                sourceUsed = "appsettings.json ApplicationInsights:ConnectionString";
+            }
+            else if (!string.IsNullOrWhiteSpace(configInstrumentationKey))
+            {
+                appInsightsConnectionStringFinal = $"InstrumentationKey={configInstrumentationKey}";
+                sourceUsed = "appsettings.json APPINSIGHTS_INSTRUMENTATIONKEY";
+            }
+            else if (!string.IsNullOrWhiteSpace(envConnectionString))
+            {
+                appInsightsConnectionStringFinal = envConnectionString;
+                sourceUsed = "Environment variable APPLICATIONINSIGHTS_CONNECTION_STRING";
+            }
+            else if (!string.IsNullOrWhiteSpace(envInstrumentationKey))
+            {
+                appInsightsConnectionStringFinal = $"InstrumentationKey={envInstrumentationKey}";
+                sourceUsed = "Environment variable APPINSIGHTS_INSTRUMENTATIONKEY";
             }
             
-            Log.Information($"Final Application Insights configuration: {appInsightsConnectionStringFinal}");
-
+            Log.Information($"=== Configuration Decision ===");
+            Log.Information($"Source used: {sourceUsed}");
+            Log.Information($"Final connection string format: {(string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal) ? "NONE" : "SET")}");
+            
             if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
             {
                 try
@@ -98,16 +106,16 @@ try
                     loggerConfiguration.WriteTo.ApplicationInsights(
                         appInsightsConnectionStringFinal,
                         new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
-                    Log.Information("Application Insights sink added to Serilog configuration");
+                    Log.Information("✅ Application Insights sink added to Serilog configuration successfully");
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Failed to add Application Insights sink to Serilog configuration");
+                    Log.Error(ex, "❌ Failed to add Application Insights sink to Serilog configuration");
                 }
             }
             else
             {
-                Log.Warning("No Application Insights connection string or instrumentation key found. Application Insights logging will be disabled.");
+                Log.Warning("⚠️ No Application Insights connection string or instrumentation key found. Application Insights logging will be disabled.");
             }
         }
     });
