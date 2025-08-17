@@ -52,12 +52,6 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     
     Log.Information("Application Insights sink added using full connection string");
     Log.Information($"Connection String: {cleanConnectionString.Substring(0, Math.Min(50, cleanConnectionString.Length))}...");
-    
-    // Test the Application Insights sink immediately
-    var testLogger = loggerConfig.CreateLogger();
-    testLogger.Information("=== IMMEDIATE TEST: Application Insights sink test ===");
-    testLogger.Warning("=== IMMEDIATE TEST: This warning should appear in Application Insights ===");
-    testLogger.Error("=== IMMEDIATE TEST: This error should appear in Application Insights ===");
 }
 else if (!string.IsNullOrWhiteSpace(instrumentationKey))
 {
@@ -71,20 +65,22 @@ else if (!string.IsNullOrWhiteSpace(instrumentationKey))
     
     Log.Information("Application Insights sink added using instrumentation key only");
     Log.Information($"Instrumentation Key: {cleanInstrumentationKey.Substring(0, Math.Min(10, cleanInstrumentationKey.Length))}...");
-    
-    // Test the Application Insights sink immediately
-    var testLogger = loggerConfig.CreateLogger();
-    testLogger.Information("=== IMMEDIATE TEST: Application Insights sink test ===");
-    testLogger.Warning("=== IMMEDIATE TEST: This warning should appear in Application Insights ===");
-    testLogger.Error("=== IMMEDIATE TEST: This error should appear in Application Insights ===");
 }
 else
 {
     Log.Warning("No Application Insights environment variables found");
-    Log.Warning("Available environment variables: " + string.Join(", ", Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(k => k.Contains("APPINSIGHTS") || k.Contains("INSTRUMENTATION") || k.Contains("APPLICATIONINSIGHTS"))));
 }
 
+// Create the logger only once after all configuration is complete
 Log.Logger = loggerConfig.CreateLogger();
+
+// Test the Application Insights sink immediately if it was configured
+if (!string.IsNullOrWhiteSpace(connectionString) || !string.IsNullOrWhiteSpace(instrumentationKey))
+{
+    Log.Information("=== IMMEDIATE TEST: Application Insights sink test ===");
+    Log.Warning("=== IMMEDIATE TEST: This warning should appear in Application Insights ===");
+    Log.Error("=== IMMEDIATE TEST: This error should appear in Application Insights ===");
+}
 
 try
 {
@@ -98,19 +94,16 @@ try
     // Use the pre-configured Serilog
     builder.Host.UseSerilog();
 
-    // Debug: Check environment variables for Application Insights
-    var appInsightsKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-    var appInsightsConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
-    
+    // Debug: Check environment variables for Application Insights (reuse variables from above)
     Log.Information("=== ENVIRONMENT VARIABLES DEBUG ===");
-    Log.Information($"APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrEmpty(appInsightsKey) ? "NOT SET" : "SET")}");
-    Log.Information($"APPLICATIONINSIGHTS_CONNECTION_STRING: {(string.IsNullOrEmpty(appInsightsConnectionString) ? "NOT SET" : "SET")}");
+    Log.Information($"APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrEmpty(instrumentationKey) ? "NOT SET" : "SET")}");
+    Log.Information($"APPLICATIONINSIGHTS_CONNECTION_STRING: {(string.IsNullOrEmpty(connectionString) ? "NOT SET" : "SET")}");
     
-    if (!string.IsNullOrEmpty(appInsightsConnectionString))
+    if (!string.IsNullOrEmpty(connectionString))
     {
         Log.Information("Will use APPLICATIONINSIGHTS_CONNECTION_STRING for Application Insights configuration");
     }
-    else if (!string.IsNullOrEmpty(appInsightsKey))
+    else if (!string.IsNullOrEmpty(instrumentationKey))
     {
         Log.Information("Will use APPINSIGHTS_INSTRUMENTATIONKEY for Application Insights configuration");
     }
@@ -120,22 +113,53 @@ try
     }
 
     // Check for other possible environment variable names
-    var allEnvVars = Environment.GetEnvironmentVariables();
-    var appInsightsVars = allEnvVars.Keys.Cast<string>()
-        .Where(k => k.Contains("APPINSIGHTS") || k.Contains("INSTRUMENTATION") || k.Contains("APPLICATIONINSIGHTS"))
-        .ToList();
-    
-    Log.Information($"Found {appInsightsVars.Count} Application Insights related environment variables: {string.Join(", ", appInsightsVars)}");
+    try
+    {
+        var allEnvVars = Environment.GetEnvironmentVariables();
+        if (allEnvVars?.Keys != null)
+        {
+            var appInsightsVars = allEnvVars.Keys.Cast<string>()
+                .Where(k => k != null && (k.Contains("APPINSIGHTS") || k.Contains("INSTRUMENTATION") || k.Contains("APPLICATIONINSIGHTS")))
+                .ToList();
+            
+            Log.Information($"Found {appInsightsVars.Count} Application Insights related environment variables: {string.Join(", ", appInsightsVars)}");
+        }
+        else
+        {
+            Log.Warning("Could not access environment variables");
+        }
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Error while checking environment variables");
+    }
 
     // Debug: Check Serilog configuration
     Log.Information("=== SERILOG CONFIGURATION DEBUG ===");
     var serilogSection = configuration.GetSection("Serilog");
     Log.Information($"Serilog section exists: {serilogSection.Exists()}");
-    Log.Information($"Serilog WriteTo count: {serilogSection.GetSection("WriteTo").GetChildren().Count()}");
     
-    foreach (var sink in serilogSection.GetSection("WriteTo").GetChildren())
+    if (serilogSection.Exists())
     {
-        Log.Information($"Sink: {sink["Name"]}");
+        var writeToSection = serilogSection.GetSection("WriteTo");
+        if (writeToSection.Exists())
+        {
+            Log.Information($"Serilog WriteTo count: {writeToSection.GetChildren().Count()}");
+            
+            foreach (var sink in writeToSection.GetChildren())
+            {
+                var sinkName = sink["Name"] ?? "Unknown";
+                Log.Information($"Sink: {sinkName}");
+            }
+        }
+        else
+        {
+            Log.Warning("Serilog WriteTo section not found in configuration");
+        }
+    }
+    else
+    {
+        Log.Warning("Serilog section not found in configuration");
     }
 
     // Application Insights is configured via Serilog above - don't add it again here
