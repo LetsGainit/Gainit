@@ -66,10 +66,20 @@ try
 
             if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
             {
-                var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-                if (!string.IsNullOrWhiteSpace(instrumentationKey))
+                // Try to get the connection string from Azure environment variables
+                var azureConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+                if (!string.IsNullOrWhiteSpace(azureConnectionString))
                 {
-                    appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
+                    appInsightsConnectionStringFinal = azureConnectionString;
+                }
+                else
+                {
+                    // Fallback to just instrumentation key if full connection string not available
+                    var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+                    if (!string.IsNullOrWhiteSpace(instrumentationKey))
+                    {
+                        appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
+                    }
                 }
             }
 
@@ -113,6 +123,7 @@ try
             opts.IndexName,
             new Azure.AzureKeyCredential(opts.ApiKey)
         );
+        
     });
 
     builder.Services.AddSingleton(sp =>
