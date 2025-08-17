@@ -55,14 +55,13 @@ try
             .ReadFrom.Services(services)
             .Enrich.FromLogContext();
 
-        // Ensure Application Insights sink is added exactly once.
-        // If Serilog sink is already configured via configuration (e.g., Development), do NOT add it again here.
-        var configuredSerilogAiConnection = context.Configuration["Serilog:WriteTo:2:Args:connectionString"];
-        if (string.IsNullOrWhiteSpace(configuredSerilogAiConnection))
+        // Force our custom Application Insights setup to run
+        // This ensures we use the correct connection string format
         {
-            // No sink configured in Serilog settings → add via code using fallbacks
+            // Force our custom Application Insights setup to run
             var appInsightsConnectionStringFinal = context.Configuration["ApplicationInsights:ConnectionString"]
                 ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+            Log.Information($"Application Insights connection string chosen: {appInsightsConnectionStringFinal}");
 
             if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
             {
