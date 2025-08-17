@@ -165,6 +165,12 @@ try
         options.JsonSerializerOptions.WriteIndented = true;
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        
+        // Log the actual JSON settings being used
+        Console.WriteLine($"=== JSON Settings Applied ===");
+        Console.WriteLine($"ReferenceHandler: {options.JsonSerializerOptions.ReferenceHandler}");
+        Console.WriteLine($"WriteIndented: {options.JsonSerializerOptions.WriteIndented}");
+        Console.WriteLine($"PropertyNamingPolicy: {options.JsonSerializerOptions.PropertyNamingPolicy}");
     });
 
     // Force System.Text.Json globally to prevent Entity Framework from using JSON.NET
@@ -173,30 +179,6 @@ try
         options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.SerializerOptions.WriteIndented = true;
     });
-
-
-
-    builder.Services.AddControllers().AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        // Configure System.Text.Json to handle circular references without adding $id/$values
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        options.JsonSerializerOptions.WriteIndented = true;
-        // Ensure we're using System.Text.Json, not JSON.NET
-        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        // Force System.Text.Json to be the default serializer
-        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-    });
-
-    // Force System.Text.Json to be the default JSON serializer for the entire application
-    // This prevents Entity Framework from using JSON.NET internally
-    builder.Services.Configure<JsonOptions>(options =>
-    {
-        options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        options.SerializerOptions.WriteIndented = true;
-    });
-
-
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
@@ -230,7 +212,11 @@ try
 
     // Test console output for Azure Log Stream
     Console.WriteLine("=== CONSOLE TEST: Application built successfully ===");
+    Console.WriteLine($"=== .NET Version: {Environment.Version} ===");
+    Console.WriteLine($"=== Target Framework: {AppContext.TargetFrameworkName} ===");
+    Console.WriteLine($"=== Environment: {app.Environment.EnvironmentName} ===");
     Log.Information("Application built successfully - logging is working!");
+    Log.Information($"Running on .NET {Environment.Version} in {app.Environment.EnvironmentName} environment");
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
