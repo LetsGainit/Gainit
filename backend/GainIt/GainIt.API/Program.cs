@@ -55,68 +55,38 @@ try
             .ReadFrom.Services(services)
             .Enrich.FromLogContext();
 
-        // Force our custom Application Insights setup to run
-        // This ensures we use the correct connection string format
+        // Configure Application Insights during Serilog setup
+        // Use both context.Configuration and Environment.GetEnvironmentVariable for maximum compatibility
+        var appInsightsConnectionString = context.Configuration["ApplicationInsights:ConnectionString"]
+            ?? context.Configuration["APPINSIGHTS_INSTRUMENTATIONKEY"]
+            ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")
+            ?? Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+
+        if (!string.IsNullOrWhiteSpace(appInsightsConnectionString))
         {
-            // Check each configuration source individually for better logging
-            var configConnectionString = context.Configuration["ApplicationInsights:ConnectionString"];
-            var configInstrumentationKey = context.Configuration["APPINSIGHTS_INSTRUMENTATIONKEY"];
-            var envConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
-            var envInstrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-            
-            Log.Information("=== Application Insights Configuration Sources ===");
-            Log.Information($"appsettings.json ApplicationInsights:ConnectionString: {(string.IsNullOrWhiteSpace(configConnectionString) ? "NOT SET" : "SET")}");
-            Log.Information($"appsettings.json APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrWhiteSpace(configInstrumentationKey) ? "NOT SET" : "SET")}");
-            Log.Information($"Environment variable APPLICATIONINSIGHTS_CONNECTION_STRING: {(string.IsNullOrWhiteSpace(envConnectionString) ? "NOT SET" : "SET")}");
-            Log.Information($"Environment variable APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrWhiteSpace(envInstrumentationKey) ? "NOT SET" : "SET")}");
-            
-            // Determine which source to use
-            string? appInsightsConnectionStringFinal = null;
-            string sourceUsed = "None";
-            
-            if (!string.IsNullOrWhiteSpace(configConnectionString))
+            // If it's just an instrumentation key, format it properly
+            if (!appInsightsConnectionString.Contains(";") && !appInsightsConnectionString.Contains("="))
             {
-                appInsightsConnectionStringFinal = configConnectionString;
-                sourceUsed = "appsettings.json ApplicationInsights:ConnectionString";
+                appInsightsConnectionString = $"InstrumentationKey={appInsightsConnectionString}";
             }
-            else if (!string.IsNullOrWhiteSpace(configInstrumentationKey))
+
+            try
             {
-                appInsightsConnectionStringFinal = $"InstrumentationKey={configInstrumentationKey}";
-                sourceUsed = "appsettings.json APPINSIGHTS_INSTRUMENTATIONKEY";
+                loggerConfiguration.WriteTo.ApplicationInsights(
+                    appInsightsConnectionString,
+                    new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+                
+                // Log success (this will go to console/file initially)
+                Console.WriteLine($"✅ Application Insights sink added successfully using: {appInsightsConnectionString.Substring(0, Math.Min(50, appInsightsConnectionString.Length))}...");
             }
-            else if (!string.IsNullOrWhiteSpace(envConnectionString))
+            catch (Exception ex)
             {
-                appInsightsConnectionStringFinal = envConnectionString;
-                sourceUsed = "Environment variable APPLICATIONINSIGHTS_CONNECTION_STRING";
+                Console.WriteLine($"❌ Failed to add Application Insights sink: {ex.Message}");
             }
-            else if (!string.IsNullOrWhiteSpace(envInstrumentationKey))
-            {
-                appInsightsConnectionStringFinal = $"InstrumentationKey={envInstrumentationKey}";
-                sourceUsed = "Environment variable APPINSIGHTS_INSTRUMENTATIONKEY";
-            }
-            
-            Log.Information($"=== Configuration Decision ===");
-            Log.Information($"Source used: {sourceUsed}");
-            Log.Information($"Final connection string format: {(string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal) ? "NONE" : "SET")}");
-            
-            if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
-            {
-                try
-                {
-                    loggerConfiguration.WriteTo.ApplicationInsights(
-                        appInsightsConnectionStringFinal,
-                        new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
-                    Log.Information("✅ Application Insights sink added to Serilog configuration successfully");
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "❌ Failed to add Application Insights sink to Serilog configuration");
-                }
-            }
-            else
-            {
-                Log.Warning("⚠️ No Application Insights connection string or instrumentation key found. Application Insights logging will be disabled.");
-            }
+        }
+        else
+        {
+            Console.WriteLine("⚠️ No Application Insights configuration found - logging will be limited to console/file");
         }
     });
 
