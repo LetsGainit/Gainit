@@ -68,20 +68,28 @@ try
             {
                 // Use just the instrumentation key to avoid connection string parsing issues
                 var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+                Log.Information($"APPINSIGHTS_INSTRUMENTATIONKEY found: {!string.IsNullOrWhiteSpace(instrumentationKey)}");
+                
                 if (!string.IsNullOrWhiteSpace(instrumentationKey))
                 {
                     appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
+                    Log.Information("Using instrumentation key format for Application Insights");
                 }
                 else
                 {
                     // Fallback to full connection string if instrumentation key not available
                     var azureConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+                    Log.Information($"APPLICATIONINSIGHTS_CONNECTION_STRING found: {!string.IsNullOrWhiteSpace(azureConnectionString)}");
+                    
                     if (!string.IsNullOrWhiteSpace(azureConnectionString))
                     {
                         appInsightsConnectionStringFinal = azureConnectionString;
+                        Log.Information("Using full connection string format for Application Insights");
                     }
                 }
             }
+            
+            Log.Information($"Final Application Insights configuration: {appInsightsConnectionStringFinal}");
 
             if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
             {
