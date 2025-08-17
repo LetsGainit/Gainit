@@ -66,19 +66,19 @@ try
 
             if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
             {
-                // Try to get the connection string from Azure environment variables
-                var azureConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
-                if (!string.IsNullOrWhiteSpace(azureConnectionString))
+                // Use just the instrumentation key to avoid connection string parsing issues
+                var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+                if (!string.IsNullOrWhiteSpace(instrumentationKey))
                 {
-                    appInsightsConnectionStringFinal = azureConnectionString;
+                    appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
                 }
                 else
                 {
-                    // Fallback to just instrumentation key if full connection string not available
-                    var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-                    if (!string.IsNullOrWhiteSpace(instrumentationKey))
+                    // Fallback to full connection string if instrumentation key not available
+                    var azureConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+                    if (!string.IsNullOrWhiteSpace(azureConnectionString))
                     {
-                        appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
+                        appInsightsConnectionStringFinal = azureConnectionString;
                     }
                 }
             }
