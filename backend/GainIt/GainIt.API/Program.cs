@@ -63,6 +63,7 @@ try
                 ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
             Log.Information($"Application Insights connection string chosen: {appInsightsConnectionStringFinal}");
 
+            // Check if the connection string is valid
             if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
             {
                 // Use just the instrumentation key to avoid connection string parsing issues
