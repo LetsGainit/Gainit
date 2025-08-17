@@ -47,7 +47,7 @@ try
     // Clear default logging providers to prevent duplicate logs
     builder.Logging.ClearProviders();
 
-    // Configure Serilog for the application
+        // Configure Serilog for the application
     builder.Host.UseSerilog((context, services, loggerConfiguration) =>
     {
         loggerConfiguration
@@ -55,38 +55,81 @@ try
             .ReadFrom.Services(services)
             .Enrich.FromLogContext();
 
-            // Configure Application Insights during Serilog setup
-    // PRIORITIZE instrumentation key over complex connection string to avoid parsing errors
-    var appInsightsConnectionString = context.Configuration["APPINSIGHTS_INSTRUMENTATIONKEY"]
-        ?? Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY")
-        ?? context.Configuration["ApplicationInsights:ConnectionString"]
-        ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
-
-        if (!string.IsNullOrWhiteSpace(appInsightsConnectionString))
+        // FORCE our custom Application Insights setup to run
+        // Check if there's already an AI sink configured from appsettings
+        var existingAiSink = context.Configuration["Serilog:WriteTo:ApplicationInsights:ConnectionString"];
+        
+        // Always run our custom setup to ensure proper configuration
+        Log.Information("Starting custom Application Insights configuration...");
+        
+        // IMPLEMENT THE WORKING PATTERN FROM BEFORE:
+        // 1. First try: Get connection string from config or APPLICATIONINSIGHTS_CONNECTION_STRING
+        // 2. If that fails: Try to get just the APPINSIGHTS_INSTRUMENTATIONKEY
+        // 3. If that fails: Try APPLICATIONINSIGHTS_CONNECTION_STRING again
+        
+        string? appInsightsConnectionStringFinal = null;
+        
+        // Step 1: Try existing config first
+        var configuredSerilogAiConnection = context.Configuration["Serilog:WriteTo:ApplicationInsights:ConnectionString"];
+        if (!string.IsNullOrWhiteSpace(configuredSerilogAiConnection))
         {
-            // If it's just an instrumentation key, format it properly
-            if (!appInsightsConnectionString.Contains(";") && !appInsightsConnectionString.Contains("="))
+            appInsightsConnectionStringFinal = configuredSerilogAiConnection;
+            Log.Information("Step 1: Found existing Serilog AI config: SET");
+        }
+        
+        // Step 2: If no existing config, try to get one
+        if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+        {
+            // If we don't have a connection string yet, try to get one
+            var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+            
+            if (!string.IsNullOrWhiteSpace(instrumentationKey))
             {
-                appInsightsConnectionString = $"InstrumentationKey={appInsightsConnectionString}";
+                // Use simple format: "InstrumentationKey=value"
+                appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
+                Log.Information("Step 2: Using APPINSIGHTS_INSTRUMENTATIONKEY: SET");
             }
+            else
+            {
+                // Try the full connection string again
+                var azureConnectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+                if (!string.IsNullOrWhiteSpace(azureConnectionString))
+                {
+                    appInsightsConnectionStringFinal = azureConnectionString;
+                    Log.Information("Step 3: Using APPLICATIONINSIGHTS_CONNECTION_STRING: SET");
+                }
+            }
+        }
+        
+        Log.Information($"FINAL SELECTED: {(appInsightsConnectionStringFinal != null ? "HAS VALUE" : "NO VALUE")}");
+
+        // Now use the final connection string we determined above
+        if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+        {
+            Log.Information("Using connection string: HAS VALUE");
 
             try
             {
                 loggerConfiguration.WriteTo.ApplicationInsights(
-                    appInsightsConnectionString,
+                    appInsightsConnectionStringFinal!,
                     new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
                 
-                // Log success (this will go to console/file initially)
-                Console.WriteLine($"✅ Application Insights sink added successfully using: {appInsightsConnectionString.Substring(0, Math.Min(50, appInsightsConnectionString.Length))}...");
+                // Log success
+                Log.Information("Application Insights sink added successfully!");
+                
+                // Also log to Serilog once the sink is configured
+                Log.Information("=== APPLICATION INSIGHTS CONFIGURATION SUCCESS ===");
+                Log.Information("Connection string source: HAS VALUE");
+                Log.Information("Application Insights sink configured successfully - all logs will now go to Application Insights");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Failed to add Application Insights sink: {ex.Message}");
+                Log.Error(ex, "Failed to configure Application Insights sink");
             }
         }
         else
         {
-            Console.WriteLine("⚠️ No Application Insights configuration found - logging will be limited to console/file");
+            Log.Warning("No Application Insights configuration found - logging will be limited to console/file");
         }
     });
 
@@ -212,7 +255,6 @@ try
     Log.Information($"=== .NET Version: {Environment.Version} ===");
     Log.Information($"=== Target Framework: {AppContext.TargetFrameworkName} ===");
     Log.Information($"=== Environment: {app.Environment.EnvironmentName} ===");
-    Log.Information("Application built successfully - logging is working!");
     Log.Information($"Running on .NET {Environment.Version} in {app.Environment.EnvironmentName} environment");
 
     // Configure the HTTP request pipeline.

@@ -1110,6 +1110,9 @@ namespace GainIt.API.Data
                 context.SaveChanges();
                 #endregion
             }
+            else{
+                logger?.LogInformation("Database already seeded");
+            }
         }
     }
 }
