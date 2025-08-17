@@ -167,10 +167,10 @@ try
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         
         // Log the actual JSON settings being used
-        Console.WriteLine($"=== JSON Settings Applied ===");
-        Console.WriteLine($"ReferenceHandler: {options.JsonSerializerOptions.ReferenceHandler}");
-        Console.WriteLine($"WriteIndented: {options.JsonSerializerOptions.WriteIndented}");
-        Console.WriteLine($"PropertyNamingPolicy: {options.JsonSerializerOptions.PropertyNamingPolicy}");
+        Log.Information("=== JSON Settings Applied ===");
+        Log.Information($"ReferenceHandler: {options.JsonSerializerOptions.ReferenceHandler}");
+        Log.Information($"WriteIndented: {options.JsonSerializerOptions.WriteIndented}");
+        Log.Information($"PropertyNamingPolicy: {options.JsonSerializerOptions.PropertyNamingPolicy}");
     });
 
     // Force System.Text.Json globally to prevent Entity Framework from using JSON.NET
@@ -210,11 +210,11 @@ try
 
     var app = builder.Build();
 
-    // Test console output for Azure Log Stream
-    Console.WriteLine("=== CONSOLE TEST: Application built successfully ===");
-    Console.WriteLine($"=== .NET Version: {Environment.Version} ===");
-    Console.WriteLine($"=== Target Framework: {AppContext.TargetFrameworkName} ===");
-    Console.WriteLine($"=== Environment: {app.Environment.EnvironmentName} ===");
+    // Test logging output for Azure Log Stream
+    Log.Information("=== APPLICATION TEST: Application built successfully ===");
+    Log.Information($"=== .NET Version: {Environment.Version} ===");
+    Log.Information($"=== Target Framework: {AppContext.TargetFrameworkName} ===");
+    Log.Information($"=== Environment: {app.Environment.EnvironmentName} ===");
     Log.Information("Application built successfully - logging is working!");
     Log.Information($"Running on .NET {Environment.Version} in {app.Environment.EnvironmentName} environment");
 
