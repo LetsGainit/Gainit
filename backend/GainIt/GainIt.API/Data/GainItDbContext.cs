@@ -93,6 +93,8 @@ namespace GainIt.API.Data
         /// Project members table - tracks team members and their roles in projects
         /// </summary>
         public DbSet<ProjectMember> ProjectMembers { get; set; }
+
+        public DbSet<JoinRequest> JoinRequests { get; set; }
         #endregion
 
         #region Database Operation Logging

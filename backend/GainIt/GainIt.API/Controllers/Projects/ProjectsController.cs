@@ -1,5 +1,4 @@
-﻿using GainIt.API.DTOs.Requests;
-using GainIt.API.DTOs.Search;
+﻿using GainIt.API.DTOs.Search;
 using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
@@ -9,6 +8,7 @@ using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
+using GainIt.API.DTOs.Requests.Projects;
 
 namespace GainIt.API.Controllers.Projects
 {
