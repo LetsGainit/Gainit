@@ -16,6 +16,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Serilog;
+using System.Reflection;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -35,11 +40,54 @@ var configBuilder = new ConfigurationBuilder()
 
 var configuration = configBuilder.Build();
 
-// Bootstrap Serilog from configuration only (avoid adding sinks programmatically here to prevent duplicates)
+// Configure Serilog with Application Insights
 var loggerConfig = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration);
 
+// Add Application Insights sink if instrumentation key is available
+var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
+var connectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+
+if (!string.IsNullOrWhiteSpace(connectionString))
+{
+    // Use the full connection string if available
+    var cleanConnectionString = connectionString.Trim().Replace("\"", "").Replace("'", "");
+    
+    loggerConfig.WriteTo.ApplicationInsights(
+        cleanConnectionString,
+        new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+    
+    Log.Information("Application Insights sink added using full connection string");
+    Log.Information($"Connection String: {cleanConnectionString.Substring(0, Math.Min(50, cleanConnectionString.Length))}...");
+}
+else if (!string.IsNullOrWhiteSpace(instrumentationKey))
+{
+    // Fallback to instrumentation key only
+    var cleanInstrumentationKey = instrumentationKey.Trim().Replace("\"", "").Replace("'", "");
+    var appInsightsConnectionString = $"InstrumentationKey={cleanInstrumentationKey}";
+    
+    loggerConfig.WriteTo.ApplicationInsights(
+        appInsightsConnectionString,
+        new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+    
+    Log.Information("Application Insights sink added using instrumentation key only");
+    Log.Information($"Instrumentation Key: {cleanInstrumentationKey.Substring(0, Math.Min(10, cleanInstrumentationKey.Length))}...");
+}
+else
+{
+    Log.Warning("No Application Insights environment variables found");
+}
+
+// Create the logger only once after all configuration is complete
 Log.Logger = loggerConfig.CreateLogger();
+
+// Test the Application Insights sink immediately if it was configured
+if (!string.IsNullOrWhiteSpace(connectionString) || !string.IsNullOrWhiteSpace(instrumentationKey))
+{
+    Log.Information("=== IMMEDIATE TEST: Application Insights sink test ===");
+    Log.Warning("=== IMMEDIATE TEST: This warning should appear in Application Insights ===");
+    Log.Error("=== IMMEDIATE TEST: This error should appear in Application Insights ===");
+}
 
 try
 {
@@ -50,43 +98,79 @@ try
     // Clear default logging providers to prevent duplicate logs
     builder.Logging.ClearProviders();
 
-    // Configure Serilog for the application
-    builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+    // Use the pre-configured Serilog
+    builder.Host.UseSerilog();
+
+    // Debug: Check environment variables for Application Insights (reuse variables from above)
+    Log.Information("=== ENVIRONMENT VARIABLES DEBUG ===");
+    Log.Information($"APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrEmpty(instrumentationKey) ? "NOT SET" : "SET")}");
+    Log.Information($"APPLICATIONINSIGHTS_CONNECTION_STRING: {(string.IsNullOrEmpty(connectionString) ? "NOT SET" : "SET")}");
+    
+    if (!string.IsNullOrEmpty(connectionString))
     {
-        loggerConfiguration
-            .ReadFrom.Configuration(context.Configuration)
-            .ReadFrom.Services(services)
-            .Enrich.FromLogContext();
+        Log.Information("Will use APPLICATIONINSIGHTS_CONNECTION_STRING for Application Insights configuration");
+    }
+    else if (!string.IsNullOrEmpty(instrumentationKey))
+    {
+        Log.Information("Will use APPINSIGHTS_INSTRUMENTATIONKEY for Application Insights configuration");
+    }
+    else
+    {
+        Log.Warning("No Application Insights environment variables found - logging will be limited to console/file");
+    }
 
-        // Ensure Application Insights sink is added exactly once.
-        // If Serilog sink is already configured via configuration (e.g., Development), do NOT add it again here.
-        var configuredSerilogAiConnection = context.Configuration["Serilog:WriteTo:2:Args:connectionString"];
-        if (string.IsNullOrWhiteSpace(configuredSerilogAiConnection))
+    // Check for other possible environment variable names
+    try
+    {
+        var allEnvVars = Environment.GetEnvironmentVariables();
+        if (allEnvVars?.Keys != null)
         {
-            // No sink configured in Serilog settings → add via code using fallbacks
-            var appInsightsConnectionStringFinal = context.Configuration["ApplicationInsights:ConnectionString"]
-                ?? Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
+            var appInsightsVars = allEnvVars.Keys.Cast<string>()
+                .Where(k => k != null && (k.Contains("APPINSIGHTS") || k.Contains("INSTRUMENTATION") || k.Contains("APPLICATIONINSIGHTS")))
+                .ToList();
+            
+            Log.Information($"Found {appInsightsVars.Count} Application Insights related environment variables: {string.Join(", ", appInsightsVars)}");
+        }
+        else
+        {
+            Log.Warning("Could not access environment variables");
+        }
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Error while checking environment variables");
+    }
 
-            if (string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
+    // Debug: Check Serilog configuration
+    Log.Information("=== SERILOG CONFIGURATION DEBUG ===");
+    var serilogSection = configuration.GetSection("Serilog");
+    Log.Information($"Serilog section exists: {serilogSection.Exists()}");
+    
+    if (serilogSection.Exists())
+    {
+        var writeToSection = serilogSection.GetSection("WriteTo");
+        if (writeToSection.Exists())
+        {
+            Log.Information($"Serilog WriteTo count: {writeToSection.GetChildren().Count()}");
+            
+            foreach (var sink in writeToSection.GetChildren())
             {
-                var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-                if (!string.IsNullOrWhiteSpace(instrumentationKey))
-                {
-                    appInsightsConnectionStringFinal = $"InstrumentationKey={instrumentationKey}";
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(appInsightsConnectionStringFinal))
-            {
-                loggerConfiguration.WriteTo.ApplicationInsights(
-                    appInsightsConnectionStringFinal,
-                    new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
+                var sinkName = sink["Name"] ?? "Unknown";
+                Log.Information($"Sink: {sinkName}");
             }
         }
-    });
+        else
+        {
+            Log.Warning("Serilog WriteTo section not found in configuration");
+        }
+    }
+    else
+    {
+        Log.Warning("Serilog section not found in configuration");
+    }
 
-    // Add Application Insights
-    builder.Services.AddApplicationInsightsTelemetry();
+    // Application Insights is configured via Serilog above - don't add it again here
+    // builder.Services.AddApplicationInsightsTelemetry(); // DISABLED to prevent conflicts
 
     builder.Services.AddDbContext<GainItDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("GainItPostgresDb")));
@@ -109,6 +193,7 @@ try
             opts.IndexName,
             new Azure.AzureKeyCredential(opts.ApiKey)
         );
+        
     });
 
     builder.Services.AddSingleton(sp =>
@@ -162,11 +247,27 @@ try
     builder.Services.AddHealthChecks()
         .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "database", "sql" });
 
+    // Configure JSON serialization to handle circular references without adding $id/$values
     builder.Services.AddControllers().AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        // Add this line to handle your intentional circular references (users->achievements->user)
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        
+        // Log the actual JSON settings being used
+        Log.Information("=== JSON Settings Applied ===");
+        Log.Information($"ReferenceHandler: {options.JsonSerializerOptions.ReferenceHandler}");
+        Log.Information($"WriteIndented: {options.JsonSerializerOptions.WriteIndented}");
+        Log.Information($"PropertyNamingPolicy: {options.JsonSerializerOptions.PropertyNamingPolicy}");
+    });
+
+    // Force System.Text.Json globally to prevent Entity Framework from using JSON.NET
+    builder.Services.Configure<JsonOptions>(options =>
+    {
+        options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.SerializerOptions.WriteIndented = true;
     });
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -208,9 +309,12 @@ try
 
     var app = builder.Build();
 
-    // Test console output for Azure Log Stream
-    Console.WriteLine("=== CONSOLE TEST: Application built successfully ===");
-    Log.Information("Application built successfully - logging is working!");
+    // Test logging output for Azure Log Stream
+    Log.Information("=== APPLICATION TEST: Application built successfully ===");
+    Log.Information($"=== .NET Version: {Environment.Version} ===");
+    Log.Information($"=== Target Framework: {AppContext.TargetFrameworkName} ===");
+    Log.Information($"=== Environment: {app.Environment.EnvironmentName} ===");
+    Log.Information($"Running on .NET {Environment.Version} in {app.Environment.EnvironmentName} environment");
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
@@ -249,6 +353,17 @@ try
             await context.Response.WriteAsync(result);
         }
     }); 
+
+    // Add a simple test endpoint to verify logging
+    app.MapGet("/test-logging", () =>
+    {
+        Log.Debug("Test DEBUG log from minimal API endpoint");
+        Log.Information("Test INFORMATION log from minimal API endpoint");
+        Log.Warning("Test WARNING log from minimal API endpoint");
+        Log.Error("Test ERROR log from minimal API endpoint");
+        
+        return "Logging test completed - check Application Insights for log messages";
+    });
 
     // Seed the database with initial data
     using (var scope = app.Services.CreateScope())

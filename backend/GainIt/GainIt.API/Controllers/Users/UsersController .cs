@@ -1,5 +1,6 @@
 ﻿using GainIt.API.DTOs.Requests.Users;
 using GainIt.API.DTOs.ViewModels.Users;
+using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
@@ -208,7 +209,7 @@ namespace GainIt.API.Controllers.Users
 
                 var projects = await r_userProfileService.GetUserProjectsAsync(id);
                 var achievements = (await r_userProfileService.GetUserAchievementsAsync(id)).ToList();
-                FullMentorViewModel mentorViewModel = new FullMentorViewModel(mentor, projects, achievements);
+                FullMentorViewModel mentorViewModel = new FullMentorViewModel(mentor, projects, achievements, true, true);
                 
                 r_logger.LogInformation("Successfully retrieved Mentor profile: UserId={UserId}, ProjectsCount={ProjectsCount}, AchievementsCount={AchievementsCount}", 
                     id, projects.Count(), achievements.Count);
@@ -472,6 +473,7 @@ namespace GainIt.API.Controllers.Users
             }
             catch (KeyNotFoundException ex)
             {
+                
                 r_logger.LogWarning("Gainer or Achievement Template not found: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}, Error={Error}", id, achievementTemplateId, ex.Message);
                 return NotFound(new { Message = ex.Message });
             }
@@ -721,11 +723,11 @@ namespace GainIt.API.Controllers.Users
         /// <param name="id">The unique identifier of the Gainer.</param>
         /// <returns>The list of projects the Gainer has participated in.</returns>
         [HttpGet("gainer/{id}/projects")]
-        [ProducesResponseType(typeof(IEnumerable<UserProject>), 200)]
+        [ProducesResponseType(typeof(IEnumerable<ConciseUserProjectViewModel>), 200)]
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> GetGainerProjectHistory(Guid id)
+        public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetGainerProjectHistory(Guid id)
         {
             r_logger.LogInformation("Getting Gainer project history: UserId={UserId}", id);
             
@@ -738,8 +740,9 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var projects = await r_userProfileService.GetGainerProjectHistoryAsync(id);
-                r_logger.LogInformation("Successfully retrieved Gainer project history: UserId={UserId}, ProjectsCount={ProjectsCount}", id, projects.Count());
-                return Ok(projects);
+                var projectViewModels = projects.Select(p => new ConciseUserProjectViewModel(p, id)).ToList();
+                r_logger.LogInformation("Successfully retrieved Gainer project history: UserId={UserId}, ProjectsCount={ProjectsCount}", id, projectViewModels.Count);
+                return Ok(projectViewModels);
             }
             catch (KeyNotFoundException ex)
             {
@@ -759,11 +762,11 @@ namespace GainIt.API.Controllers.Users
         /// <param name="id">The unique identifier of the Mentor.</param>
         /// <returns>The list of projects the Mentor has mentored.</returns>
         [HttpGet("mentor/{id}/projects")]
-        [ProducesResponseType(typeof(IEnumerable<UserProject>), 200)]
+        [ProducesResponseType(typeof(IEnumerable<ConciseUserProjectViewModel>), 200)]
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> GetMentorProjectHistory(Guid id)
+        public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetMentorProjectHistory(Guid id)
         {
             r_logger.LogInformation("Getting Mentor project history: UserId={UserId}", id);
             
@@ -776,8 +779,9 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var projects = await r_userProfileService.GetMentorProjectHistoryAsync(id);
-                r_logger.LogInformation("Successfully retrieved Mentor project history: UserId={UserId}, ProjectsCount={ProjectsCount}", id, projects.Count());
-                return Ok(projects);
+                var projectViewModels = projects.Select(p => new ConciseUserProjectViewModel(p, id)).ToList();
+                r_logger.LogInformation("Successfully retrieved Mentor project history: UserId={UserId}, ProjectsCount={ProjectsCount}", id, projectViewModels.Count);
+                return Ok(projectViewModels);
             }
             catch (KeyNotFoundException ex)
             {
@@ -797,11 +801,11 @@ namespace GainIt.API.Controllers.Users
         /// <param name="id">The unique identifier of the Nonprofit Organization.</param>
         /// <returns>The list of projects owned by the Nonprofit Organization.</returns>
         [HttpGet("nonprofit/{id}/projects")]
-        [ProducesResponseType(typeof(IEnumerable<UserProject>), 200)]
+        [ProducesResponseType(typeof(IEnumerable<ConciseUserProjectViewModel>), 200)]
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> GetNonprofitProjectHistory(Guid id)
+        public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetNonprofitProjectHistory(Guid id)
         {
             r_logger.LogInformation("Getting Nonprofit project history: NonprofitId={NonprofitId}", id);
             
@@ -814,8 +818,9 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var projects = await r_userProfileService.GetNonprofitProjectHistoryAsync(id);
-                r_logger.LogInformation("Successfully retrieved Nonprofit project history: NonprofitId={NonprofitId}, ProjectsCount={ProjectsCount}", id, projects.Count());
-                return Ok(projects);
+                var projectViewModels = projects.Select(p => new ConciseUserProjectViewModel(p, null)).ToList();
+                r_logger.LogInformation("Successfully retrieved Nonprofit project history: NonprofitId={NonprofitId}, ProjectsCount={ProjectsCount}", id, projectViewModels.Count);
+                return Ok(projectViewModels);
             }
             catch (KeyNotFoundException ex)
             {

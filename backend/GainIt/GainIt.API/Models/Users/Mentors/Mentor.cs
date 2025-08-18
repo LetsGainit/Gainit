@@ -2,6 +2,7 @@
 using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users.Expertise;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace GainIt.API.Models.Users.Mentors
 {
@@ -19,10 +20,13 @@ namespace GainIt.API.Models.Users.Mentors
         [StringLength(200, ErrorMessage = "Area of Expertise cannot exceed 200 characters")]
         public string AreaOfExpertise { get; set; }
 
+        [JsonIgnore]
         public TechExpertise TechExpertise { get; set; }
 
+        [JsonIgnore]
         public List<UserProject> MentoredProjects { get; set; } = new();
 
+        [JsonIgnore]
         public List<UserAchievement> Achievements { get; set; } = new();
     }
 }

@@ -1,5 +1,6 @@
 ﻿using GainIt.API.Models.Users;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace GainIt.API.Models.Projects
 {
@@ -20,7 +21,9 @@ namespace GainIt.API.Models.Projects
         public DateTime? LeftAtUtc { get; set; }
 
         // Navigation properties
+        [JsonIgnore]
         public required UserProject Project { get; set; }
+        [JsonIgnore]
         public required User User { get; set; }
     }
 }

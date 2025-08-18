@@ -22,9 +22,10 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             DifficultyLevel = i_template.DifficultyLevel.ToString();
             ProjectPictureUrl = i_template.ProjectPictureUrl;
             Duration = toDaysAndMonthsString(i_template.Duration);
-            Goals = i_template.Goals;
-            Technologies = i_template.Technologies;
-            RequiredRoles = i_template.RequiredRoles;
+            // Extract data before JsonIgnore takes effect
+            Goals = i_template.Goals.ToList();
+            Technologies = i_template.Technologies.ToList();
+            RequiredRoles = i_template.RequiredRoles.ToList();
         }
 
         private static string toDaysAndMonthsString(TimeSpan duration)

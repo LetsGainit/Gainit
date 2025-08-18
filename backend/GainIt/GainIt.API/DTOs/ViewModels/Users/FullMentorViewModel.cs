@@ -15,20 +15,22 @@ namespace GainIt.API.DTOs.ViewModels.Users
         public List<ConciseUserProjectViewModel> MentoredProjects { get; set; } = new List<ConciseUserProjectViewModel>();
         public List<AchievementViewModel> Achievements { get; set; } = new List<AchievementViewModel>();    
 
-        public FullMentorViewModel(Mentor mentor, List<UserProject> projects, List<UserAchievement> achievements) : base(mentor)
+        public FullMentorViewModel(Mentor mentor, List<UserProject>? projects, List<UserAchievement>? achievements, bool includeProjects = true, bool includeAchievements = true) : base(mentor)
         {
             YearsOfExperience = mentor.YearsOfExperience;
             AreaOfExpertise = mentor.AreaOfExpertise;
 
             TechExpertise = new TechExpertiseViewModel(mentor.TechExpertise);
 
-            MentoredProjects = projects
-                .Select(up => new ConciseUserProjectViewModel(up, mentor.UserId))
-                .ToList();
+            // Only include projects if explicitly requested and provided
+            MentoredProjects = (includeProjects && projects != null)
+                ? projects.Select(up => new ConciseUserProjectViewModel(up, mentor.UserId)).ToList()
+                : new List<ConciseUserProjectViewModel>();
 
-            Achievements = achievements
-                .Select(ua => new AchievementViewModel(ua))
-                .ToList();
+            // Only include achievements if explicitly requested and provided
+            Achievements = (includeAchievements && achievements != null)
+                ? achievements.Select(ua => new AchievementViewModel(ua)).ToList()
+                : new List<AchievementViewModel>();
         }
     }
 }
