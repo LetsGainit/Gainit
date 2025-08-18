@@ -22,7 +22,9 @@ using Serilog;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
+using Microsoft.AspNetCore.SignalR;
+using System.Security.Claims;
+using GainIt.API.Realtime;
 
 // Build configuration first
 var configBuilder = new ConfigurationBuilder()
@@ -95,6 +97,9 @@ try
         builder.Configuration.GetSection("OpenAI"));
     builder.Services.Configure<AcsEmailOptions>(
         builder.Configuration.GetSection("ACS:Email"));
+    builder.Services.AddSignalR()
+    .AddAzureSignalR(
+        builder.Configuration["SignalR:ConnectionString"]);
 
     builder.Services.AddSingleton(sp =>
     {
@@ -151,6 +156,7 @@ try
     builder.Services.AddScoped<IUserProfileService, UserProfileService>();
     builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
     builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
+    builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
 
     // Add health checks
     builder.Services.AddHealthChecks()
@@ -191,6 +197,15 @@ try
     });
     });
 
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("signalr-cors", p => p
+            .WithOrigins("http://localhost:5173", "http://localhost:3000", "https://app.gainit.app")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+    });
+
     var app = builder.Build();
 
     // Test console output for Azure Log Stream
@@ -210,8 +225,10 @@ try
     app.UseHttpsRedirection(); //redirects to https
     app.UseAuthentication(); //authenticates the request
     app.UseAuthorization(); //authorizes the request
+    app.UseCors("signalr-cors");
     app.MapControllers(); //maps the controllers to the request
-    
+    app.MapHub<NotificationsHub>("/hubs/notifications");
+
     // Add health check endpoint
     app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
     {
