@@ -21,5 +21,7 @@ namespace GainIt.API.Models.Projects
         public Guid? DeciderUserId { get; set; }
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
         public DateTime? DecisionAtUtc { get; set; }
+
+        public string RequestedRole { get; set; }
     }
 }

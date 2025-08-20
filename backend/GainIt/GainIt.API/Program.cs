@@ -1,6 +1,5 @@
 using Azure;
 using Azure.AI.OpenAI;
-using Azure.Core;
 using Azure.Search.Documents;
 using GainIt.API.Data;
 using GainIt.API.HealthChecks;
@@ -14,21 +13,15 @@ using GainIt.API.Services.Users.Implementations;
 using GainIt.API.Services.Users.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
 using System.Reflection;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Serilog;
-using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.SignalR;
-using System.Security.Claims;
 using GainIt.API.Realtime;
 
 // Build configuration first
@@ -184,6 +177,8 @@ try
     builder.Services.AddSignalR()
     .AddAzureSignalR(
         builder.Configuration["SignalR:ConnectionString"]);
+    builder.Services.Configure<JoinRequestOptions>(
+        builder.Configuration.GetSection("JoinRequests"));
 
     builder.Services.AddSingleton(sp =>
     {
@@ -242,6 +237,8 @@ try
     builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
     builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
     builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
+    builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
+
 
     // Add health checks
     builder.Services.AddHealthChecks()
@@ -327,9 +324,9 @@ try
     app.UsePerformanceMonitoring(); // Monitor performance and memory usage
     app.UseMiddleware<RequestLoggingMiddleware>(); //logs starts
     app.UseHttpsRedirection(); //redirects to https
+    app.UseCors("signalr-cors");
     app.UseAuthentication(); //authenticates the request
     app.UseAuthorization(); //authorizes the request
-    app.UseCors("signalr-cors");
     app.MapControllers(); //maps the controllers to the request
     app.MapHub<NotificationsHub>("/hubs/notifications");
 

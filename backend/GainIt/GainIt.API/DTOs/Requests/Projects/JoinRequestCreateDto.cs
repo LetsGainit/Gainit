@@ -3,5 +3,6 @@
     public class JoinRequestCreateDto
     {
         public string? Message { get; set; }
+        public string RequestedRole { get; set; }
     }
 }

@@ -233,6 +233,52 @@ namespace GainIt.API.Data
                 });
                 #endregion
 
+                #region JoinRequest Configuration
+                modelBuilder.Entity<JoinRequest>(entity =>
+                {
+                    entity.HasKey(j => j.JoinRequestId);
+
+                    // Relationships
+                    entity.HasOne(j => j.Project)
+                        .WithMany() // optional: add List<JoinRequest> in UserProject for reverse navigation
+                        .HasForeignKey(j => j.ProjectId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.HasOne(j => j.RequesterUser)
+                        .WithMany() // optional: add reverse navigation in User if needed
+                        .HasForeignKey(j => j.RequesterUserId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // DeciderUserId is just a nullable Guid without navigation
+
+                    // Properties
+                    entity.Property(j => j.Status)
+                        .IsRequired();
+
+                    entity.Property(j => j.RequestedRole)
+                        .IsRequired()
+                        .HasMaxLength(100);
+
+                    entity.Property(j => j.Message)
+                        .HasMaxLength(1000);
+
+                    entity.Property(j => j.DecisionReason)
+                        .HasMaxLength(1000);
+
+                    entity.Property(j => j.CreatedAtUtc)
+                        .IsRequired();
+
+                    // Indexes
+                    entity.HasIndex(j => new { j.ProjectId, j.Status });
+                    entity.HasIndex(j => new { j.ProjectId, j.RequesterUserId });
+
+                    // Prevent duplicate Pending request for the same Project+User (Partial Index)
+                    entity.HasIndex(j => new { j.ProjectId, j.RequesterUserId })
+                        .HasFilter("\"Status\" = 0") // 0 = Pending
+                        .IsUnique();
+                });
+                #endregion
+
                 #region Expertise Configuration
                 // Configure TechExpertise
                 modelBuilder.Entity<TechExpertise>(entity =>

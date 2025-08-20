@@ -1,8 +1,7 @@
 ﻿namespace GainIt.API.DTOs.Requests.Projects
 {
-    public class JoinRequestDecisionDto
+    public class JoinRequestCancelDto
     {
-        public bool IsApproved { get; set; }
         public string? Reason { get; set; }
     }
 }
