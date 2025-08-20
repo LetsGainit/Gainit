@@ -76,7 +76,10 @@ namespace GainIt.API.Controllers.Users
 
                 r_logger.LogDebug("Extracted subject. CorrelationId={CorrelationId}, Subject={Subject}", correlationId, externalId);
 
-                var email = tryGetClaim(User, "emails", ClaimTypes.Email, "email");
+                var email = tryGetClaim(User, "emails")
+                         ?? tryGetClaim(User, "email")
+                         ?? tryGetClaim(User, "preferred_username");
+
                 var name = tryGetClaim(User, "name")
                             ?? string.Join(' ',
                                 new[] { tryGetClaim(User, "given_name"), tryGetClaim(User, "family_name") }
