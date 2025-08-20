@@ -64,16 +64,17 @@ namespace GainIt.API.Controllers.Users
             
             try
             {
-                // Required identity
-                var oid = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(oid))
+                var externalId =
+                    tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                 ?? tryGetClaim(User, "sub")
+                 ?? tryGetClaim(User, ClaimTypes.NameIdentifier);
+
+                if (string.IsNullOrEmpty(externalId))
                 {
-                    r_logger.LogWarning("Missing OID claim during user provisioning. CorrelationId={CorrelationId}, Available claims: {ClaimTypes}, RemoteIP={RemoteIP}", 
-                        correlationId, string.Join(", ", allClaims), HttpContext.Connection.RemoteIpAddress);
-                    return Unauthorized(new { Message = "Missing oid claim" });
+                    return Unauthorized(new { Message = "Missing external identity claim (oid/sub)" });
                 }
 
-                r_logger.LogDebug("Extracted OID claim. CorrelationId={CorrelationId}, OID={OID}", correlationId, oid);
+                r_logger.LogDebug("Extracted subject. CorrelationId={CorrelationId}, Subject={Subject}", correlationId, externalId);
 
                 var email = tryGetClaim(User, "emails", ClaimTypes.Email, "email");
                 var name = tryGetClaim(User, "name")
@@ -92,7 +93,7 @@ namespace GainIt.API.Controllers.Users
 
                 var dto = new ExternalUserDto
                 {
-                    ExternalId = oid!,
+                    ExternalId = externalId!,
                     Email = email,
                     FullName = string.IsNullOrWhiteSpace(name) ? null : name,
                     IdentityProvider = idp,

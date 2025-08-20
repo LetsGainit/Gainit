@@ -25,11 +25,13 @@ namespace GainIt.API.Controllers.Projects
 
         private Guid GetUserId()
         {
-            var userIdClaim = User.FindFirst("oid")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
+            var externalId = User.FindFirst("oid")?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(externalId))
                 throw new UnauthorizedAccessException("User ID not found in token.");
 
-            return Guid.Parse(userIdClaim);
+            return Guid.Parse(externalId);
         }
 
         /// <summary>
