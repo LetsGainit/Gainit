@@ -226,9 +226,22 @@ try
 
     builder.Services.AddAuthorization(options =>
     {
-        // ????????? ??? ?????: ????? ?????? ???? ?? ?-scope ?? ?-API
-        options.AddPolicy("RequireAccessAsUser",
-            p => p.RequireClaim("scp", "access_as_user"));
+        options.AddPolicy("RequireAccessAsUser", policy =>
+            policy.RequireAssertion(ctx =>
+            {
+                // scp is a space-delimited list in delegated-user tokens
+                var scp = ctx.User.FindFirst("scp")?.Value ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(scp))
+                {
+                    return scp.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                              .Contains("access_as_user", StringComparer.Ordinal);
+                }
+
+                // optional fallback for app roles (client credentials / roles tokens)
+                var roles = ctx.User.FindAll("roles").Select(c => c.Value);
+                return roles.Contains("access_as_user", StringComparer.Ordinal);
+            })
+        );
     });
 
     // Add services to the container.
