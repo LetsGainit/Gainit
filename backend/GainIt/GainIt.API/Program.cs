@@ -298,7 +298,7 @@ try
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("signalr-cors", p => p
-            .WithOrigins("http://localhost:5173", "http://localhost:3000", "https://app.gainit.app")
+            .WithOrigins("http://localhost:5173", "http://localhost:3000", "https://gray-moss-04b923a10.2.azurestaticapps.net")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
