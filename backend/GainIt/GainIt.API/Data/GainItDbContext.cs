@@ -97,6 +97,28 @@ namespace GainIt.API.Data
         public DbSet<JoinRequest> JoinRequests { get; set; }
         #endregion
 
+        #region GitHub Integration
+        /// <summary>
+        /// GitHub repositories linked to projects
+        /// </summary>
+        public DbSet<GitHubRepository> GitHubRepositories { get; set; }
+
+        /// <summary>
+        /// GitHub analytics data for repositories
+        /// </summary>
+        public DbSet<GitHubAnalytics> GitHubAnalytics { get; set; }
+
+        /// <summary>
+        /// GitHub user contributions to repositories
+        /// </summary>
+        public DbSet<GitHubContribution> GitHubContributions { get; set; }
+
+        /// <summary>
+        /// GitHub synchronization logs
+        /// </summary>
+        public DbSet<GitHubSyncLog> GitHubSyncLogs { get; set; }
+        #endregion
+
         #region Database Operation Logging
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -399,6 +421,7 @@ namespace GainIt.API.Data
                     AreaOfExpertise = "Full Stack Development",
                     Biography = "Senior software architect with expertise in cloud technologies and microservices.",
                     GitHubURL = "https://github.com/noacohen",
+                    GitHubUsername = "noacohen",  // Add GitHub username
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/65.jpg",
                     LinkedInURL = "https://linkedin.com/company/mentors-in-tech",
                     FacebookPageURL = "https://facebook.com/TechCareerMentorship",
@@ -418,6 +441,7 @@ namespace GainIt.API.Data
                     AreaOfExpertise = "Data Science & AI",
                     Biography = "Experienced data scientist and AI mentor, passionate about machine learning and analytics.",
                     GitHubURL = "https://github.com/davidlevy",
+                    GitHubUsername = "davidlevy",  // Add GitHub username
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/66.jpg",
                     LinkedInURL = "https://linkedin.com/company/tech-career-mentorship",
                     FacebookPageURL = "https://facebook.com/TechCareerMentor",
@@ -437,6 +461,7 @@ namespace GainIt.API.Data
                     WebsiteUrl = "https://techforgood.co.il",
                     Biography = "Empowering Israeli communities through technology education and digital literacy programs.",
                     GitHubURL = "https://github.com/techforgood-israel",
+                    GitHubUsername = "techforgood-israel",  // Add GitHub username
                     ProfilePictureURL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQHIVTRK4hstoI6IBdXmslzxY96ql1mZQF6wg&s",
                     LinkedInURL = "https://linkedin.com/company/techforgood-israel",
                     FacebookPageURL = "https://facebook.com/TechForGoodIsrael",
@@ -494,6 +519,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Web Development", "UI/UX Design", "Cloud Computing" },
                     GitHubURL = "https://github.com/yossirosenberg",
+                    GitHubUsername = "yossirosenberg",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/yossirosenberg",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/12.jpg",
                     FacebookPageURL = "https://facebook.com/yossi.rosenberg",
@@ -513,6 +539,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "Machine Learning", "Data Science", "Python" },
                     GitHubURL = "https://github.com/mayagoldstein",
+                    GitHubUsername = "mayagoldstein",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/mayagoldstein",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/22.jpg",
                     FacebookPageURL = "https://facebook.com/maya.goldstein",
@@ -532,6 +559,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Mobile Development", "Android", "Kotlin" },
                     GitHubURL = "https://github.com/amitbendavid",
+                    GitHubUsername = "amitbendavid",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/amitbendavid",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/33.jpg",
                     FacebookPageURL = "https://facebook.com/amit.bendavid",
@@ -551,6 +579,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "Cybersecurity", "Networks", "Linux" },
                     GitHubURL = "https://github.com/tamarweiss",
+                    GitHubUsername = "tamarweiss",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/tamarweiss",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/44.jpg",
                     FacebookPageURL = "https://facebook.com/tamar.weiss",
@@ -570,6 +599,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Game Development", "Unity", "C#" },
                     GitHubURL = "https://github.com/elishalom",
+                    GitHubUsername = "elishalom",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/elishalom",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/55.jpg",
                     FacebookPageURL = "https://facebook.com/eli.shalom",
@@ -589,6 +619,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "AI", "Natural Language Processing", "Python" },
                     GitHubURL = "https://github.com/liorabarak",
+                    GitHubUsername = "liorabarak",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/liorabarak",
                     FacebookPageURL = "https://facebook.com/liora.barak",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/77.jpg",

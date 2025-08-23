@@ -33,6 +33,7 @@ namespace GainIt.API.Models.Users
         [Url, StringLength(200)] public string? FacebookPageURL { get; set; }
         [Url, StringLength(200)] public string? LinkedInURL { get; set; }
         [Url, StringLength(200)] public string? GitHubURL { get; set; }
+        [StringLength(100)] public string? GitHubUsername { get; set; }
         [Url, StringLength(200)] public string? ProfilePictureURL { get; set; }
 
         [JsonIgnore]

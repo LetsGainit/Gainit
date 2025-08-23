@@ -22,6 +22,11 @@ project.fragment.lock.json
 # 🔒 Secrets
 *.env
 secrets.json
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.*.local.json
+appsettings.GitHub.Development.json
 
 # 🌐 ASP.NET Configuration
 appsettings.json

@@ -80,6 +80,7 @@ namespace GainIt.API.Services.Users.Implementations
                     EmailAddress = email!,
                     FullName = fullName ?? "Unknown",
                     Country = string.IsNullOrWhiteSpace(i_externalUserDto.Country) ? null : i_externalUserDto.Country,
+                    GitHubUsername = i_externalUserDto.GitHubUsername,  // Add GitHub username
                     CreatedAt = DateTimeOffset.UtcNow,
                     LastLoginAt = DateTimeOffset.UtcNow
                 };
@@ -152,6 +153,7 @@ namespace GainIt.API.Services.Users.Implementations
                 EmailAddress = user.EmailAddress,
                 FullName = user.FullName,
                 Country = user.Country,
+                GitHubUsername = user.GitHubUsername,  // Add GitHub username
                 IsNewUser = isNewUser
             };
 
@@ -307,6 +309,7 @@ namespace GainIt.API.Services.Users.Implementations
                 gainer.FacebookPageURL = i_updateDto.FacebookPageURL;
                 gainer.LinkedInURL = i_updateDto.LinkedInURL;
                 gainer.GitHubURL = i_updateDto.GitHubURL;
+                gainer.GitHubUsername = i_updateDto.GitHubUsername;  // Add GitHub username update
                 gainer.ProfilePictureURL = i_updateDto.ProfilePictureURL;
 
                 // Update Gainer-specific properties
@@ -348,6 +351,7 @@ namespace GainIt.API.Services.Users.Implementations
                 mentor.FacebookPageURL = i_updateDto.FacebookPageURL;
                 mentor.LinkedInURL = i_updateDto.LinkedInURL;
                 mentor.GitHubURL = i_updateDto.GitHubURL;
+                mentor.GitHubUsername = i_updateDto.GitHubUsername;  // Add GitHub username update
                 mentor.ProfilePictureURL = i_updateDto.ProfilePictureURL;
 
                 // Update Mentor-specific properties
@@ -402,6 +406,7 @@ namespace GainIt.API.Services.Users.Implementations
                 nonprofit.FacebookPageURL = updateDto.FacebookPageURL;
                 nonprofit.LinkedInURL = updateDto.LinkedInURL;
                 nonprofit.GitHubURL = updateDto.GitHubURL;
+                nonprofit.GitHubUsername = updateDto.GitHubUsername;  // Add GitHub username update
                 nonprofit.ProfilePictureURL = updateDto.ProfilePictureURL;
 
                 // Update Nonprofit-specific properties

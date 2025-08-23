@@ -11,6 +11,8 @@ using GainIt.API.Services.Projects.Implementations;
 using GainIt.API.Services.Projects.Interfaces;
 using GainIt.API.Services.Users.Implementations;
 using GainIt.API.Services.Users.Interfaces;
+using GainIt.API.Services.GitHub.Interfaces;
+using GainIt.API.Services.GitHub.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -179,6 +181,8 @@ try
         builder.Configuration["SignalR:ConnectionString"]);
     builder.Services.Configure<JoinRequestOptions>(
         builder.Configuration.GetSection("JoinRequests"));
+    builder.Services.Configure<GitHubOptions>(
+        builder.Configuration.GetSection("GitHub"));
 
     builder.Services.AddSingleton(sp =>
     {
@@ -244,13 +248,21 @@ try
         );
     });
 
-    // Add services to the container.
-    builder.Services.AddScoped<IProjectService, ProjectService>();
-    builder.Services.AddScoped<IUserProfileService, UserProfileService>();
-    builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
-    builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
-    builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
-    builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
+            // Add services to the container.
+        builder.Services.AddScoped<IProjectService, ProjectService>();
+        builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+        builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
+        builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
+        builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
+        builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
+
+        // GitHub Services
+        builder.Services.AddScoped<IGitHubService, GitHubService>();
+        builder.Services.AddScoped<IGitHubApiClient, GitHubApiClient>();
+        builder.Services.AddScoped<IGitHubAnalyticsService, GitHubAnalyticsService>();
+
+        // Add HTTP client for GitHub API
+        builder.Services.AddHttpClient<IGitHubApiClient, GitHubApiClient>();
 
 
     // Add health checks
