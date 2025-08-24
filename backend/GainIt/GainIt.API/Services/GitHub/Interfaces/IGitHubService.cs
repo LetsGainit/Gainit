@@ -68,5 +68,14 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// Gets project activity summary for ChatGPT context
         /// </summary>
         Task<string> GetProjectActivitySummaryAsync(Guid projectId, int daysPeriod = 30);
+
+        /// <summary>
+        /// Gets personalized GitHub analytics insights based on a user's specific query
+        /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="userQuery">The user's specific question or area of interest</param>
+        /// <param name="daysPeriod">Number of days to analyze (default: 60, max: 365)</param>
+        /// <returns>AI-powered insights tailored to the user's query</returns>
+        Task<string> GetPersonalizedAnalyticsInsightsAsync(Guid projectId, string userQuery, int daysPeriod = 60);
     }
 }

@@ -8,5 +8,13 @@ namespace GainIt.API.Services.Projects.Interfaces
     {
         Task<ProjectMatchResultDto> MatchProjectsByTextAsync(string i_InputText, int i_ResultCount = 3);
         Task<IEnumerable<TemplateProject>> MatchProjectsByProfileAsync(Guid i_UserId, int i_ResultCount = 3);
+        
+        /// <summary>
+        /// Generates AI-powered insights for GitHub analytics using the existing GPT configuration
+        /// </summary>
+        /// <param name="analyticsSummary">Raw GitHub analytics summary</param>
+        /// <param name="userQuery">Optional user query for context</param>
+        /// <returns>Enhanced analytics explanation with AI insights</returns>
+        Task<string> GetGitHubAnalyticsExplanationAsync(string analyticsSummary, string? userQuery = null);
     }
 }

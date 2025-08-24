@@ -129,7 +129,15 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Gets GitHub analytics for a project
+        /// Gets GitHub analytics for a project with automatic data refresh.
+        /// 
+        /// Use cases:
+        /// • Current project analytics without manual intervention
+        /// • Automatic data freshness (refreshes if > 1 day old)
+        /// • Real-time analytics for reporting and insights
+        /// 
+        /// Note: For complete data sync including repository metadata,
+        /// use POST /api/github/projects/{projectId}/sync
         /// </summary>
         /// <param name="projectId">The unique identifier of the project</param>
         /// <param name="daysPeriod">Number of days to analyze (default: 30, max: 365)</param>
@@ -401,13 +409,70 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Syncs GitHub data for a project
+        /// Gets personalized GitHub analytics insights based on a user's specific query
         /// </summary>
         /// <param name="projectId">The unique identifier of the project</param>
-        /// <param name="syncType">Type of sync to perform: 'repository', 'analytics', or 'all' (default: 'all')</param>
+        /// <param name="userQuery">The user's specific question or area of interest</param>
+        /// <param name="daysPeriod">Number of days to analyze (default: 30, max: 365)</param>
+        /// <returns>AI-powered insights tailored to the user's query</returns>
+        /// <response code="200">Personalized insights retrieved successfully</response>
+        /// <response code="400">Invalid request parameters</response>
+        /// <response code="500">Internal server error during insights generation</response>
+        [HttpGet("projects/{projectId}/insights")]
+        [ProducesResponseType(typeof(GitHubActivitySummaryBaseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetPersonalizedInsights(Guid projectId, [FromQuery] string userQuery, [FromQuery] int daysPeriod = 30)
+        {
+            try
+            {
+                // Validate user query
+                if (string.IsNullOrWhiteSpace(userQuery))
+                {
+                    return BadRequest(new ErrorResponseDto { Error = "User query is required" });
+                }
+
+                // Validate days period
+                if (daysPeriod <= 0 || daysPeriod > 365)
+                {
+                    return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
+                }
+
+                var insights = await _gitHubService.GetPersonalizedAnalyticsInsightsAsync(projectId, userQuery, daysPeriod);
+                
+                var response = new GitHubActivitySummaryBaseDto
+                {
+                    ProjectId = projectId,
+                    DaysPeriod = daysPeriod,
+                    Summary = insights
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting personalized insights for project {ProjectId} with query: {UserQuery}", projectId, userQuery);
+                return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while generating personalized insights" });
+            }
+        }
+
+        /// <summary>
+        /// Manually syncs GitHub data for a project.
+        /// 
+        /// Use cases:
+        /// • Immediate data refresh for time-sensitive operations
+        /// • Complete repository metadata updates (stars, forks, description)
+        /// • Bulk data synchronization for reporting
+        /// • Recovery from data inconsistencies
+        /// 
+        /// Note: Analytics automatically refresh when > 1 day old.
+        /// This manual sync ensures both metadata and analytics are current.
+        /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="syncType">Type of sync: 'repository' (metadata), 'analytics' (contributions), or 'all' (complete, default)</param>
         /// <returns>Sync operation result and status</returns>
         /// <response code="200">Data synced successfully</response>
-        /// <response code="400">Sync operation failed</response>
+        /// <response code="400">Sync operation failed or invalid sync type</response>
         /// <response code="500">Internal server error during sync operation</response>
         [HttpPost("projects/{projectId}/sync")]
         [ProducesResponseType(typeof(GitHubSyncResponseDto), StatusCodes.Status200OK)]
@@ -461,7 +526,13 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Gets the sync status for a project
+        /// Gets the sync status for a project to monitor synchronization operations.
+        /// 
+        /// Use cases:
+        /// • Monitor sync operation progress and completion
+        /// • Debug failed synchronization attempts
+        /// • Track data freshness and last update times
+        /// • Verify sync operation results
         /// </summary>
         /// <param name="projectId">The unique identifier of the project</param>
         /// <returns>Last sync operation status and details</returns>

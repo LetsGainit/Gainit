@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using GainIt.API.Data;
 using GainIt.API.Models.Projects;
 using GainIt.API.Services.GitHub.Interfaces;
+using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -12,17 +13,20 @@ namespace GainIt.API.Services.GitHub.Implementations
         private readonly GainItDbContext _context;
         private readonly IGitHubApiClient _apiClient;
         private readonly IGitHubAnalyticsService _analyticsService;
+        private readonly IProjectMatchingService _projectMatchingService;
         private readonly ILogger<GitHubService> _logger;
 
         public GitHubService(
             GainItDbContext context,
             IGitHubApiClient apiClient,
             IGitHubAnalyticsService analyticsService,
+            IProjectMatchingService projectMatchingService,
             ILogger<GitHubService> logger)
         {
             _context = context;
             _apiClient = apiClient;
             _analyticsService = analyticsService;
+            _projectMatchingService = projectMatchingService;
             _logger = logger;
         }
 
@@ -508,34 +512,50 @@ namespace GainIt.API.Services.GitHub.Implementations
                     return "No contribution data available for this user.";
                 }
 
-                var summary = $"User Activity Summary for {contribution.GitHubUsername} in the last {daysPeriod} days:\n\n";
-                summary += $"📝 Commit Activity:\n";
-                summary += $"• Total Commits: {contribution.TotalCommits}\n";
-                summary += $"• Lines Changed: {contribution.TotalLinesChanged} (+{contribution.TotalAdditions}, -{contribution.TotalDeletions})\n";
-                summary += $"• Files Modified: {contribution.FilesModified}\n";
-                summary += $"• Active Days: {contribution.UniqueDaysWithCommits}\n\n";
+                // Generate the raw analytics summary
+                var rawSummary = $"User Activity Summary for {contribution.GitHubUsername} in the last {daysPeriod} days:\n\n";
+                rawSummary += $"📝 Commit Activity:\n";
+                rawSummary += $"• Total Commits: {contribution.TotalCommits}\n";
+                rawSummary += $"• Lines Changed: {contribution.TotalLinesChanged} (+{contribution.TotalAdditions}, -{contribution.TotalDeletions})\n";
+                rawSummary += $"• Files Modified: {contribution.FilesModified}\n";
+                rawSummary += $"• Active Days: {contribution.UniqueDaysWithCommits}\n\n";
 
-                summary += $"🔧 Issue & PR Activity:\n";
-                summary += $"• Issues Created: {contribution.TotalIssuesCreated}\n";
-                summary += $"• Pull Requests: {contribution.TotalPullRequestsCreated}\n";
-                summary += $"• Code Reviews: {contribution.TotalReviews}\n\n";
+                rawSummary += $"🔧 Issue & PR Activity:\n";
+                rawSummary += $"• Issues Created: {contribution.TotalIssuesCreated}\n";
+                rawSummary += $"• Pull Requests: {contribution.TotalPullRequestsCreated}\n";
+                rawSummary += $"• Code Reviews: {contribution.TotalReviews}\n\n";
 
-                summary += $"📊 Activity Patterns:\n";
+                rawSummary += $"📊 Activity Patterns:\n";
                 if (contribution.CommitsByDayOfWeek.Any())
                 {
                     var mostActiveDay = contribution.CommitsByDayOfWeek.OrderByDescending(x => x.Value).First();
-                    summary += $"• Most Active Day: {mostActiveDay.Key} ({mostActiveDay.Value} commits)\n";
+                    rawSummary += $"• Most Active Day: {mostActiveDay.Key} ({mostActiveDay.Value} commits)\n";
                 }
 
                 if (contribution.LanguagesContributed.Any())
                 {
-                    summary += $"• Languages: {string.Join(", ", contribution.LanguagesContributed)}\n";
+                    rawSummary += $"• Languages: {string.Join(", ", contribution.LanguagesContributed)}\n";
                 }
 
                 var contributionScore = await _analyticsService.CalculateUserContributionScoreAsync(contribution);
-                summary += $"\n🏆 Contribution Score: {contributionScore}/100\n";
+                rawSummary += $"\n🏆 Contribution Score: {contributionScore}/100\n";
 
-                return summary;
+                // Use GPT service to enhance the summary with AI insights
+                try
+                {
+                    var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
+                        rawSummary, 
+                        $"Analyze this user's GitHub activity and provide insights about their contribution patterns, strengths, and areas for improvement"
+                    );
+                    
+                    _logger.LogInformation("Successfully generated AI-enhanced user activity summary for user {UserId} in project {ProjectId}", userId, projectId);
+                    return enhancedSummary;
+                }
+                catch (Exception gptEx)
+                {
+                    _logger.LogWarning(gptEx, "GPT service failed for user activity summary, falling back to raw summary for user {UserId} in project {ProjectId}", userId, projectId);
+                    return rawSummary;
+                }
             }
             catch (Exception ex)
             {
@@ -556,12 +576,87 @@ namespace GainIt.API.Services.GitHub.Implementations
                     return "No analytics data available for this project.";
                 }
 
-                return await _analyticsService.GenerateActivitySummaryAsync(analytics, contributions);
+                // Generate the raw analytics summary
+                var rawSummary = await _analyticsService.GenerateActivitySummaryAsync(analytics, contributions);
+                
+                // Use GPT service to enhance the summary with AI insights
+                try
+                {
+                    var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
+                        rawSummary, 
+                        $"Analyze this project's GitHub activity and provide insights about project health, team performance, and recommendations for improvement"
+                    );
+                    
+                    _logger.LogInformation("Successfully generated AI-enhanced project activity summary for project {ProjectId}", projectId);
+                    return enhancedSummary;
+                }
+                catch (Exception gptEx)
+                {
+                    _logger.LogWarning(gptEx, "GPT service failed for project activity summary, falling back to raw summary for project {ProjectId}", projectId);
+                    return rawSummary;
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting project activity summary for project {ProjectId}", projectId);
                 return "Unable to generate project activity summary due to an error.";
+            }
+        }
+
+        /// <summary>
+        /// Gets personalized GitHub analytics insights based on a user's specific query
+        /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="userQuery">The user's specific question or area of interest</param>
+        /// <param name="daysPeriod">Number of days to analyze (default: 30, max: 365)</param>
+        /// <returns>AI-powered insights tailored to the user's query</returns>
+        public async Task<string> GetPersonalizedAnalyticsInsightsAsync(Guid projectId, string userQuery, int daysPeriod = 30)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(userQuery))
+                {
+                    throw new ArgumentException("User query cannot be null or empty");
+                }
+
+                // Validate days period
+                if (daysPeriod <= 0 || daysPeriod > 365)
+                {
+                    throw new ArgumentException("Days period must be between 1 and 365");
+                }
+
+                var analytics = await GetProjectAnalyticsAsync(projectId, daysPeriod);
+                var contributions = await GetUserContributionsAsync(projectId, daysPeriod);
+
+                if (analytics == null)
+                {
+                    return "No analytics data available for this project.";
+                }
+
+                // Generate the raw analytics summary
+                var rawSummary = await _analyticsService.GenerateActivitySummaryAsync(analytics, contributions);
+                
+                // Use GPT service to provide personalized insights based on the user's query
+                try
+                {
+                    var personalizedInsights = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
+                        rawSummary, 
+                        userQuery
+                    );
+                    
+                    _logger.LogInformation("Successfully generated personalized analytics insights for project {ProjectId} with query: {UserQuery}", projectId, userQuery);
+                    return personalizedInsights;
+                }
+                catch (Exception gptEx)
+                {
+                    _logger.LogWarning(gptEx, "GPT service failed for personalized insights, falling back to raw summary for project {ProjectId}", projectId);
+                    return $"Unable to generate personalized insights for your query: '{userQuery}'. Here's the standard analytics summary:\n\n{rawSummary}";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting personalized analytics insights for project {ProjectId} with query: {UserQuery}", projectId, userQuery);
+                return "Unable to generate personalized analytics insights due to an error.";
             }
         }
 
