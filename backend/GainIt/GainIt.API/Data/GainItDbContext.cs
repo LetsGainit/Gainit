@@ -1,11 +1,12 @@
-﻿using GainIt.API.Models.Projects;
+﻿using GainIt.API.Models.Enums.Projects;
+using GainIt.API.Models.Projects;
+using GainIt.API.Models.Tasks;
+using GainIt.API.Models.Users;
+using GainIt.API.Models.Users.Expertise;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
-using GainIt.API.Models.Users;
 using GainIt.API.Models.Users.Nonprofits;
 using Microsoft.EntityFrameworkCore;
-using GainIt.API.Models.Enums.Projects;
-using GainIt.API.Models.Users.Expertise;
 using Microsoft.Extensions.Logging;
 
 namespace GainIt.API.Data
@@ -95,6 +96,14 @@ namespace GainIt.API.Data
         public DbSet<ProjectMember> ProjectMembers { get; set; }
 
         public DbSet<JoinRequest> JoinRequests { get; set; }
+        #endregion
+
+        #region Task System
+        public DbSet<ProjectTask> ProjectTasks { get; set; }
+        public DbSet<ProjectSubtask> ProjectSubtasks { get; set; }
+        public DbSet<ProjectMilestone> ProjectMilestones { get; set; }
+        public DbSet<ProjectTaskReference> ProjectTaskReferences { get; set; }
+        public DbSet<TaskDependency> TaskDependencies { get; set; }
         #endregion
 
         #region GitHub Integration
@@ -300,6 +309,107 @@ namespace GainIt.API.Data
                         .IsUnique();
                 });
                 #endregion
+
+                #region Task System Configuration
+
+                // ProjectTask
+                modelBuilder.Entity<ProjectTask>(entity =>
+                {
+                    entity.HasKey(t => t.TaskId);
+
+                    // FK to UserProject (one project -> many tasks)
+                    entity.HasOne(t => t.Project)
+                          .WithMany(p => p.Tasks)
+                          .HasForeignKey(t => t.ProjectId)
+                          .OnDelete(DeleteBehavior.Cascade);
+
+                    // FK to ProjectMilestone (optional; one milestone -> many tasks)
+                    entity.HasOne(t => t.Milestone)
+                          .WithMany(m => m.Tasks)
+                          .HasForeignKey(t => t.MilestoneId)
+                          .OnDelete(DeleteBehavior.SetNull);
+
+                    entity.HasIndex(t => new { t.ProjectId, t.AssignedRole, t.AssignedUserId });
+
+                    // Useful index for Kanban queries and lists
+                    entity.HasIndex(t => new { t.ProjectId, t.Status, t.OrderIndex });
+                    entity.Property(t => t.Title).HasMaxLength(120).IsRequired();
+                    entity.Property(t => t.Description).HasMaxLength(4000);
+                });
+
+                // ProjectSubtask
+                modelBuilder.Entity<ProjectSubtask>(entity =>
+                {
+                    entity.HasKey(s => s.SubtaskId);
+
+                    // FK to ProjectTask (one task -> many subtasks)
+                    entity.HasOne(s => s.Task)
+                          .WithMany(t => t.Subtasks)
+                          .HasForeignKey(s => s.TaskId)
+                          .OnDelete(DeleteBehavior.Cascade);
+
+                    // Optional index for fast ordering inside a task
+                    entity.HasIndex(s => new { s.TaskId, s.OrderIndex });
+                });
+
+                // ProjectMilestone
+                modelBuilder.Entity<ProjectMilestone>(entity =>
+                {
+                    entity.HasKey(m => m.MilestoneId);
+
+                    // FK to UserProject (one project -> many milestones)
+                    entity.HasOne(m => m.Project)
+                          .WithMany(p => p.Milestones)
+                          .HasForeignKey(m => m.ProjectId)
+                          .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.Property(m => m.Title).HasMaxLength(120).IsRequired();
+                    entity.Property(m => m.Description).HasMaxLength(1000);
+                });
+
+                // ProjectTaskReference
+                modelBuilder.Entity<ProjectTaskReference>(entity =>
+                {
+                    entity.HasKey(r => r.ReferenceId);
+
+                    // FK to ProjectTask (one task -> many references)
+                    entity.HasOne(r => r.Task)
+                          .WithMany(t => t.References)
+                          .HasForeignKey(r => r.TaskId)
+                          .OnDelete(DeleteBehavior.Cascade);
+
+                    // Helpful index for quick filtering
+                    entity.HasIndex(r => new { r.TaskId, r.Type });
+
+                    entity.Property(r => r.Url).HasMaxLength(2048).IsRequired();
+                    entity.Property(r => r.Title).HasMaxLength(200);
+                });
+
+                // TaskDependency (self-relation on ProjectTask)
+                modelBuilder.Entity<TaskDependency>(entity =>
+                {
+                    // Composite PK ensures a pair (TaskId, DependsOnTaskId) is unique
+                    entity.HasKey(d => new { d.TaskId, d.DependsOnTaskId });
+
+                    // The "dependent" task (has many dependencies)
+                    entity.HasOne(d => d.Task)
+                          .WithMany(t => t.Dependencies)
+                          .HasForeignKey(d => d.TaskId)
+                          .OnDelete(DeleteBehavior.Cascade);
+
+                    // The task it depends on (no back-collection)
+                    entity.HasOne(d => d.DependsOn)
+                          .WithMany()
+                          .HasForeignKey(d => d.DependsOnTaskId)
+                          // Restrict: prevent deleting a task that others depend on by accident
+                          .OnDelete(DeleteBehavior.Restrict);
+
+                    // Optional: fast lookups by "who unlocks whom"
+                    entity.HasIndex(d => d.DependsOnTaskId);
+                });
+
+                #endregion
+
 
                 #region Expertise Configuration
                 // Configure TechExpertise
