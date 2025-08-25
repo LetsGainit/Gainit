@@ -1,11 +1,12 @@
-﻿using GainIt.API.Models.Projects;
+﻿using GainIt.API.Models.Enums.Projects;
+using GainIt.API.Models.Projects;
+using GainIt.API.Models.Tasks;
+using GainIt.API.Models.Users;
+using GainIt.API.Models.Users.Expertise;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
-using GainIt.API.Models.Users;
 using GainIt.API.Models.Users.Nonprofits;
 using Microsoft.EntityFrameworkCore;
-using GainIt.API.Models.Enums.Projects;
-using GainIt.API.Models.Users.Expertise;
 using Microsoft.Extensions.Logging;
 
 namespace GainIt.API.Data
@@ -95,6 +96,36 @@ namespace GainIt.API.Data
         public DbSet<ProjectMember> ProjectMembers { get; set; }
 
         public DbSet<JoinRequest> JoinRequests { get; set; }
+        #endregion
+
+        #region Task System
+        public DbSet<ProjectTask> ProjectTasks { get; set; }
+        public DbSet<ProjectSubtask> ProjectSubtasks { get; set; }
+        public DbSet<ProjectMilestone> ProjectMilestones { get; set; }
+        public DbSet<ProjectTaskReference> ProjectTaskReferences { get; set; }
+        public DbSet<TaskDependency> TaskDependencies { get; set; }
+        #endregion
+
+        #region GitHub Integration
+        /// <summary>
+        /// GitHub repositories linked to projects
+        /// </summary>
+        public DbSet<GitHubRepository> GitHubRepositories { get; set; }
+
+        /// <summary>
+        /// GitHub analytics data for repositories
+        /// </summary>
+        public DbSet<GitHubAnalytics> GitHubAnalytics { get; set; }
+
+        /// <summary>
+        /// GitHub user contributions to repositories
+        /// </summary>
+        public DbSet<GitHubContribution> GitHubContributions { get; set; }
+
+        /// <summary>
+        /// GitHub synchronization logs
+        /// </summary>
+        public DbSet<GitHubSyncLog> GitHubSyncLogs { get; set; }
         #endregion
 
         #region Database Operation Logging
@@ -279,6 +310,107 @@ namespace GainIt.API.Data
                 });
                 #endregion
 
+                #region Task System Configuration
+
+                // ProjectTask
+                modelBuilder.Entity<ProjectTask>(entity =>
+                {
+                    entity.HasKey(t => t.TaskId);
+
+                    // FK to UserProject (one project -> many tasks)
+                    entity.HasOne(t => t.Project)
+                          .WithMany(p => p.Tasks)
+                          .HasForeignKey(t => t.ProjectId)
+                          .OnDelete(DeleteBehavior.Cascade);
+
+                    // FK to ProjectMilestone (optional; one milestone -> many tasks)
+                    entity.HasOne(t => t.Milestone)
+                          .WithMany(m => m.Tasks)
+                          .HasForeignKey(t => t.MilestoneId)
+                          .OnDelete(DeleteBehavior.SetNull);
+
+                    entity.HasIndex(t => new { t.ProjectId, t.AssignedRole, t.AssignedUserId });
+
+                    // Useful index for Kanban queries and lists
+                    entity.HasIndex(t => new { t.ProjectId, t.Status, t.OrderIndex });
+                    entity.Property(t => t.Title).HasMaxLength(120).IsRequired();
+                    entity.Property(t => t.Description).HasMaxLength(4000);
+                });
+
+                // ProjectSubtask
+                modelBuilder.Entity<ProjectSubtask>(entity =>
+                {
+                    entity.HasKey(s => s.SubtaskId);
+
+                    // FK to ProjectTask (one task -> many subtasks)
+                    entity.HasOne(s => s.Task)
+                          .WithMany(t => t.Subtasks)
+                          .HasForeignKey(s => s.TaskId)
+                          .OnDelete(DeleteBehavior.Cascade);
+
+                    // Optional index for fast ordering inside a task
+                    entity.HasIndex(s => new { s.TaskId, s.OrderIndex });
+                });
+
+                // ProjectMilestone
+                modelBuilder.Entity<ProjectMilestone>(entity =>
+                {
+                    entity.HasKey(m => m.MilestoneId);
+
+                    // FK to UserProject (one project -> many milestones)
+                    entity.HasOne(m => m.Project)
+                          .WithMany(p => p.Milestones)
+                          .HasForeignKey(m => m.ProjectId)
+                          .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.Property(m => m.Title).HasMaxLength(120).IsRequired();
+                    entity.Property(m => m.Description).HasMaxLength(1000);
+                });
+
+                // ProjectTaskReference
+                modelBuilder.Entity<ProjectTaskReference>(entity =>
+                {
+                    entity.HasKey(r => r.ReferenceId);
+
+                    // FK to ProjectTask (one task -> many references)
+                    entity.HasOne(r => r.Task)
+                          .WithMany(t => t.References)
+                          .HasForeignKey(r => r.TaskId)
+                          .OnDelete(DeleteBehavior.Cascade);
+
+                    // Helpful index for quick filtering
+                    entity.HasIndex(r => new { r.TaskId, r.Type });
+
+                    entity.Property(r => r.Url).HasMaxLength(2048).IsRequired();
+                    entity.Property(r => r.Title).HasMaxLength(200);
+                });
+
+                // TaskDependency (self-relation on ProjectTask)
+                modelBuilder.Entity<TaskDependency>(entity =>
+                {
+                    // Composite PK ensures a pair (TaskId, DependsOnTaskId) is unique
+                    entity.HasKey(d => new { d.TaskId, d.DependsOnTaskId });
+
+                    // The "dependent" task (has many dependencies)
+                    entity.HasOne(d => d.Task)
+                          .WithMany(t => t.Dependencies)
+                          .HasForeignKey(d => d.TaskId)
+                          .OnDelete(DeleteBehavior.Cascade);
+
+                    // The task it depends on (no back-collection)
+                    entity.HasOne(d => d.DependsOn)
+                          .WithMany()
+                          .HasForeignKey(d => d.DependsOnTaskId)
+                          // Restrict: prevent deleting a task that others depend on by accident
+                          .OnDelete(DeleteBehavior.Restrict);
+
+                    // Optional: fast lookups by "who unlocks whom"
+                    entity.HasIndex(d => d.DependsOnTaskId);
+                });
+
+                #endregion
+
+
                 #region Expertise Configuration
                 // Configure TechExpertise
                 modelBuilder.Entity<TechExpertise>(entity =>
@@ -367,6 +499,184 @@ namespace GainIt.API.Data
                 });
                 #endregion
 
+                #region GitHub Configuration
+                // Configure GitHubAnalytics entity
+                modelBuilder.Entity<GitHubAnalytics>(entity =>
+                {
+                    // Configure dictionary properties to be stored as JSON
+                    entity.Property(e => e.LanguageStats)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.WeeklyCommits)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.WeeklyIssues)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.WeeklyPullRequests)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.MonthlyCommits)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.MonthlyIssues)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.MonthlyPullRequests)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    // Configure relationships
+                    entity.HasOne(e => e.Repository)
+                        .WithOne(r => r.Analytics)
+                        .HasForeignKey<GitHubAnalytics>(e => e.RepositoryId)
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+                #endregion
+
+                #region GitHub Models Configuration
+                // Configure GitHubAnalytics entity
+                modelBuilder.Entity<GitHubAnalytics>(entity =>
+                {
+                    // Configure Dictionary<string, int> properties to be stored as JSON
+                    entity.Property(e => e.LanguageStats)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.WeeklyCommits)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.WeeklyIssues)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.WeeklyPullRequests)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.MonthlyCommits)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.MonthlyIssues)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.MonthlyPullRequests)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    // Configure relationships
+                    entity.HasOne(e => e.Repository)
+                        .WithOne(r => r.Analytics)
+                        .HasForeignKey<GitHubAnalytics>(e => e.RepositoryId)
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+                // Configure GitHubContribution entity
+                modelBuilder.Entity<GitHubContribution>(entity =>
+                {
+                    // Configure Dictionary<string, int> properties to be stored as JSON
+                    entity.Property(e => e.CommitsByDayOfWeek)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.CommitsByHour)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    entity.Property(e => e.ActivityByMonth)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
+                        );
+
+                    // Configure List<string> property to be stored as JSON
+                    entity.Property(e => e.LanguagesContributed)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
+                        );
+
+                    // Configure relationships
+                    entity.HasOne(e => e.Repository)
+                        .WithMany(r => r.Contributions)
+                        .HasForeignKey(e => e.RepositoryId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.HasOne(e => e.User)
+                        .WithMany()
+                        .HasForeignKey(e => e.UserId)
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+                // Configure GitHubRepository entity
+                modelBuilder.Entity<GitHubRepository>(entity =>
+                {
+                    // Configure List<string> property to be stored as JSON
+                    entity.Property(e => e.Languages)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
+                        );
+
+                    // Configure relationships
+                    entity.HasOne(e => e.Project)
+                        .WithMany()
+                        .HasForeignKey(e => e.ProjectId)
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+                // Configure GitHubSyncLog entity
+                modelBuilder.Entity<GitHubSyncLog>(entity =>
+                {
+                    // Configure relationships
+                    entity.HasOne(e => e.Repository)
+                        .WithMany(r => r.SyncLogs)
+                        .HasForeignKey(e => e.RepositoryId)
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+                #endregion
+
                 base.OnModelCreating(modelBuilder);
             }
             catch (Exception ex)
@@ -399,6 +709,7 @@ namespace GainIt.API.Data
                     AreaOfExpertise = "Full Stack Development",
                     Biography = "Senior software architect with expertise in cloud technologies and microservices.",
                     GitHubURL = "https://github.com/noacohen",
+                    GitHubUsername = "noacohen",  // Add GitHub username
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/65.jpg",
                     LinkedInURL = "https://linkedin.com/company/mentors-in-tech",
                     FacebookPageURL = "https://facebook.com/TechCareerMentorship",
@@ -418,6 +729,7 @@ namespace GainIt.API.Data
                     AreaOfExpertise = "Data Science & AI",
                     Biography = "Experienced data scientist and AI mentor, passionate about machine learning and analytics.",
                     GitHubURL = "https://github.com/davidlevy",
+                    GitHubUsername = "davidlevy",  // Add GitHub username
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/66.jpg",
                     LinkedInURL = "https://linkedin.com/company/tech-career-mentorship",
                     FacebookPageURL = "https://facebook.com/TechCareerMentor",
@@ -437,6 +749,7 @@ namespace GainIt.API.Data
                     WebsiteUrl = "https://techforgood.co.il",
                     Biography = "Empowering Israeli communities through technology education and digital literacy programs.",
                     GitHubURL = "https://github.com/techforgood-israel",
+                    GitHubUsername = "techforgood-israel",  // Add GitHub username
                     ProfilePictureURL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQHIVTRK4hstoI6IBdXmslzxY96ql1mZQF6wg&s",
                     LinkedInURL = "https://linkedin.com/company/techforgood-israel",
                     FacebookPageURL = "https://facebook.com/TechForGoodIsrael",
@@ -494,6 +807,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Web Development", "UI/UX Design", "Cloud Computing" },
                     GitHubURL = "https://github.com/yossirosenberg",
+                    GitHubUsername = "yossirosenberg",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/yossirosenberg",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/12.jpg",
                     FacebookPageURL = "https://facebook.com/yossi.rosenberg",
@@ -513,6 +827,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "Machine Learning", "Data Science", "Python" },
                     GitHubURL = "https://github.com/mayagoldstein",
+                    GitHubUsername = "mayagoldstein",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/mayagoldstein",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/22.jpg",
                     FacebookPageURL = "https://facebook.com/maya.goldstein",
@@ -532,6 +847,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Mobile Development", "Android", "Kotlin" },
                     GitHubURL = "https://github.com/amitbendavid",
+                    GitHubUsername = "amitbendavid",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/amitbendavid",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/33.jpg",
                     FacebookPageURL = "https://facebook.com/amit.bendavid",
@@ -551,6 +867,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "Cybersecurity", "Networks", "Linux" },
                     GitHubURL = "https://github.com/tamarweiss",
+                    GitHubUsername = "tamarweiss",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/tamarweiss",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/44.jpg",
                     FacebookPageURL = "https://facebook.com/tamar.weiss",
@@ -570,6 +887,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Game Development", "Unity", "C#" },
                     GitHubURL = "https://github.com/elishalom",
+                    GitHubUsername = "elishalom",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/elishalom",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/men/55.jpg",
                     FacebookPageURL = "https://facebook.com/eli.shalom",
@@ -589,6 +907,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "AI", "Natural Language Processing", "Python" },
                     GitHubURL = "https://github.com/liorabarak",
+                    GitHubUsername = "liorabarak",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/liorabarak",
                     FacebookPageURL = "https://facebook.com/liora.barak",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/77.jpg",

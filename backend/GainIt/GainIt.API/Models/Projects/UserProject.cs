@@ -1,9 +1,10 @@
 ﻿using GainIt.API.Models.Enums.Projects;
-using System.ComponentModel.DataAnnotations;
+using GainIt.API.Models.Tasks;
 using GainIt.API.Models.Users;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
@@ -57,5 +58,8 @@ namespace GainIt.API.Models.Projects
                 .Select(pm => pm.User as Gainer)
                 .FirstOrDefault();
         }
+
+        [JsonIgnore] public List<ProjectTask> Tasks { get; set; } = new();
+        [JsonIgnore] public List<ProjectMilestone> Milestones { get; set; } = new();
     }
 }

@@ -234,6 +234,57 @@ namespace GainIt.API.Services.Projects.Implementations
             }
         }
 
+        /// <summary>
+        /// Generates AI-powered insights for GitHub analytics using the existing GPT configuration
+        /// </summary>
+        /// <param name="analyticsSummary">Raw GitHub analytics summary</param>
+        /// <param name="userQuery">Optional user query for context</param>
+        /// <returns>Enhanced analytics explanation with AI insights</returns>
+        public async Task<string> GetGitHubAnalyticsExplanationAsync(string analyticsSummary, string? userQuery = null)
+        {
+            r_logger.LogInformation("Generating GitHub analytics explanation: SummaryLength={SummaryLength}, HasUserQuery={HasUserQuery}", 
+                analyticsSummary.Length, !string.IsNullOrEmpty(userQuery));
+
+            try
+            {
+                var systemPrompt = "You are a GitHub analytics expert that provides intelligent insights and actionable recommendations. " +
+                    "Analyze the provided GitHub analytics data and give insights about:\n" +
+                    "1. Project health and activity levels\n" +
+                    "2. Team performance and contribution patterns\n" +
+                    "3. Areas for improvement and optimization\n" +
+                    "4. Success metrics and achievements\n" +
+                    "Provide clear, actionable recommendations based on the data. " +
+                    "Keep the response professional and focused on business value.";
+
+                var userPrompt = string.IsNullOrEmpty(userQuery) 
+                    ? $"Analyze this GitHub analytics data and provide insights:\n\n{analyticsSummary}"
+                    : $"User query: {userQuery}\n\nGitHub Analytics:\n{analyticsSummary}\n\nProvide insights relevant to the user's query.";
+
+                var messages = new ChatMessage[]
+                {
+                    new SystemChatMessage(systemPrompt),
+                    new UserChatMessage(userPrompt)
+                };
+
+                var options = new ChatCompletionOptions
+                {
+                    Temperature = 0.3f // Slightly higher than project matching for more creative insights
+                };
+
+                ChatCompletion completion = await r_chatClient.CompleteChatAsync(messages, options);
+                var explanation = completion.Content[0].Text.Trim();
+
+                r_logger.LogInformation("GitHub analytics explanation generated successfully: ExplanationLength={ExplanationLength}", explanation.Length);
+                return explanation;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error generating GitHub analytics explanation: SummaryLength={SummaryLength}", analyticsSummary.Length);
+                // Return a fallback message instead of throwing to maintain service stability
+                return "Unable to generate AI-powered insights at this time. Please try again later.";
+            }
+        }
+
         private async Task<List<TemplateProject>> filterProjectsWithChatAsync(string i_Query, List<TemplateProject> i_Projects)
         {
             r_logger.LogInformation("Filtering projects with chat: Query={Query}, ProjectsCount={ProjectsCount}", i_Query, i_Projects.Count);

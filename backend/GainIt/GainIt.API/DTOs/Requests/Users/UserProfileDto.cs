@@ -15,11 +15,13 @@ namespace GainIt.API.DTOs.Requests.Users
 
         public string? Country { get; set; }
 
+        public string? GitHubUsername { get; set; }  // Add GitHub username to profile
+
         public bool IsNewUser { get; set; }
 
         public override string ToString()
         {
-            return $"UserProfileDto{{UserId={UserId}, ExternalId='{ExternalId}', EmailAddress='{EmailAddress}', FullName='{FullName}', Country='{Country}'}}";
+            return $"UserProfileDto{{UserId={UserId}, ExternalId='{ExternalId}', EmailAddress='{EmailAddress}', FullName='{FullName}', Country='{Country}', GitHubUsername='{GitHubUsername}'}}";
         }
     }
 }

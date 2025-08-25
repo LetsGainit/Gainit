@@ -23,6 +23,404 @@ namespace GainIt.API.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("GainIt.API.Models.Projects.GitHubAnalytics", b =>
+                {
+                    b.Property<Guid>("AnalyticsId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ActiveContributors")
+                        .HasColumnType("integer");
+
+                    b.Property<double?>("AverageTimeToCloseIssues")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("AverageTimeToMergePRs")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CalculatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ClosedIssues")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ClosedPullRequests")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DaysPeriod")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("FirstCommitDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LanguageStats")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastCommitDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("MergedPullRequests")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MonthlyCommits")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MonthlyIssues")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MonthlyPullRequests")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OpenIssues")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OpenPullRequests")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TotalAdditions")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalBranches")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalCommits")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalContributors")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalDeletions")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalForks")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalIssues")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalLinesChanged")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalPullRequests")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalReleases")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalStars")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalTags")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalWatchers")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("WeeklyCommits")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("WeeklyIssues")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("WeeklyPullRequests")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("AnalyticsId");
+
+                    b.HasIndex("RepositoryId")
+                        .IsUnique();
+
+                    b.ToTable("GitHubAnalytics");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Projects.GitHubContribution", b =>
+                {
+                    b.Property<Guid>("ContributionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActivityByMonth")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double?>("AverageCommitSize")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("AverageReviewTime")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CalculatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ClosedIssuesCreated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ClosedPullRequestsCreated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CollaboratorsInteractedWith")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CommitsByDayOfWeek")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CommitsByHour")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("CurrentStreak")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DaysPeriod")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DiscussionsParticipated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("FilesModified")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("FirstCommitDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GitHubUsername")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("IssuesAssigned")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IssuesClosed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IssuesCommentedOn")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LanguagesContributed")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastCommitDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LongestStreak")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MergedPullRequestsCreated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OpenIssuesCreated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OpenPullRequestsCreated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PullRequestsApproved")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PullRequestsRequestedChanges")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PullRequestsReviewed")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ReviewsApproved")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ReviewsCommented")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ReviewsRequestedChanges")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalAdditions")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalCommits")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalDeletions")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalIssuesCreated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalLinesChanged")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalPullRequestsCreated")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalReviews")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UniqueDaysWithCommits")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("WikiPagesEdited")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ContributionId");
+
+                    b.HasIndex("RepositoryId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("GitHubContributions");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Projects.GitHubRepository", b =>
+                {
+                    b.Property<Guid>("RepositoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DefaultBranch")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int?>("ForksCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsFork")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Languages")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastActivityAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("LastSyncedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("License")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int?>("OpenIssuesCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("OpenPullRequestsCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OwnerName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("PrimaryLanguage")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RepositoryName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("RepositoryUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int?>("StarsCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("RepositoryId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("GitHubRepositories");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Projects.GitHubSyncLog", b =>
+                {
+                    b.Property<Guid>("SyncLogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ItemsProcessed")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("RateLimitResetAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("RemainingRequests")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RepositoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SyncDetails")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SyncType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("TotalItems")
+                        .HasColumnType("integer");
+
+                    b.HasKey("SyncLogId");
+
+                    b.HasIndex("RepositoryId");
+
+                    b.ToTable("GitHubSyncLogs");
+                });
+
             modelBuilder.Entity("GainIt.API.Models.Projects.JoinRequest", b =>
                 {
                     b.Property<Guid>("JoinRequestId")
@@ -243,6 +641,10 @@ namespace GainIt.API.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("GitHubUsername")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -430,6 +832,58 @@ namespace GainIt.API.Migrations
                     b.ToTable("Nonprofits");
                 });
 
+            modelBuilder.Entity("GainIt.API.Models.Projects.GitHubAnalytics", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Projects.GitHubRepository", "Repository")
+                        .WithOne("Analytics")
+                        .HasForeignKey("GainIt.API.Models.Projects.GitHubAnalytics", "RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Repository");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Projects.GitHubContribution", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Projects.GitHubRepository", "Repository")
+                        .WithMany("Contributions")
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GainIt.API.Models.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Repository");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Projects.GitHubRepository", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Projects.UserProject", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Projects.GitHubSyncLog", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Projects.GitHubRepository", "Repository")
+                        .WithMany("SyncLogs")
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Repository");
+                });
+
             modelBuilder.Entity("GainIt.API.Models.Projects.JoinRequest", b =>
                 {
                     b.HasOne("GainIt.API.Models.Projects.UserProject", "Project")
@@ -583,6 +1037,15 @@ namespace GainIt.API.Migrations
                         .IsRequired();
 
                     b.Navigation("NonprofitExpertise");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Projects.GitHubRepository", b =>
+                {
+                    b.Navigation("Analytics");
+
+                    b.Navigation("Contributions");
+
+                    b.Navigation("SyncLogs");
                 });
 
             modelBuilder.Entity("GainIt.API.Models.Users.User", b =>
