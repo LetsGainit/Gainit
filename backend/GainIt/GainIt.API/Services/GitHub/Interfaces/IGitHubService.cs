@@ -1,4 +1,5 @@
 using GainIt.API.Models.Projects;
+using GainIt.API.DTOs.ViewModels.GitHub;
 
 namespace GainIt.API.Services.GitHub.Interfaces
 {
@@ -57,7 +58,7 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// <summary>
         /// Gets repository statistics for display
         /// </summary>
-        Task<object> GetRepositoryStatsAsync(Guid projectId);
+        Task<GitHubRepositoryStatsDto?> GetRepositoryStatsAsync(Guid projectId);
 
         /// <summary>
         /// Gets user activity summary for ChatGPT context

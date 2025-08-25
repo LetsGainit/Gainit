@@ -37,7 +37,7 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// <summary>
         /// Gets repository statistics (stars, forks, etc.)
         /// </summary>
-        Task<object> GetRepositoryStatsAsync(string owner, string name);
+        Task<GitHubRepositoryStats> GetRepositoryStatsAsync(string owner, string name);
 
         /// <summary>
         /// Validates if a repository exists and is public
@@ -53,5 +53,19 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// Checks if we have enough rate limit quota
         /// </summary>
         Task<bool> HasRateLimitQuotaAsync(int requiredRequests = 1);
+    }
+
+    /// <summary>
+    /// Repository statistics model
+    /// </summary>
+    public class GitHubRepositoryStats
+    {
+        public int StargazerCount { get; set; }
+        public int ForkCount { get; set; }
+        public int WatcherCount { get; set; }
+        public int IssueCount { get; set; }
+        public int PullRequestCount { get; set; }
+        public int BranchCount { get; set; }
+        public int ReleaseCount { get; set; }
     }
 }

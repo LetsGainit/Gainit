@@ -5,6 +5,7 @@ using GainIt.API.Services.GitHub.Interfaces;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using GainIt.API.DTOs.ViewModels.GitHub;
 
 namespace GainIt.API.Services.GitHub.Implementations
 {
@@ -452,53 +453,58 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<object> GetRepositoryStatsAsync(Guid projectId)
+        public async Task<GitHubRepositoryStatsDto?> GetRepositoryStatsAsync(Guid projectId)
         {
             try
             {
                 var repository = await GetRepositoryAsync(projectId);
                 if (repository == null)
                 {
-                    return new { Error = "Repository not found" };
+                    return null;
                 }
 
+                var repoStats = await _apiClient.GetRepositoryStatsAsync(repository.OwnerName, repository.RepositoryName);
                 var analytics = await GetProjectAnalyticsAsync(projectId);
                 var contributions = await GetUserContributionsAsync(projectId);
 
-                return new
+                var dto = new GitHubRepositoryStatsDto
                 {
-                    Repository = new
-                    {
-                        repository.RepositoryName,
-                        repository.OwnerName,
-                        repository.FullName,
-                        repository.Description,
-                        repository.IsPublic,
-                        repository.StarsCount,
-                        repository.ForksCount,
-                        repository.PrimaryLanguage,
-                        repository.Languages,
-                        repository.LastActivityAtUtc,
-                        repository.LastSyncedAtUtc
-                    },
-                    Analytics = analytics,
+                    RepositoryName = repository.RepositoryName,
+                    OwnerName = repository.OwnerName,
+                    FullName = repository.FullName,
+                    Description = repository.Description,
+                    IsPublic = repository.IsPublic,
+                    StarsCount = repository.StarsCount,
+                    ForksCount = repository.ForksCount,
+                    PrimaryLanguage = repository.PrimaryLanguage,
+                    Languages = repository.Languages,
+                    LastActivityAtUtc = repository.LastActivityAtUtc,
+                    LastSyncedAtUtc = repository.LastSyncedAtUtc,
+                    WatcherCount = repoStats.WatcherCount,
+                    IssueCount = repoStats.IssueCount,
+                    PullRequestCount = repoStats.PullRequestCount,
+                    BranchCount = repoStats.BranchCount,
+                    ReleaseCount = repoStats.ReleaseCount,
                     Contributors = contributions.Count,
                     TopContributors = contributions
                         .OrderByDescending(c => c.TotalCommits)
                         .Take(5)
-                        .Select(c => new
+                        .Select(c => new TopContributorDto
                         {
-                            c.GitHubUsername,
-                            c.TotalCommits,
-                            c.TotalLinesChanged,
-                            c.UniqueDaysWithCommits
+                            GitHubUsername = c.GitHubUsername ?? string.Empty,
+                            TotalCommits = c.TotalCommits,
+                            TotalLinesChanged = c.TotalLinesChanged,
+                            UniqueDaysWithCommits = c.UniqueDaysWithCommits
                         })
+                        .ToList()
                 };
+
+                return dto;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting repository stats for project {ProjectId}", projectId);
-                return new { Error = "Failed to retrieve repository stats" };
+                return null;
             }
         }
 

@@ -1,4 +1,6 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using GainIt.API.Models.Projects;
@@ -6,6 +8,7 @@ using GainIt.API.Options;
 using GainIt.API.Services.GitHub.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace GainIt.API.Services.GitHub.Implementations
 {
@@ -17,6 +20,8 @@ namespace GainIt.API.Services.GitHub.Implementations
         private readonly SemaphoreSlim _rateLimitSemaphore;
         private DateTime _rateLimitResetAt = DateTime.UtcNow.AddHours(1);
         private int _remainingRequests = 5000;
+        private string? _cachedJwtToken;
+        private DateTime _jwtTokenExpiry = DateTime.UtcNow;
 
         public GitHubApiClient(
             HttpClient httpClient,
@@ -251,10 +256,13 @@ namespace GainIt.API.Services.GitHub.Implementations
                 }";
 
             var variables = new { owner, name, since };
-            var response = await ExecuteGraphQLQueryAsync<dynamic>(query, variables);
+            var response = await ExecuteGraphQLQueryAsync<GitHubIssuesData>(query, variables);
             
-            // Parse the response to extract issues
-            // This is a simplified implementation - you might want to create a proper response model
+            if (response?.Repository?.Issues?.Nodes != null)
+            {
+                return response.Repository.Issues.Nodes;
+            }
+
             return new List<GitHubIssueNode>();
         }
 
@@ -295,13 +303,17 @@ namespace GainIt.API.Services.GitHub.Implementations
                 }";
 
             var variables = new { owner, name, since };
-            var response = await ExecuteGraphQLQueryAsync<dynamic>(query, variables);
+            var response = await ExecuteGraphQLQueryAsync<GitHubPullRequestsData>(query, variables);
             
-            // Parse the response to extract pull requests
+            if (response?.Repository?.PullRequests?.Nodes != null)
+            {
+                return response.Repository.PullRequests.Nodes;
+            }
+
             return new List<GitHubPullRequestNode>();
         }
 
-        public async Task<object> GetRepositoryStatsAsync(string owner, string name)
+        public async Task<GitHubRepositoryStats> GetRepositoryStatsAsync(string owner, string name)
         {
             var query = @"
                 query($owner: String!, $name: String!) {
@@ -327,8 +339,23 @@ namespace GainIt.API.Services.GitHub.Implementations
                 }";
 
             var variables = new { owner, name };
-            var response = await ExecuteGraphQLQueryAsync<dynamic>(query, variables);
-            return response ?? new object();
+            var response = await ExecuteGraphQLQueryAsync<GitHubStatsData>(query, variables);
+            
+            if (response?.Repository != null)
+            {
+                return new GitHubRepositoryStats
+                {
+                    StargazerCount = response.Repository.StargazerCount,
+                    ForkCount = response.Repository.ForkCount,
+                    WatcherCount = response.Repository.Watchers?.TotalCount ?? 0,
+                    IssueCount = response.Repository.Issues?.TotalCount ?? 0,
+                    PullRequestCount = response.Repository.PullRequests?.TotalCount ?? 0,
+                    BranchCount = response.Repository.Refs?.TotalCount ?? 0,
+                    ReleaseCount = response.Repository.Releases?.TotalCount ?? 0
+                };
+            }
+
+            return new GitHubRepositoryStats();
         }
 
         public async Task<bool> ValidateRepositoryAsync(string owner, string name)
@@ -398,7 +425,7 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                 // Create request with proper headers
                 var request = new HttpRequestMessage(HttpMethod.Post, "");
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", GetGitHubTokenAsync());
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", await GetGitHubTokenAsync());
                 request.Headers.Add("User-Agent", "GainIt-Platform");
                 request.Content = content;
 
@@ -447,20 +474,128 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        private string GetGitHubTokenAsync()
+        private async Task<string> GetGitHubTokenAsync()
         {
-            // This is a simplified implementation
-            // In production, you should implement proper JWT token generation for GitHub Apps
-            // See: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-jwt-for-a-github-app
-            
-            if (!string.IsNullOrEmpty(_options.Value.PrivateKeyContent))
+            // Check if we have a cached valid token
+            if (!string.IsNullOrEmpty(_cachedJwtToken) && DateTime.UtcNow < _jwtTokenExpiry)
             {
-                // Generate JWT token using private key
-                // This is a placeholder - implement actual JWT generation
-                return "placeholder_jwt_token";
+                return _cachedJwtToken;
             }
 
-            throw new InvalidOperationException("GitHub App private key not configured");
+            if (string.IsNullOrEmpty(_options.Value.PrivateKeyContent))
+            {
+                throw new InvalidOperationException("GitHub App private key not configured");
+            }
+
+            try
+            {
+                // Generate JWT token for GitHub App
+                var token = GenerateGitHubAppJwt();
+                
+                // Cache the token (GitHub App JWTs are valid for 10 minutes, we'll use 8 minutes to be safe)
+                _cachedJwtToken = token;
+                _jwtTokenExpiry = DateTime.UtcNow.AddMinutes(8);
+                
+                return token;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to generate GitHub App JWT token");
+                throw new InvalidOperationException("Failed to generate GitHub App JWT token", ex);
+            }
+        }
+
+        private string GenerateGitHubAppJwt()
+        {
+            try
+            {
+                // Resolve PEM content: prefer file path if provided
+                string? pem = null;
+                if (!string.IsNullOrWhiteSpace(_options.Value.PrivateKeyPath) && File.Exists(_options.Value.PrivateKeyPath))
+                {
+                    pem = File.ReadAllText(_options.Value.PrivateKeyPath);
+                }
+                else
+                {
+                    pem = _options.Value.PrivateKeyContent;
+                }
+
+                pem = pem?.Trim();
+                if (string.IsNullOrWhiteSpace(pem))
+                {
+                    throw new InvalidOperationException("GitHub App private key not configured");
+                }
+
+                // Normalize literal '\n' to real newlines if pasted inline
+                if (pem.Contains("\\n"))
+                {
+                    pem = pem.Replace("\\n", "\n");
+                }
+
+                using var rsa = RSA.Create();
+
+                // Try PKCS#8 first: -----BEGIN PRIVATE KEY-----
+                if (pem.Contains("BEGIN PRIVATE KEY"))
+                {
+                    var pkcs8 = ExtractPemBlock(pem, "PRIVATE KEY");
+                    var pkcs8Bytes = Convert.FromBase64String(pkcs8);
+                    rsa.ImportPkcs8PrivateKey(pkcs8Bytes, out _);
+                }
+                else if (pem.Contains("BEGIN RSA PRIVATE KEY"))
+                {
+                    // PKCS#1: -----BEGIN RSA PRIVATE KEY-----
+                    var pkcs1 = ExtractPemBlock(pem, "RSA PRIVATE KEY");
+                    var pkcs1Bytes = Convert.FromBase64String(pkcs1);
+                    rsa.ImportRSAPrivateKey(pkcs1Bytes, out _);
+                }
+                else
+                {
+                    // Fallback: try to decode raw base64
+                    var raw = pem.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim();
+                    var rawBytes = Convert.FromBase64String(raw);
+                    // Attempt PKCS#8, then PKCS#1
+                    try { rsa.ImportPkcs8PrivateKey(rawBytes, out _); }
+                    catch { rsa.ImportRSAPrivateKey(rawBytes, out _); }
+                }
+
+                var signingCredentials = new SigningCredentials(
+                    new RsaSecurityKey(rsa),
+                    SecurityAlgorithms.RsaSha256);
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var now = DateTime.UtcNow;
+                
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Issuer = _options.Value.AppId?.ToString(),
+                    IssuedAt = now,
+                    NotBefore = now,
+                    Expires = now.AddMinutes(10),
+                    SigningCredentials = signingCredentials
+                };
+
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+                return tokenHandler.WriteToken(token);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating JWT token");
+                throw;
+            }
+        }
+
+        private static string ExtractPemBlock(string pem, string label)
+        {
+            var header = $"-----BEGIN {label}-----";
+            var footer = $"-----END {label}-----";
+            var start = pem.IndexOf(header, StringComparison.Ordinal);
+            var end = pem.IndexOf(footer, StringComparison.Ordinal);
+            if (start < 0 || end < 0 || end <= start)
+            {
+                throw new InvalidOperationException($"Invalid PEM format for {label}");
+            }
+            var base64 = pem.Substring(start + header.Length, end - (start + header.Length));
+            return base64.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim();
         }
 
         private async Task UpdateRateLimitAsync(HttpResponseMessage response)
@@ -494,6 +629,70 @@ namespace GainIt.API.Services.GitHub.Implementations
         private class GraphQLError
         {
             public string Message { get; set; } = string.Empty;
+        }
+
+        // Response models for GraphQL queries
+        private class GitHubRepositoryData
+        {
+            public GitHubRepositoryNode? Repository { get; set; }
+        }
+
+        private class GitHubAnalyticsData
+        {
+            public GitHubAnalyticsRepository? Repository { get; set; }
+        }
+
+        private class GitHubIssuesData
+        {
+            public GitHubRepositoryWithIssues? Repository { get; set; }
+        }
+
+        private class GitHubPullRequestsData
+        {
+            public GitHubRepositoryWithPullRequests? Repository { get; set; }
+        }
+
+        private class GitHubStatsData
+        {
+            public GitHubStatsRepository? Repository { get; set; }
+        }
+
+        private class GitHubRepositoryWithIssues
+        {
+            public GitHubIssuesConnection? Issues { get; set; }
+        }
+
+        private class GitHubRepositoryWithPullRequests
+        {
+            public GitHubPullRequestsConnection? PullRequests { get; set; }
+        }
+
+        private class GitHubIssuesConnection
+        {
+            public List<GitHubIssueNode>? Nodes { get; set; }
+            public int TotalCount { get; set; }
+        }
+
+        private class GitHubPullRequestsConnection
+        {
+            public List<GitHubPullRequestNode>? Nodes { get; set; }
+            public int TotalCount { get; set; }
+        }
+
+        private class GitHubStatsRepository
+        {
+            public int StargazerCount { get; set; }
+            public int ForkCount { get; set; }
+            public GitHubConnection? Watchers { get; set; }
+            public GitHubConnection? Issues { get; set; }
+            public GitHubConnection? PullRequests { get; set; }
+            public GitHubConnection? Refs { get; set; }
+            public GitHubConnection? Releases { get; set; }
+        }
+
+        private class GitHubConnection
+        {
+            public int TotalCount { get; set; }
         }
     }
 }
