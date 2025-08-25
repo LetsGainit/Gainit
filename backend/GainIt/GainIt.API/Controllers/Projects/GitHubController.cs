@@ -41,6 +41,7 @@ namespace GainIt.API.Controllers.Projects
         /// <response code="409">Repository already linked or conflict occurred</response>
         /// <response code="500">Internal server error during linking process</response>
         [HttpPost("projects/{projectId}/link")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(GitHubRepositoryLinkResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status409Conflict)]
@@ -90,6 +91,45 @@ namespace GainIt.API.Controllers.Projects
             {
                 _logger.LogError(ex, "Error linking GitHub repository to project {ProjectId}", projectId);
                 return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while linking the repository" });
+            }
+        }
+
+        /// <summary>
+        /// Gets the GitHub repository linked to a project
+        /// </summary>
+        [HttpGet("projects/{projectId}/repository")]
+        [ProducesResponseType(typeof(GitHubRepositoryInfoDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLinkedRepository(Guid projectId)
+        {
+            try
+            {
+                var repository = await _gitHubService.GetRepositoryAsync(projectId);
+                if (repository == null)
+                {
+                    return NotFound(new ErrorResponseDto { Error = "No repository linked to this project" });
+                }
+
+                var dto = new GitHubRepositoryInfoDto
+                {
+                    RepositoryId = repository.RepositoryId.ToString(),
+                    RepositoryName = repository.RepositoryName,
+                    OwnerName = repository.OwnerName,
+                    FullName = repository.FullName,
+                    Description = repository.Description,
+                    IsPublic = repository.IsPublic,
+                    PrimaryLanguage = repository.PrimaryLanguage,
+                    Languages = repository.Languages,
+                    StarsCount = repository.StarsCount ?? 0,
+                    ForksCount = repository.ForksCount ?? 0
+                };
+
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting linked repository for project {ProjectId}", projectId);
+                return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while retrieving the repository" });
             }
         }
 
@@ -305,7 +345,7 @@ namespace GainIt.API.Controllers.Projects
         /// <response code="404">Repository statistics not available</response>
         /// <response code="500">Internal server error during statistics retrieval</response>
         [HttpGet("projects/{projectId}/stats")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GitHubRepositoryStatsDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetRepositoryStats(Guid projectId)
@@ -313,10 +353,9 @@ namespace GainIt.API.Controllers.Projects
             try
             {
                 var stats = await _gitHubService.GetRepositoryStatsAsync(projectId);
-                
-                if (stats is dynamic && ((dynamic)stats).Error != null)
+                if (stats == null)
                 {
-                    return NotFound(stats);
+                    return NotFound(new ErrorResponseDto { Error = "Repository stats not found" });
                 }
 
                 return Ok(stats);
