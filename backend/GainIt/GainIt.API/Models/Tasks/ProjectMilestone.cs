@@ -21,7 +21,9 @@ namespace GainIt.API.Models.Tasks
         [StringLength(1000)]
         public string? Description { get; set; }
 
-        public eMilestoneStatus Status { get; set; } = eTaskStatus.Todo switch { _ => eMilestoneStatus.Planned };
+        public eMilestoneStatus Status { get; set; } = eMilestoneStatus.Planned;
+
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
         [JsonIgnore] public List<ProjectTask> Tasks { get; set; } = new();
     }

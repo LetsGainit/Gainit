@@ -14,10 +14,6 @@
             public const string TaskCreated = "taskCreated";
             public const string TaskUnblocked = "taskUnblocked";
             public const string TaskCompleted = "taskCompleted";
-        }
-
-        public static class Milestones
-        {
             public const string MilestoneCompleted = "milestoneCompleted";
         }
     }
