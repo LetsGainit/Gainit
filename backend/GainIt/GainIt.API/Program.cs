@@ -47,14 +47,6 @@ var loggerConfig = new LoggerConfiguration()
 var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
 var connectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
 
-// Add GitHub environment variables (same pattern as Application Insights)
-var githubAppId = Environment.GetEnvironmentVariable("GITHUB__APPID");
-var githubClientId = Environment.GetEnvironmentVariable("GITHUB__CLIENTID");
-var githubClientSecret = Environment.GetEnvironmentVariable("GITHUB__CLIENTSECRET");
-var githubPrivateKey = Environment.GetEnvironmentVariable("GITHUB__PRIVATEKEYCONTENT");
-var githubInstallationId = Environment.GetEnvironmentVariable("GITHUB__INSTALLATIONID");
-
-
 
 if (!string.IsNullOrWhiteSpace(connectionString))
 {
@@ -120,13 +112,6 @@ try
     Log.Information("=== ENVIRONMENT VARIABLES DEBUG ===");
     Log.Information($"APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrEmpty(instrumentationKey) ? "NOT SET" : "SET")}");
     Log.Information($"APPLICATIONINSIGHTS_CONNECTION_STRING: {(string.IsNullOrEmpty(connectionString) ? "NOT SET" : "SET")}");
-    
-    // Debug: Check GitHub environment variables
-    Log.Information($"GITHUB__APPID: {(string.IsNullOrEmpty(githubAppId) ? "NOT SET" : "SET")}");
-    Log.Information($"GITHUB__CLIENTID: {(string.IsNullOrEmpty(githubClientId) ? "NOT SET" : "SET")}");
-    Log.Information($"GITHUB__CLIENTSECRET: {(string.IsNullOrEmpty(githubClientSecret) ? "NOT SET" : "SET")}");
-    Log.Information($"GITHUB__PRIVATEKEYCONTENT: {(string.IsNullOrEmpty(githubPrivateKey) ? "NOT SET" : "SET")}");
-    Log.Information($"GITHUB__INSTALLATIONID: {(string.IsNullOrEmpty(githubInstallationId) ? "NOT SET" : "SET")}");
 
     if (!string.IsNullOrEmpty(connectionString))
     {
@@ -141,16 +126,7 @@ try
         Log.Warning("No Application Insights environment variables found - logging will be limited to console/file");
     }
 
-    if (!string.IsNullOrEmpty(githubAppId) || !string.IsNullOrEmpty(githubClientId) || 
-        !string.IsNullOrEmpty(githubClientSecret) || !string.IsNullOrEmpty(githubPrivateKey) || 
-        !string.IsNullOrEmpty(githubInstallationId))
-    {
-        Log.Information("Will use GitHub environment variables for GitHub configuration (production)");
-    }
-    else
-    {
-        Log.Information("Will use appsettings.GitHub.Development.json for GitHub configuration (local development)");
-    }
+    
 
     // Check for other possible environment variable names
     try
@@ -208,31 +184,15 @@ try
     
     if (githubSection.Exists())
     {
-        var appId = githubSection["AppId"];
-        var clientId = githubSection["ClientId"];
-        var installationId = githubSection["InstallationId"];
+        var restApiEndpoint = githubSection["RestApiEndpoint"];
+        var maxRequestsPerHour = githubSection["MaxRequestsPerHour"];
+        var requestTimeout = githubSection["RequestTimeoutSeconds"];
         
-        Log.Information($"GitHub AppId configured: {(!string.IsNullOrEmpty(appId) ? "YES" : "NO")}");
-        Log.Information($"GitHub ClientId configured: {(!string.IsNullOrEmpty(clientId) ? "YES" : "NO")}");
-        Log.Information($"GitHub InstallationId configured: {(!string.IsNullOrEmpty(installationId) ? "YES" : "NO")}");
-        Log.Information($"GitHub PrivateKey configured: {(!string.IsNullOrEmpty(githubSection["PrivateKeyContent"]) ? "YES" : "NO")}");
+        Log.Information($"GitHub REST API Endpoint: {restApiEndpoint ?? "NOT SET"}");
+        Log.Information($"GitHub Max Requests/Hour: {maxRequestsPerHour ?? "NOT SET"}");
+        Log.Information($"GitHub Request Timeout: {requestTimeout ?? "NOT SET"} seconds");
         
-        // Clarify configuration source
-        if (!string.IsNullOrEmpty(githubAppId) || !string.IsNullOrEmpty(githubClientId) || 
-            !string.IsNullOrEmpty(githubClientSecret) || !string.IsNullOrEmpty(githubPrivateKey) || 
-            !string.IsNullOrEmpty(githubInstallationId))
-        {
-            Log.Information("Configuration source: Azure Web App environment variables (production)");
-        }
-        else if (!string.IsNullOrEmpty(appId) || !string.IsNullOrEmpty(clientId) || 
-                 !string.IsNullOrEmpty(installationId) || !string.IsNullOrEmpty(githubSection["PrivateKeyContent"]))
-        {
-            Log.Information("Configuration source: appsettings.GitHub.Development.json (local development)");
-        }
-        else
-        {
-            Log.Information("Configuration source: appsettings.GitHub.json (base configuration, no secrets)");
-        }
+        Log.Information("Configuration source: appsettings.GitHub.Development.json (REST API mode)");
     }
     else
     {

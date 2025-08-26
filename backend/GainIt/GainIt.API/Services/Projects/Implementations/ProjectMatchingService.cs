@@ -400,7 +400,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 {
                     var parts = new List<string>
                     {
-                        gainer.Biography,
+                        gainer.Biography ?? string.Empty,
                         gainer.EducationStatus,
                         string.Join(", ", gainer.AreasOfInterest ?? new List<string>())
                     };
@@ -416,7 +416,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 {
                     var parts = new List<string>
                     {
-                        mentor.Biography,
+                        mentor.Biography ?? string.Empty,
                         mentor.AreaOfExpertise,
                         $"{mentor.YearsOfExperience} years of experience"
                     };

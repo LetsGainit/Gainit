@@ -62,6 +62,11 @@ namespace GainIt.API.Services.GitHub.Implementations
                     throw new InvalidOperationException("Failed to retrieve repository data from GitHub");
                 }
 
+                // Get additional repository data
+                var languages = await _apiClient.GetRepositoryLanguagesAsync(owner, name);
+                var contributors = await _apiClient.GetRepositoryContributorsAsync(owner, name);
+                var branches = await _apiClient.GetRepositoryBranchesAsync(owner, name);
+
                 // Create new repository record
                 var repository = new GitHubRepository
                 {
@@ -85,10 +90,10 @@ namespace GainIt.API.Services.GitHub.Implementations
                     LastSyncedAtUtc = DateTime.UtcNow
                 };
 
-                // Add languages
-                if (repositoryData.Languages?.Nodes != null)
+                // Add languages from REST API
+                if (languages != null && languages.Any())
                 {
-                    repository.Languages = repositoryData.Languages.Nodes.Select(l => l.Name).ToList();
+                    repository.Languages = languages.Keys.ToList();
                 }
 
                 // Add license info
@@ -198,6 +203,11 @@ namespace GainIt.API.Services.GitHub.Implementations
                     var repositoryData = await _apiClient.GetRepositoryAsync(repository.OwnerName, repository.RepositoryName);
                     if (repositoryData != null)
                     {
+                        // Get additional repository data
+                        var languages = await _apiClient.GetRepositoryLanguagesAsync(repository.OwnerName, repository.RepositoryName);
+                        var contributors = await _apiClient.GetRepositoryContributorsAsync(repository.OwnerName, repository.RepositoryName);
+                        var branches = await _apiClient.GetRepositoryBranchesAsync(repository.OwnerName, repository.RepositoryName);
+
                         // Update repository information
                         repository.Description = repositoryData.Description;
                         repository.StarsCount = repositoryData.StargazerCount;
@@ -207,10 +217,10 @@ namespace GainIt.API.Services.GitHub.Implementations
                         repository.LastActivityAtUtc = repositoryData.PushedAt ?? repositoryData.UpdatedAt;
                         repository.LastSyncedAtUtc = DateTime.UtcNow;
 
-                        // Update languages
-                        if (repositoryData.Languages?.Nodes != null)
+                        // Update languages from REST API
+                        if (languages != null && languages.Any())
                         {
-                            repository.Languages = repositoryData.Languages.Nodes.Select(l => l.Name).ToList();
+                            repository.Languages = languages.Keys.ToList();
                         }
 
                         await _context.SaveChangesAsync();

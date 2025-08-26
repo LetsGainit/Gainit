@@ -5,12 +5,12 @@ namespace GainIt.API.Services.GitHub.Interfaces
     public interface IGitHubApiClient
     {
         /// <summary>
-        /// Gets repository information using GraphQL
+        /// Gets repository information using REST API
         /// </summary>
         Task<GitHubRepositoryNode?> GetRepositoryAsync(string owner, string name);
 
         /// <summary>
-        /// Gets repository analytics data using GraphQL
+        /// Gets repository analytics data using REST API
         /// </summary>
         Task<GitHubAnalyticsRepository?> GetRepositoryAnalyticsAsync(string owner, string name, int daysPeriod = 30);
 
@@ -38,6 +38,21 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// Gets repository statistics (stars, forks, etc.)
         /// </summary>
         Task<GitHubRepositoryStats> GetRepositoryStatsAsync(string owner, string name);
+
+        /// <summary>
+        /// Gets repository languages with byte counts
+        /// </summary>
+        Task<Dictionary<string, int>> GetRepositoryLanguagesAsync(string owner, string name);
+
+        /// <summary>
+        /// Gets repository contributors
+        /// </summary>
+        Task<List<GitHubUserNode>> GetRepositoryContributorsAsync(string owner, string name);
+
+        /// <summary>
+        /// Gets repository branches
+        /// </summary>
+        Task<List<string>> GetRepositoryBranchesAsync(string owner, string name);
 
         /// <summary>
         /// Validates if a repository exists and is public

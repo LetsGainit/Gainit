@@ -4,54 +4,94 @@ namespace GainIt.API.Options
     {
         public const string SectionName = "GitHub";
 
-        // GitHub App Configuration
-        public string AppId { get; set; } = string.Empty;
-        public string AppName { get; set; } = string.Empty;
-        public string AppDescription { get; set; } = string.Empty;
-        public string AppUrl { get; set; } = string.Empty;
-        public string AppCallbackUrl { get; set; } = string.Empty;
-
-        // GitHub App Installation
-        public string InstallationId { get; set; } = string.Empty;
-        public string OrganizationName { get; set; } = string.Empty;
-
-        // Private Key (should be stored securely, not in appsettings)
-        public string PrivateKeyPath { get; set; } = string.Empty;
-        public string PrivateKeyContent { get; set; } = string.Empty;
-
-        // API Configuration
-        public string GraphQLEndpoint { get; set; } = "https://api.github.com/graphql";
+        /// <summary>
+        /// GitHub REST API endpoint
+        /// </summary>
         public string RestApiEndpoint { get; set; } = "https://api.github.com";
+        
+        /// <summary>
+        /// Maximum concurrent requests to GitHub API
+        /// </summary>
         public int MaxConcurrentRequests { get; set; } = 5;
+        
+        /// <summary>
+        /// Request timeout in seconds
+        /// </summary>
         public int RequestTimeoutSeconds { get; set; } = 30;
 
-        // Rate Limiting
-        public int MaxRequestsPerHour { get; set; } = 5000;
-        public int RateLimitBuffer { get; set; } = 100; // Keep 100 requests as buffer
+        /// <summary>
+        /// Rate limiting: maximum requests per hour (public API: 60)
+        /// </summary>
+        public int MaxRequestsPerHour { get; set; } = 60;
+        
+        /// <summary>
+        /// Rate limit buffer to prevent hitting the limit
+        /// </summary>
+        public int RateLimitBuffer { get; set; } = 10;
 
-        // Sync Configuration
+        /// <summary>
+        /// Default sync period in days
+        /// </summary>
         public int DefaultSyncPeriodDays { get; set; } = 30;
+        
+        /// <summary>
+        /// Maximum sync period in days
+        /// </summary>
         public int MaxSyncPeriodDays { get; set; } = 365;
-        public int SyncIntervalMinutes { get; set; } = 60; // How often to check for updates
-        public int BatchSize { get; set; } = 100; // Number of items to process in one batch
+        
+        /// <summary>
+        /// How often to check for updates (in minutes)
+        /// </summary>
+        public int SyncIntervalMinutes { get; set; } = 60;
+        
+        /// <summary>
+        /// Number of items to process in one batch
+        /// </summary>
+        public int BatchSize { get; set; } = 100;
 
-        // Data Retention
-        public int AnalyticsRetentionDays { get; set; } = 365; // Keep 1 year of data
+        /// <summary>
+        /// Keep analytics data for this many days
+        /// </summary>
+        public int AnalyticsRetentionDays { get; set; } = 365;
+        
+        /// <summary>
+        /// Keep contribution data for this many days
+        /// </summary>
         public int ContributionRetentionDays { get; set; } = 365;
+        
+        /// <summary>
+        /// Keep sync logs for this many days
+        /// </summary>
         public int SyncLogRetentionDays { get; set; } = 90;
 
-        // Feature Flags
+        /// <summary>
+        /// Enable real-time sync (not supported in public API mode)
+        /// </summary>
         public bool EnableRealTimeSync { get; set; } = false;
+        
+        /// <summary>
+        /// Enable background sync
+        /// </summary>
         public bool EnableBackgroundSync { get; set; } = true;
+        
+        /// <summary>
+        /// Enable user analytics
+        /// </summary>
         public bool EnableUserAnalytics { get; set; } = true;
+        
+        /// <summary>
+        /// Enable project analytics
+        /// </summary>
         public bool EnableProjectAnalytics { get; set; } = true;
 
-        // Webhook Configuration (for real-time updates)
-        public string WebhookSecret { get; set; } = string.Empty;
-        public bool EnableWebhooks { get; set; } = false;
-
-        // Logging and Monitoring
-        public bool EnableDetailedLogging { get; set; } = false;
+        /// <summary>
+        /// Enable detailed logging
+        /// </summary>
+        public bool EnableDetailedLogging { get; set; } = true;
+        
+        /// <summary>
+        /// Enable metrics collection
+        /// </summary>
         public bool EnableMetricsCollection { get; set; } = true;
     }
 }
