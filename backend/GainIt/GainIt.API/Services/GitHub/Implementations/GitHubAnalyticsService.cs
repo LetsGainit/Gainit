@@ -8,10 +8,12 @@ namespace GainIt.API.Services.GitHub.Implementations
     public class GitHubAnalyticsService : IGitHubAnalyticsService
     {
         private readonly ILogger<GitHubAnalyticsService> _logger;
+        private readonly IGitHubApiClient _gitHubApiClient;
 
-        public GitHubAnalyticsService(ILogger<GitHubAnalyticsService> logger)
+        public GitHubAnalyticsService(ILogger<GitHubAnalyticsService> logger, IGitHubApiClient gitHubApiClient)
         {
             _logger = logger;
+            _gitHubApiClient = gitHubApiClient;
         }
 
         public async Task<GitHubAnalytics> ProcessRepositoryAnalyticsAsync(GitHubRepository repository, int daysPeriod = 30)
@@ -79,16 +81,71 @@ namespace GainIt.API.Services.GitHub.Implementations
                     DaysPeriod = daysPeriod
                 };
 
-                // Initialize activity patterns
-                contribution.CommitsByDayOfWeek = InitializeDayOfWeekTracking();
-                contribution.CommitsByHour = InitializeHourTracking();
-                contribution.ActivityByMonth = InitializeMonthlyTracking();
+                // Fetch real GitHub contribution data
+                var gitHubContributions = await _gitHubApiClient.GetUserContributionsAsync(
+                    repository.OwnerName, 
+                    repository.RepositoryName, 
+                    username, 
+                    daysPeriod);
 
-                // Initialize languages contributed
-                contribution.LanguagesContributed = new List<string>();
+                if (gitHubContributions != null && gitHubContributions.Any())
+                {
+                    _logger.LogInformation("Found {ContributionCount} GitHub contributions for {Username} in {Repository}", 
+                        gitHubContributions.Count, username, repository.FullName);
 
-                _logger.LogInformation("User contribution analytics processed successfully for {Username} in {Repository}", 
-                    username, repository.FullName);
+                    // Process commit data
+                    contribution.TotalCommits = gitHubContributions.Count;
+                    contribution.TotalAdditions = gitHubContributions.Sum(c => c.Additions);
+                    contribution.TotalDeletions = gitHubContributions.Sum(c => c.Deletions);
+                    contribution.TotalLinesChanged = contribution.TotalAdditions + contribution.TotalDeletions;
+                    contribution.FilesModified = gitHubContributions.Sum(c => c.ChangedFiles);
+
+                    // Calculate unique days with commits
+                    var commitDates = gitHubContributions
+                        .Select(c => c.CommittedDate.Date)
+                        .Distinct()
+                        .ToList();
+                    contribution.UniqueDaysWithCommits = commitDates.Count;
+
+                    // Process activity patterns
+                    contribution.CommitsByDayOfWeek = ProcessCommitsByDayOfWeek(gitHubContributions);
+                    contribution.CommitsByHour = ProcessCommitsByHour(gitHubContributions);
+                    contribution.ActivityByMonth = ProcessActivityByMonth(gitHubContributions);
+
+                    // Extract languages from commit messages (basic approach)
+                    contribution.LanguagesContributed = ExtractLanguagesFromCommits(gitHubContributions);
+
+                    // For now, set placeholder values for features not yet implemented
+                    contribution.TotalIssuesCreated = 0; // Would need GitHub Issues API
+                    contribution.TotalPullRequestsCreated = 0; // Would need GitHub PRs API
+                    contribution.TotalReviews = 0; // Would need GitHub Reviews API
+                    contribution.CollaboratorsInteractedWith = 0; // Would need more complex analysis
+                }
+                else
+                {
+                    _logger.LogInformation("No GitHub contributions found for {Username} in {Repository}", username, repository.FullName);
+                    
+                    // Initialize with zero values
+                    contribution.TotalCommits = 0;
+                    contribution.TotalAdditions = 0;
+                    contribution.TotalDeletions = 0;
+                    contribution.TotalLinesChanged = 0;
+                    contribution.FilesModified = 0;
+                    contribution.UniqueDaysWithCommits = 0;
+                    contribution.TotalIssuesCreated = 0;
+                    contribution.TotalPullRequestsCreated = 0;
+                    contribution.TotalReviews = 0;
+                    contribution.CollaboratorsInteractedWith = 0;
+
+                    // Initialize empty activity patterns
+                    contribution.CommitsByDayOfWeek = InitializeDayOfWeekTracking();
+                    contribution.CommitsByHour = InitializeHourTracking();
+                    contribution.ActivityByMonth = InitializeMonthlyTracking();
+                    contribution.LanguagesContributed = new List<string>();
+                }
+
+                _logger.LogInformation("User contribution analytics processed successfully for {Username} in {Repository}: {Commits} commits, {LinesChanged} lines changed", 
+                    username, repository.FullName, contribution.TotalCommits, contribution.TotalLinesChanged);
                 return contribution;
             }
             catch (Exception ex)
@@ -299,13 +356,31 @@ namespace GainIt.API.Services.GitHub.Implementations
                     Message = "Analytics export not yet implemented"
                 };
 
-                var json = JsonSerializer.Serialize(placeholderData, new JsonSerializerOptions { WriteIndented = true });
+                var json = JsonSerializer.Serialize(placeholderData);
                 return System.Text.Encoding.UTF8.GetBytes(json);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error exporting analytics for repository {RepositoryId}", repositoryId);
                 throw;
+            }
+        }
+
+        public async Task<Guid?> GetProjectIdForRepositoryAsync(string owner, string name)
+        {
+            _logger.LogInformation("Getting project ID for repository {Owner}/{Name}", owner, name);
+            
+            try
+            {
+                // This would typically query the database to find the project ID
+                // For now, return null as this method is not yet fully implemented
+                _logger.LogWarning("GetProjectIdForRepositoryAsync not yet implemented for {Owner}/{Name}", owner, name);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting project ID for repository {Owner}/{Name}", owner, name);
+                return null;
             }
         }
 
@@ -363,6 +438,85 @@ namespace GainIt.API.Services.GitHub.Implementations
                 tracking[hour.ToString("00")] = 0;
             }
             return tracking;
+        }
+
+        private Dictionary<string, int> ProcessCommitsByDayOfWeek(List<GitHubAnalyticsCommitNode> commits)
+        {
+            var dayOfWeekCounts = InitializeDayOfWeekTracking();
+            
+            foreach (var commit in commits)
+            {
+                var dayOfWeek = commit.CommittedDate.DayOfWeek.ToString();
+                if (dayOfWeekCounts.ContainsKey(dayOfWeek))
+                {
+                    dayOfWeekCounts[dayOfWeek]++;
+                }
+            }
+            
+            return dayOfWeekCounts;
+        }
+
+        private Dictionary<string, int> ProcessCommitsByHour(List<GitHubAnalyticsCommitNode> commits)
+        {
+            var hourCounts = InitializeHourTracking();
+            
+            foreach (var commit in commits)
+            {
+                var hour = commit.CommittedDate.Hour.ToString("00");
+                if (hourCounts.ContainsKey(hour))
+                {
+                    hourCounts[hour]++;
+                }
+            }
+            
+            return hourCounts;
+        }
+
+        private Dictionary<string, int> ProcessActivityByMonth(List<GitHubAnalyticsCommitNode> commits)
+        {
+            var monthCounts = InitializeMonthlyTracking();
+            
+            foreach (var commit in commits)
+            {
+                var month = commit.CommittedDate.ToString("yyyy-MM");
+                if (monthCounts.ContainsKey(month))
+                {
+                    monthCounts[month]++;
+                }
+            }
+            
+            return monthCounts;
+        }
+
+        private List<string> ExtractLanguagesFromCommits(List<GitHubAnalyticsCommitNode> commits)
+        {
+            var languages = new HashSet<string>();
+            
+            // Basic language detection from commit messages
+            foreach (var commit in commits)
+            {
+                var message = commit.Message.ToLower();
+                
+                // Common programming language keywords
+                if (message.Contains("javascript") || message.Contains("js")) languages.Add("JavaScript");
+                if (message.Contains("typescript") || message.Contains("ts")) languages.Add("TypeScript");
+                if (message.Contains("python") || message.Contains("py")) languages.Add("Python");
+                if (message.Contains("c#") || message.Contains("csharp")) languages.Add("C#");
+                if (message.Contains("java")) languages.Add("Java");
+                if (message.Contains("php")) languages.Add("PHP");
+                if (message.Contains("ruby")) languages.Add("Ruby");
+                if (message.Contains("go")) languages.Add("Go");
+                if (message.Contains("rust")) languages.Add("Rust");
+                if (message.Contains("swift")) languages.Add("Swift");
+                if (message.Contains("kotlin")) languages.Add("Kotlin");
+                if (message.Contains("scala")) languages.Add("Scala");
+                if (message.Contains("r")) languages.Add("R");
+                if (message.Contains("sql")) languages.Add("SQL");
+                if (message.Contains("html")) languages.Add("HTML");
+                if (message.Contains("css")) languages.Add("CSS");
+            }
+            
+            return languages.ToList();
         }
 
         #endregion

@@ -749,7 +749,7 @@ namespace GainIt.API.Data
                 {
                     UserId = Guid.NewGuid(),
                     ExternalId = Guid.NewGuid().ToString(),
-                    FullName = "Yossi Rosenberg",
+                    FullName = "swve",  // a real top contributer on github
                     EmailAddress = "yossi.rosenberg@techlearner.dev",
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Web Development", "UI/UX Design", "Cloud Computing" },
@@ -854,7 +854,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "AI", "Natural Language Processing", "Python" },
                     GitHubURL = "https://github.com/liorabarak",
-                    GitHubUsername = "liorabarak",  // Add GitHub username
+                    GitHubUsername = "chrishollandaise",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/liorabarak",
                     FacebookPageURL = "https://facebook.com/liora.barak",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/77.jpg",

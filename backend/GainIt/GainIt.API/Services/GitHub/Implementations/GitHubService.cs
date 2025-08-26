@@ -329,13 +329,50 @@ namespace GainIt.API.Services.GitHub.Implementations
                 {
                     _logger.LogInformation("No analytics record found for repository {RepositoryId} in project {ProjectId}, creating analytics automatically", repository.RepositoryId, projectId);
                     
-                    // Create analytics record automatically
-                    analytics = await _analyticsService.ProcessRepositoryAnalyticsAsync(repository, daysPeriod);
-                    if (analytics != null)
+                    // Create sync log entry for analytics creation
+                    var syncLog = new GitHubSyncLog
                     {
-                        _context.Set<GitHubAnalytics>().Add(analytics);
+                        RepositoryId = repository.RepositoryId,
+                        SyncType = "Analytics",
+                        Status = "InProgress",
+                        StartedAtUtc = DateTime.UtcNow
+                    };
+                    _context.Set<GitHubSyncLog>().Add(syncLog);
+                    await _context.SaveChangesAsync();
+
+                    try
+                    {
+                        // Create analytics record automatically
+                        analytics = await _analyticsService.ProcessRepositoryAnalyticsAsync(repository, daysPeriod);
+                        if (analytics != null)
+                        {
+                            _context.Set<GitHubAnalytics>().Add(analytics);
+                            await _context.SaveChangesAsync();
+                            
+                            // Update sync log
+                            syncLog.Status = "Completed";
+                            syncLog.CompletedAtUtc = DateTime.UtcNow;
+                            syncLog.ItemsProcessed = 1;
+                            syncLog.TotalItems = 1;
+                            await _context.SaveChangesAsync();
+                            
+                            _logger.LogInformation("Created analytics record for repository {RepositoryId} in project {ProjectId}", repository.RepositoryId, projectId);
+                        }
+                        else
+                        {
+                            syncLog.Status = "Failed";
+                            syncLog.ErrorMessage = "Failed to process repository analytics";
+                            syncLog.CompletedAtUtc = DateTime.UtcNow;
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        syncLog.Status = "Failed";
+                        syncLog.ErrorMessage = ex.Message;
+                        syncLog.CompletedAtUtc = DateTime.UtcNow;
                         await _context.SaveChangesAsync();
-                        _logger.LogInformation("Created analytics record for repository {RepositoryId} in project {ProjectId}", repository.RepositoryId, projectId);
+                        throw;
                     }
                 }
                 else
@@ -352,22 +389,59 @@ namespace GainIt.API.Services.GitHub.Implementations
                         _logger.LogInformation("Analytics for project {ProjectId} are stale (last calculated: {CalculatedAt}), refreshing automatically", 
                             projectId, analytics.CalculatedAtUtc);
                         
-                        // Refresh analytics automatically
-                        var refreshedAnalytics = await _analyticsService.ProcessRepositoryAnalyticsAsync(repository, daysPeriod);
-                        if (refreshedAnalytics != null)
+                        // Create sync log entry for analytics refresh
+                        var refreshSyncLog = new GitHubSyncLog
                         {
-                            // Update existing analytics
-                            analytics.LanguageStats = refreshedAnalytics.LanguageStats;
-                            analytics.WeeklyCommits = refreshedAnalytics.WeeklyCommits;
-                            analytics.WeeklyIssues = refreshedAnalytics.WeeklyIssues;
-                            analytics.WeeklyPullRequests = refreshedAnalytics.WeeklyPullRequests;
-                            analytics.MonthlyCommits = refreshedAnalytics.MonthlyCommits;
-                            analytics.MonthlyIssues = refreshedAnalytics.MonthlyIssues;
-                            analytics.MonthlyPullRequests = refreshedAnalytics.MonthlyPullRequests;
-                            analytics.CalculatedAtUtc = DateTime.UtcNow;
-                            
+                            RepositoryId = repository.RepositoryId,
+                            SyncType = "AnalyticsRefresh",
+                            Status = "InProgress",
+                            StartedAtUtc = DateTime.UtcNow
+                        };
+                        _context.Set<GitHubSyncLog>().Add(refreshSyncLog);
+                        await _context.SaveChangesAsync();
+
+                        try
+                        {
+                            // Refresh analytics automatically
+                            var refreshedAnalytics = await _analyticsService.ProcessRepositoryAnalyticsAsync(repository, daysPeriod);
+                            if (refreshedAnalytics != null)
+                            {
+                                // Update existing analytics
+                                analytics.LanguageStats = refreshedAnalytics.LanguageStats;
+                                analytics.WeeklyCommits = refreshedAnalytics.WeeklyCommits;
+                                analytics.WeeklyIssues = refreshedAnalytics.WeeklyIssues;
+                                analytics.WeeklyPullRequests = refreshedAnalytics.WeeklyPullRequests;
+                                analytics.MonthlyCommits = refreshedAnalytics.MonthlyCommits;
+                                analytics.MonthlyIssues = refreshedAnalytics.MonthlyIssues;
+                                analytics.MonthlyPullRequests = refreshedAnalytics.MonthlyPullRequests;
+                                analytics.CalculatedAtUtc = DateTime.UtcNow;
+                                
+                                await _context.SaveChangesAsync();
+                                
+                                // Update sync log
+                                refreshSyncLog.Status = "Completed";
+                                refreshSyncLog.CompletedAtUtc = DateTime.UtcNow;
+                                refreshSyncLog.ItemsProcessed = 1;
+                                refreshSyncLog.TotalItems = 1;
+                                await _context.SaveChangesAsync();
+                                
+                                _logger.LogInformation("Refreshed analytics for repository {RepositoryId} in project {ProjectId}", repository.RepositoryId, projectId);
+                            }
+                            else
+                            {
+                                refreshSyncLog.Status = "Failed";
+                                refreshSyncLog.ErrorMessage = "Failed to refresh repository analytics";
+                                refreshSyncLog.CompletedAtUtc = DateTime.UtcNow;
+                                await _context.SaveChangesAsync();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            refreshSyncLog.Status = "Failed";
+                            refreshSyncLog.ErrorMessage = ex.Message;
+                            refreshSyncLog.CompletedAtUtc = DateTime.UtcNow;
                             await _context.SaveChangesAsync();
-                            _logger.LogInformation("Refreshed analytics for repository {RepositoryId} in project {ProjectId}", repository.RepositoryId, projectId);
+                            throw;
                         }
                     }
                 }
@@ -395,52 +469,85 @@ namespace GainIt.API.Services.GitHub.Implementations
                 var repository = await GetRepositoryAsync(projectId);
                 if (repository == null) return;
 
-                // Get project members to process contributions
-                var projectMembers = await _context.Set<ProjectMember>()
-                    .Where(pm => pm.ProjectId == projectId && pm.LeftAtUtc == null)
-                    .Include(pm => pm.User)
-                    .ToListAsync();
-
-                _logger.LogDebug("Found {MemberCount} active project members for project {ProjectId}", projectMembers.Count, projectId);
-
-                // Process user contributions
-                var contributions = new List<GitHubContribution>();
-                foreach (var member in projectMembers)
+                // Create sync log entry for contributions update
+                var contributionsSyncLog = new GitHubSyncLog
                 {
-                    // Use stored GitHubUsername if available, fallback to extracting from GitHubURL
-                    string? username = member.User.GitHubUsername;
-                    if (string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(member.User.GitHubURL))
+                    RepositoryId = repository.RepositoryId,
+                    SyncType = "Contributions",
+                    Status = "InProgress",
+                    StartedAtUtc = DateTime.UtcNow
+                };
+                _context.Set<GitHubSyncLog>().Add(contributionsSyncLog);
+                await _context.SaveChangesAsync();
+
+                try
+                {
+                    // Get project members to process contributions
+                    var projectMembers = await _context.Set<ProjectMember>()
+                        .Where(pm => pm.ProjectId == projectId && pm.LeftAtUtc == null)
+                        .Include(pm => pm.User)
+                        .ToListAsync();
+
+                    _logger.LogDebug("Found {MemberCount} active project members for project {ProjectId}", projectMembers.Count, projectId);
+
+                    // Process user contributions
+                    var contributions = new List<GitHubContribution>();
+                    foreach (var member in projectMembers)
                     {
-                        username = ExtractGitHubUsername(member.User.GitHubURL);
+                        // Use stored GitHubUsername if available, fallback to extracting from GitHubURL
+                        string? username = member.User.GitHubUsername;
+                        if (string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(member.User.GitHubURL))
+                        {
+                            username = ExtractGitHubUsername(member.User.GitHubURL);
+                        }
+                        
+                        if (!string.IsNullOrEmpty(username))
+                        {
+                            _logger.LogDebug("Processing contribution for user {UserId} with GitHub username {GitHubUsername}", member.UserId, username);
+                            var contribution = await _analyticsService.ProcessUserContributionAsync(
+                                repository, member.UserId, username, daysPeriod);
+                            contributions.Add(contribution);
+                        }
+                        else
+                        {
+                            _logger.LogDebug("Skipping user {UserId} - no GitHub username found", member.UserId);
+                        }
+                    }
+
+                    _logger.LogDebug("Processed {ContributionCount} user contributions for project {ProjectId}", contributions.Count, projectId);
+
+                    // Remove old contributions and add new ones
+                    if (repository.Contributions.Any())
+                    {
+                        _logger.LogDebug("Removing {OldContributionCount} old contributions for project {ProjectId}", repository.Contributions.Count, projectId);
+                        _context.Set<GitHubContribution>().RemoveRange(repository.Contributions);
                     }
                     
-                    if (!string.IsNullOrEmpty(username))
-                    {
-                        _logger.LogDebug("Processing contribution for user {UserId} with GitHub username {GitHubUsername}", member.UserId, username);
-                        var contribution = await _analyticsService.ProcessUserContributionAsync(
-                            repository, member.UserId, username, daysPeriod);
-                        contributions.Add(contribution);
-                    }
-                    else
-                    {
-                        _logger.LogDebug("Skipping user {UserId} - no GitHub username found", member.UserId);
-                    }
+                    repository.Contributions = contributions;
+                    _context.Set<GitHubContribution>().AddRange(contributions);
+
+                    await _context.SaveChangesAsync();
+                    
+                    // Update sync log
+                    contributionsSyncLog.Status = "Completed";
+                    contributionsSyncLog.CompletedAtUtc = DateTime.UtcNow;
+                    contributionsSyncLog.ItemsProcessed = contributions.Count;
+                    contributionsSyncLog.TotalItems = projectMembers.Count;
+                    await _context.SaveChangesAsync();
+                    
+                    _logger.LogDebug("Updated {ContributionCount} contributions for project {ProjectId}", contributions.Count, projectId);
                 }
-
-                _logger.LogDebug("Processed {ContributionCount} user contributions for project {ProjectId}", contributions.Count, projectId);
-
-                // Remove old contributions and add new ones
-                if (repository.Contributions.Any())
+                catch (Exception ex)
                 {
-                    _logger.LogDebug("Removing {OldContributionCount} old contributions for project {ProjectId}", repository.Contributions.Count, projectId);
-                    _context.Set<GitHubContribution>().RemoveRange(repository.Contributions);
+                    // Update sync log with error
+                    contributionsSyncLog.Status = "Failed";
+                    contributionsSyncLog.ErrorMessage = ex.Message;
+                    contributionsSyncLog.CompletedAtUtc = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    
+                    _logger.LogError(ex, "Error ensuring contributions are up to date for project {ProjectId}", projectId);
+                    // Don't throw - this is a background operation
                 }
-                
-                repository.Contributions = contributions;
-                _context.Set<GitHubContribution>().AddRange(contributions);
-
-                await _context.SaveChangesAsync();
-                _logger.LogDebug("Updated {ContributionCount} contributions for project {ProjectId}", contributions.Count, projectId);
             }
             catch (Exception ex)
             {
@@ -645,6 +752,16 @@ namespace GainIt.API.Services.GitHub.Implementations
                 var analytics = await GetProjectAnalyticsAsync(projectId);
                 var contributions = await GetUserContributionsAsync(projectId);
 
+                _logger.LogDebug("Repository stats for project {ProjectId}: Found {ContributionCount} contributions", 
+                    projectId, contributions.Count);
+
+                // Log contribution details for debugging
+                foreach (var contribution in contributions)
+                {
+                    _logger.LogDebug("Contribution for user {UserId}: Commits={Commits}, LinesChanged={LinesChanged}, Username={Username}", 
+                        contribution.UserId, contribution.TotalCommits, contribution.TotalLinesChanged, contribution.GitHubUsername);
+                }
+
                 var dto = new GitHubRepositoryStatsDto
                 {
                     RepositoryName = repository.RepositoryName,
@@ -664,6 +781,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     ReleaseCount = repoStats.ReleaseCount,
                     Contributors = contributions.Count,
                     TopContributors = contributions
+                        .Where(c => c.TotalCommits > 0) // Only show contributors with actual commits
                         .OrderByDescending(c => c.TotalCommits)
                         .Take(5)
                         .Select(c => new TopContributorDto

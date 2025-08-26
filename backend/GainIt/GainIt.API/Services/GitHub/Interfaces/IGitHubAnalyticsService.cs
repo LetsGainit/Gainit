@@ -48,5 +48,10 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// Exports analytics data in various formats
         /// </summary>
         Task<byte[]> ExportAnalyticsAsync(Guid repositoryId, string format = "json");
+
+        /// <summary>
+        /// Gets the project ID that a repository is linked to
+        /// </summary>
+        Task<Guid?> GetProjectIdForRepositoryAsync(string owner, string name);
     }
 }
