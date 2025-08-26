@@ -33,9 +33,7 @@ var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true, reloadOnChange: true)
-    .AddJsonFile("appsettings.GitHub.json", optional: true, reloadOnChange: true) // Base GitHub config (empty values for production)
-    .AddJsonFile("appsettings.GitHub.Development.json", optional: true, reloadOnChange: true) // Development GitHub config (local dev only)
-    .AddEnvironmentVariables(); // Production: GitHub secrets from Azure Web App environment variables
+    .AddEnvironmentVariables();
 
 var configuration = configBuilder.Build();
 
@@ -89,6 +87,7 @@ if (!string.IsNullOrWhiteSpace(connectionString) || !string.IsNullOrWhiteSpace(i
     Log.Information("=== IMMEDIATE TEST: Application Insights sink test ===");
     Log.Warning("=== IMMEDIATE TEST: This warning should appear in Application Insights ===");
     Log.Error("=== IMMEDIATE TEST: This error should appear in Application Insights ===");
+    
 }
 
 try
@@ -99,11 +98,6 @@ try
 
     // Clear default logging providers to prevent duplicate logs
     builder.Logging.ClearProviders();
-
-    // Ensure GitHub configuration files are included in builder.Configuration as well
-    builder.Configuration
-        .AddJsonFile("appsettings.GitHub.json", optional: true, reloadOnChange: true)
-        .AddJsonFile("appsettings.GitHub.Development.json", optional: true, reloadOnChange: true);
 
     // Use the pre-configured Serilog
     builder.Host.UseSerilog();
@@ -178,26 +172,7 @@ try
         Log.Warning("Serilog section not found in configuration");
     }
 
-    // Debug: Check GitHub configuration
-    Log.Information("=== GITHUB CONFIGURATION DEBUG ===");
-    var githubSection = configuration.GetSection("GitHub");
-    
-    if (githubSection.Exists())
-    {
-        var restApiEndpoint = githubSection["RestApiEndpoint"];
-        var maxRequestsPerHour = githubSection["MaxRequestsPerHour"];
-        var requestTimeout = githubSection["RequestTimeoutSeconds"];
-        
-        Log.Information($"GitHub REST API Endpoint: {restApiEndpoint ?? "NOT SET"}");
-        Log.Information($"GitHub Max Requests/Hour: {maxRequestsPerHour ?? "NOT SET"}");
-        Log.Information($"GitHub Request Timeout: {requestTimeout ?? "NOT SET"} seconds");
-        
-        Log.Information("Configuration source: appsettings.GitHub.Development.json (REST API mode)");
-    }
-    else
-    {
-        Log.Warning("GitHub section not found in configuration");
-    }
+    Log.Information("GitHub integration configured for REST API (no configuration file needed)");
 
     // Application Insights is configured via Serilog above - don't add it again here
     // builder.Services.AddApplicationInsightsTelemetry(); // DISABLED to prevent conflicts
@@ -216,8 +191,6 @@ try
         builder.Configuration["SignalR:ConnectionString"]);
     builder.Services.Configure<JoinRequestOptions>(
         builder.Configuration.GetSection("JoinRequests"));
-    builder.Services.Configure<GitHubOptions>(
-        builder.Configuration.GetSection("GitHub"));
 
     builder.Services.AddSingleton(sp =>
     {

@@ -13,4 +13,13 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
         public int TotalItems { get; set; }
         public string? ErrorMessage { get; set; }
     }
+
+    /// <summary>
+    /// Response DTO for sync status operations
+    /// </summary>
+    public class SyncStatusResponseDto
+    {
+        public Guid ProjectId { get; set; }
+        public GitHubSyncStatusDto SyncStatus { get; set; } = new();
+    }
 }

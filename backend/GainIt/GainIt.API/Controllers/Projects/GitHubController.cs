@@ -11,12 +11,12 @@ namespace GainIt.API.Controllers.Projects
 {
     /// <summary>
     /// GitHub integration controller for managing repository links, analytics, and data synchronization
+    /// Uses GitHub REST API for public repository access without authentication requirements
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [AllowAnonymous] // Allow all endpoints for testing REST API integration
     [Produces("application/json")]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
     public class GitHubController : ControllerBase
     {
         private readonly IGitHubService _gitHubService;
@@ -41,55 +41,44 @@ namespace GainIt.API.Controllers.Projects
         /// <response code="409">Repository already linked or conflict occurred</response>
         /// <response code="500">Internal server error during linking process</response>
         [HttpPost("projects/{projectId}/link")]
-        [AllowAnonymous]
         [ProducesResponseType(typeof(GitHubRepositoryLinkResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> LinkRepository(Guid projectId, [FromBody] GitHubRepositoryLinkDto request)
         {
+            _logger.LogDebug("LinkRepository called for project {ProjectId} with URL: {RepositoryUrl}", projectId, request?.RepositoryUrl);
+            
             try
             {
-                if (string.IsNullOrWhiteSpace(request.RepositoryUrl))
+                if (string.IsNullOrWhiteSpace(request?.RepositoryUrl))
                 {
+                    _logger.LogWarning("Repository URL is null or empty for project {ProjectId}", projectId);
                     return BadRequest(new ErrorResponseDto { Error = "Repository URL is required" });
                 }
 
-                var repository = await _gitHubService.LinkRepositoryAsync(projectId, request.RepositoryUrl);
+                _logger.LogDebug("Calling _gitHubService.LinkRepositoryAsync for project {ProjectId} with URL: {RepositoryUrl}", projectId, request.RepositoryUrl);
+                var result = await _gitHubService.LinkRepositoryAsync(projectId, request.RepositoryUrl);
                 
-                _logger.LogInformation("GitHub repository linked successfully to project {ProjectId}", projectId);
+                _logger.LogInformation("GitHub repository linked successfully to project {ProjectId}: {RepositoryUrl}", projectId, request.RepositoryUrl);
+                _logger.LogDebug("Link result: Success={Success}, Message={Message}, RepositoryId={RepositoryId}", 
+                    result.Success, result.Message, result.RepositoryId);
                 
-                var response = new GitHubRepositoryLinkResponseDto
-                {
-                    Message = "Repository linked successfully",
-                    Repository = new GitHubRepositoryInfoDto
-                    {
-                        RepositoryId = repository.RepositoryId.ToString(),
-                        RepositoryName = repository.RepositoryName,
-                        OwnerName = repository.OwnerName,
-                        FullName = repository.FullName,
-                        Description = repository.Description,
-                        IsPublic = repository.IsPublic,
-                        PrimaryLanguage = repository.PrimaryLanguage,
-                        Languages = repository.Languages,
-                        StarsCount = repository.StarsCount ?? 0,
-                        ForksCount = repository.ForksCount ?? 0
-                    }
-                };
-
-                return Ok(response);
+                return Ok(result);
             }
             catch (ArgumentException ex)
             {
+                _logger.LogWarning("ArgumentException in LinkRepository for project {ProjectId}: {Message}", projectId, ex.Message);
                 return BadRequest(new ErrorResponseDto { Error = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
+                _logger.LogWarning("InvalidOperationException in LinkRepository for project {ProjectId}: {Message}", projectId, ex.Message);
                 return Conflict(new ErrorResponseDto { Error = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error linking GitHub repository to project {ProjectId}", projectId);
+                _logger.LogError(ex, "Error linking GitHub repository to project {ProjectId} with URL: {RepositoryUrl}", projectId, request?.RepositoryUrl);
                 return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while linking the repository" });
             }
         }
@@ -102,14 +91,21 @@ namespace GainIt.API.Controllers.Projects
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetLinkedRepository(Guid projectId)
         {
+            _logger.LogDebug("GetLinkedRepository called for project {ProjectId}", projectId);
+            
             try
             {
+                _logger.LogDebug("Calling _gitHubService.GetRepositoryAsync for project {ProjectId}", projectId);
                 var repository = await _gitHubService.GetRepositoryAsync(projectId);
+                
                 if (repository == null)
                 {
+                    _logger.LogWarning("No repository found for project {ProjectId}", projectId);
                     return NotFound(new ErrorResponseDto { Error = "No repository linked to this project" });
                 }
 
+                _logger.LogDebug("Repository found for project {ProjectId}: {RepositoryName}", projectId, repository.RepositoryName);
+                
                 var dto = new GitHubRepositoryInfoDto
                 {
                     RepositoryId = repository.RepositoryId.ToString(),
@@ -124,6 +120,7 @@ namespace GainIt.API.Controllers.Projects
                     ForksCount = repository.ForksCount ?? 0
                 };
 
+                _logger.LogInformation("Successfully retrieved repository info for project {ProjectId}: {RepositoryName}", projectId, repository.RepositoryName);
                 return Ok(dto);
             }
             catch (Exception ex)
@@ -134,78 +131,66 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Unlinks a GitHub repository from a project
+        /// Gets repository statistics for a project
         /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
-        /// <returns>Unlink confirmation message</returns>
-        /// <response code="200">Repository successfully unlinked from the project</response>
-        /// <response code="404">No linked repository found for this project</response>
-        /// <response code="500">Internal server error during unlinking process</response>
-        [HttpDelete("projects/{projectId}/unlink")]
-        [ProducesResponseType(typeof(GitHubMessageResponseDto), StatusCodes.Status200OK)]
+        [HttpGet("projects/{projectId}/stats")]
+        [ProducesResponseType(typeof(GitHubRepositoryStatsDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UnlinkRepository(Guid projectId)
+        public async Task<IActionResult> GetRepositoryStats(Guid projectId)
         {
+            _logger.LogDebug("GetRepositoryStats called for project {ProjectId}", projectId);
+            
             try
             {
-                var success = await _gitHubService.UnlinkRepositoryAsync(projectId);
+                _logger.LogDebug("Calling _gitHubService.GetRepositoryStatsAsync for project {ProjectId}", projectId);
+                var stats = await _gitHubService.GetRepositoryStatsAsync(projectId);
                 
-                if (success)
+                if (stats == null)
                 {
-                    _logger.LogInformation("GitHub repository unlinked successfully from project {ProjectId}", projectId);
-                    return Ok(new GitHubMessageResponseDto { Message = "Repository unlinked successfully" });
+                    _logger.LogWarning("Repository stats not found for project {ProjectId}", projectId);
+                    return NotFound(new ErrorResponseDto { Error = "Repository stats not found" });
                 }
-                else
-                {
-                    return NotFound(new ErrorResponseDto { Error = "No linked repository found for this project" });
-                }
+
+                _logger.LogDebug("Repository stats found for project {ProjectId}: {RepositoryName}", projectId, stats.RepositoryName);
+                _logger.LogInformation("Successfully retrieved repository stats for project {ProjectId}: {RepositoryName}", projectId, stats.RepositoryName);
+                return Ok(stats);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error unlinking GitHub repository from project {ProjectId}", projectId);
-                return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while unlinking the repository" });
+                _logger.LogError(ex, "Error getting repository stats for project {ProjectId}", projectId);
+                return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while retrieving repository stats" });
             }
         }
 
         /// <summary>
-        /// Gets GitHub analytics for a project with automatic data refresh.
-        /// 
-        /// Use cases:
-        /// • Current project analytics without manual intervention
-        /// • Automatic data freshness (refreshes if > 1 day old)
-        /// • Real-time analytics for reporting and insights
-        /// 
-        /// Note: For complete data sync including repository metadata,
-        /// use POST /api/github/projects/{projectId}/sync
+        /// Gets GitHub analytics for a project with automatic data refresh
         /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
-        /// <param name="daysPeriod">Number of days to analyze (default: 30, max: 365)</param>
-        /// <returns>Project analytics data including commits, issues, and pull requests</returns>
-        /// <response code="200">Analytics data retrieved successfully</response>
-        /// <response code="404">No analytics data available for this project</response>
-        /// <response code="500">Internal server error during analytics retrieval</response>
         [HttpGet("projects/{projectId}/analytics")]
         [ProducesResponseType(typeof(GitHubProjectAnalyticsResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetProjectAnalytics(Guid projectId, [FromQuery] int daysPeriod = 30)
         {
+            _logger.LogDebug("GetProjectAnalytics called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
+            
             try
             {
-                // Validate days period
                 if (daysPeriod <= 0 || daysPeriod > 365)
                 {
+                    _logger.LogWarning("Invalid daysPeriod {DaysPeriod} for project {ProjectId}", daysPeriod, projectId);
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
                 }
 
+                _logger.LogDebug("Calling _gitHubService.GetProjectAnalyticsAsync for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
                 var analytics = await _gitHubService.GetProjectAnalyticsAsync(projectId, daysPeriod);
                 
                 if (analytics == null)
                 {
-                    return NotFound(new ErrorResponseDto { Error = "No analytics data available for this project" });
+                    _logger.LogWarning("Failed to retrieve or create analytics for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
+                    return StatusCode(500, new ErrorResponseDto { Error = "Failed to retrieve analytics data. Please try again later." });
                 }
 
+                _logger.LogDebug("Analytics data retrieved/created for project {ProjectId}: CalculatedAt={CalculatedAt}", projectId, analytics.CalculatedAtUtc);
+                
                 var response = new GitHubProjectAnalyticsResponseDto
                 {
                     ProjectId = projectId,
@@ -214,11 +199,12 @@ namespace GainIt.API.Controllers.Projects
                     Analytics = analytics
                 };
 
+                _logger.LogInformation("Successfully retrieved analytics for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting project analytics for project {ProjectId}", projectId);
+                _logger.LogError(ex, "Error getting project analytics for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
                 return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while retrieving analytics" });
             }
         }
@@ -226,25 +212,25 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets user contributions for a project
         /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
-        /// <param name="daysPeriod">Number of days to analyze (default: 30, max: 365)</param>
-        /// <returns>List of user contributions with detailed metrics</returns>
-        /// <response code="200">User contributions retrieved successfully</response>
-        /// <response code="500">Internal server error during contributions retrieval</response>
         [HttpGet("projects/{projectId}/contributions")]
         [ProducesResponseType(typeof(GitHubUserContributionsResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUserContributions(Guid projectId, [FromQuery] int daysPeriod = 30)
         {
+            _logger.LogDebug("GetUserContributions called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
+            
             try
             {
-                // Validate days period
                 if (daysPeriod <= 0 || daysPeriod > 365)
                 {
+                    _logger.LogWarning("Invalid daysPeriod {DaysPeriod} for project {ProjectId}", daysPeriod, projectId);
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
                 }
 
+                _logger.LogDebug("Calling _gitHubService.GetUserContributionsAsync for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
                 var contributions = await _gitHubService.GetUserContributionsAsync(projectId, daysPeriod);
+                
+                _logger.LogDebug("Retrieved {ContributionsCount} contributions for project {ProjectId}", contributions.Count, projectId);
                 
                 var response = new GitHubUserContributionsResponseDto
                 {
@@ -265,11 +251,12 @@ namespace GainIt.API.Controllers.Projects
                     }).ToList()
                 };
 
+                _logger.LogInformation("Successfully retrieved {ContributionsCount} user contributions for project {ProjectId}", contributions.Count, projectId);
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting user contributions for project {ProjectId}", projectId);
+                _logger.LogError(ex, "Error getting user contributions for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
                 return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while retrieving contributions" });
             }
         }
@@ -277,22 +264,13 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets contribution analytics for a specific user in a project
         /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
-        /// <param name="userId">The unique identifier of the user</param>
-        /// <param name="daysPeriod">Number of days to analyze (default: 30, max: 365)</param>
-        /// <returns>Detailed contribution analytics for the specified user</returns>
-        /// <response code="200">User contribution data retrieved successfully</response>
-        /// <response code="404">No contribution data available for this user</response>
-        /// <response code="500">Internal server error during contribution retrieval</response>
-        [HttpGet("projects/{projectId}/contributions/{userId}")]
+        [HttpGet("projects/{projectId}/users/{userId}/contributions")]
         [ProducesResponseType(typeof(GitHubUserContributionDetailResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUserContribution(Guid projectId, Guid userId, [FromQuery] int daysPeriod = 30)
         {
             try
             {
-                // Validate days period
                 if (daysPeriod <= 0 || daysPeriod > 365)
                 {
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
@@ -337,53 +315,15 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Gets repository statistics for a project
+        /// Gets user activity summary for AI context
         /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
-        /// <returns>Repository statistics including stars, forks, issues, and pull requests</returns>
-        /// <response code="200">Repository statistics retrieved successfully</response>
-        /// <response code="404">Repository statistics not available</response>
-        /// <response code="500">Internal server error during statistics retrieval</response>
-        [HttpGet("projects/{projectId}/stats")]
-        [ProducesResponseType(typeof(GitHubRepositoryStatsDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetRepositoryStats(Guid projectId)
-        {
-            try
-            {
-                var stats = await _gitHubService.GetRepositoryStatsAsync(projectId);
-                if (stats == null)
-                {
-                    return NotFound(new ErrorResponseDto { Error = "Repository stats not found" });
-                }
-
-                return Ok(stats);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting repository stats for project {ProjectId}", projectId);
-                return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while retrieving repository stats" });
-            }
-        }
-
-        /// <summary>
-        /// Gets user activity summary for ChatGPT context
-        /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
-        /// <param name="userId">The unique identifier of the user</param>
-        /// <param name="daysPeriod">Number of days to analyze (default: 30, max: 365)</param>
-        /// <returns>Formatted activity summary suitable for AI context</returns>
-        /// <response code="200">User activity summary retrieved successfully</response>
-        /// <response code="500">Internal server error during summary retrieval</response>
-        [HttpGet("projects/{projectId}/users/{userId}/activity-summary")]
+        [HttpGet("projects/{projectId}/users/{userId}/activity")]
         [ProducesResponseType(typeof(GitHubUserActivitySummaryResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUserActivitySummary(Guid projectId, Guid userId, [FromQuery] int daysPeriod = 30)
         {
             try
             {
-                // Validate days period
                 if (daysPeriod <= 0 || daysPeriod > 365)
                 {
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
@@ -409,13 +349,8 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Gets project activity summary for ChatGPT context
+        /// Gets project activity summary for AI context
         /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
-        /// <param name="daysPeriod">Number of days to analyze (default: 30, max: 365)</param>
-        /// <returns>Formatted project activity summary suitable for AI context</returns>
-        /// <response code="200">Project activity summary retrieved successfully</response>
-        /// <response code="500">Internal server error during summary retrieval</response>
         [HttpGet("projects/{projectId}/activity-summary")]
         [ProducesResponseType(typeof(GitHubActivitySummaryBaseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
@@ -423,7 +358,6 @@ namespace GainIt.API.Controllers.Projects
         {
             try
             {
-                // Validate days period
                 if (daysPeriod <= 0 || daysPeriod > 365)
                 {
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
@@ -450,13 +384,6 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets personalized GitHub analytics insights based on a user's specific query
         /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
-        /// <param name="userQuery">The user's specific question or area of interest</param>
-        /// <param name="daysPeriod">Number of days to analyze (default: 30, max: 365)</param>
-        /// <returns>AI-powered insights tailored to the user's query</returns>
-        /// <response code="200">Personalized insights retrieved successfully</response>
-        /// <response code="400">Invalid request parameters</response>
-        /// <response code="500">Internal server error during insights generation</response>
         [HttpGet("projects/{projectId}/insights")]
         [ProducesResponseType(typeof(GitHubActivitySummaryBaseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
@@ -465,13 +392,11 @@ namespace GainIt.API.Controllers.Projects
         {
             try
             {
-                // Validate user query
                 if (string.IsNullOrWhiteSpace(userQuery))
                 {
                     return BadRequest(new ErrorResponseDto { Error = "User query is required" });
                 }
 
-                // Validate days period
                 if (daysPeriod <= 0 || daysPeriod > 365)
                 {
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
@@ -496,23 +421,8 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Manually syncs GitHub data for a project.
-        /// 
-        /// Use cases:
-        /// • Immediate data refresh for time-sensitive operations
-        /// • Complete repository metadata updates (stars, forks, description)
-        /// • Bulk data synchronization for reporting
-        /// • Recovery from data inconsistencies
-        /// 
-        /// Note: Analytics automatically refresh when > 1 day old.
-        /// This manual sync ensures both metadata and analytics are current.
+        /// Manually syncs GitHub data for a project
         /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
-        /// <param name="syncType">Type of sync: 'repository' (metadata), 'analytics' (contributions), or 'all' (complete, default)</param>
-        /// <returns>Sync operation result and status</returns>
-        /// <response code="200">Data synced successfully</response>
-        /// <response code="400">Sync operation failed or invalid sync type</response>
-        /// <response code="500">Internal server error during sync operation</response>
         [HttpPost("projects/{projectId}/sync")]
         [ProducesResponseType(typeof(GitHubSyncResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
@@ -521,7 +431,6 @@ namespace GainIt.API.Controllers.Projects
         {
             try
             {
-                // Validate sync type
                 var validSyncTypes = new[] { "repository", "analytics", "all" };
                 if (!validSyncTypes.Contains(syncType.ToLower()))
                 {
@@ -540,7 +449,6 @@ namespace GainIt.API.Controllers.Projects
                         break;
                     case "all":
                     default:
-                        // Sync both repository data and analytics
                         var repoSuccess = await _gitHubService.SyncRepositoryDataAsync(projectId);
                         var analyticsSuccess = await _gitHubService.SyncAnalyticsAsync(projectId);
                         success = repoSuccess && analyticsSuccess;
@@ -565,19 +473,8 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Gets the sync status for a project to monitor synchronization operations.
-        /// 
-        /// Use cases:
-        /// • Monitor sync operation progress and completion
-        /// • Debug failed synchronization attempts
-        /// • Track data freshness and last update times
-        /// • Verify sync operation results
+        /// Gets the sync status for a project
         /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
-        /// <returns>Last sync operation status and details</returns>
-        /// <response code="200">Sync status retrieved successfully</response>
-        /// <response code="404">No sync history found for this project</response>
-        /// <response code="500">Internal server error during status retrieval</response>
         [HttpGet("projects/{projectId}/sync-status")]
         [ProducesResponseType(typeof(SyncStatusResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
@@ -620,11 +517,6 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Validates a GitHub repository URL
         /// </summary>
-        /// <param name="request">Repository URL validation request</param>
-        /// <returns>Validation result indicating if the repository is accessible</returns>
-        /// <response code="200">Repository URL validation completed</response>
-        /// <response code="400">Invalid repository URL format</response>
-        /// <response code="500">Internal server error during validation</response>
         [HttpPost("validate-url")]
         [ProducesResponseType(typeof(UrlValidationResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]

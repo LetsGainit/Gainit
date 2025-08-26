@@ -13,7 +13,6 @@ namespace GainIt.API.Services.GitHub.Implementations
     public class GitHubApiClient : IGitHubApiClient
     {
         private readonly HttpClient _httpClient;
-        private readonly IOptions<GitHubOptions> _options;
         private readonly ILogger<GitHubApiClient> _logger;
         private readonly SemaphoreSlim _rateLimitSemaphore;
         private DateTime _rateLimitResetAt = DateTime.UtcNow.AddHours(1);
@@ -21,82 +20,45 @@ namespace GainIt.API.Services.GitHub.Implementations
 
         public GitHubApiClient(
             HttpClient httpClient,
-            IOptions<GitHubOptions> options,
             ILogger<GitHubApiClient> logger)
         {
             _httpClient = httpClient;
-            _options = options;
             _logger = logger;
             _rateLimitSemaphore = new SemaphoreSlim(1, 1);
 
             // Configure HTTP client for GitHub REST API
             _httpClient.BaseAddress = new Uri("https://api.github.com/");
-            _httpClient.Timeout = TimeSpan.FromSeconds(_options.Value.RequestTimeoutSeconds);
+            _httpClient.Timeout = TimeSpan.FromSeconds(30); // Hardcoded timeout
             
             // Set GitHub API version and user agent
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "GainIt-Platform");
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3+json");
         }
 
-        public async Task<GitHubRepositoryNode?> GetRepositoryAsync(string owner, string name)
+        public async Task<GitHubRestApiRepository?> GetRepositoryAsync(string owner, string name)
         {
-            _logger.LogInformation("Getting repository data for {Owner}/{Name} via REST API", owner, name);
-            
             try
             {
-                if (!await HasRateLimitQuotaAsync(1))
-                {
-                    throw new InvalidOperationException("GitHub API rate limit exceeded");
-                }
-
-                var endpoint = $"repos/{owner}/{name}";
-                var response = await _httpClient.GetAsync(endpoint);
+                _logger.LogInformation("Getting repository data for {Owner}/{Name} via REST API", owner, name);
                 
-                if (response.IsSuccessStatusCode)
+                var response = await _httpClient.GetAsync($"repos/{owner}/{name}");
+                
+                if (!response.IsSuccessStatusCode)
                 {
-                    var content = await response.Content.ReadAsStringAsync();
-                    _logger.LogInformation("REST API response for {Owner}/{Name}: {ResponseLength} characters", 
-                        owner, name, content.Length);
-                    
-                    var repository = JsonSerializer.Deserialize<GitHubRepositoryNode>(content);
-                    
-                    // Update rate limit from headers
-                    await UpdateRateLimitAsync(response);
-                    
-                    _logger.LogInformation("Repository data retrieved for {Owner}/{Name}: {NameWithOwner}", 
-                        owner, name, repository?.NameWithOwner ?? "null");
-                    
-                    return repository;
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("GitHub REST API error for {Owner}/{Name}: {StatusCode} - {Content}", 
-                        owner, name, response.StatusCode, errorContent);
-                    
-                    // Update rate limit even on error
-                    await UpdateRateLimitAsync(response);
-                    
+                    _logger.LogWarning("Failed to get repository {Owner}/{Name}. Status: {StatusCode}", owner, name, response.StatusCode);
                     return null;
                 }
+
+                var json = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation("REST API response for {Owner}/{Name}: {Length} characters", owner, name, json.Length);
+
+                var repository = JsonSerializer.Deserialize<GitHubRestApiRepository>(json);
+                return repository;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting repository data for {Owner}/{Name}", owner, name);
                 return null;
-            }
-            finally
-            {
-                // Decrement remaining requests
-                await _rateLimitSemaphore.WaitAsync();
-                try
-                {
-                    _remainingRequests = Math.Max(0, _remainingRequests - 1);
-                }
-                finally
-                {
-                    _rateLimitSemaphore.Release();
-                }
             }
         }
 
@@ -111,7 +73,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     throw new InvalidOperationException("GitHub API rate limit exceeded");
                 }
 
-                var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
                 var endpoint = $"repos/{owner}/{name}/commits?since={since}&per_page=100";
                 
                 var response = await _httpClient.GetAsync(endpoint);
@@ -197,7 +159,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     throw new InvalidOperationException("GitHub API rate limit exceeded");
                 }
 
-                var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
                 var endpoint = $"repos/{owner}/{name}/commits?author={username}&since={since}&per_page=100";
                 
                 var response = await _httpClient.GetAsync(endpoint);
@@ -307,10 +269,10 @@ namespace GainIt.API.Services.GitHub.Implementations
                         owner, name, response.StatusCode, errorContent);
                     
                     await UpdateRateLimitAsync(response);
-                }
-                
-                return new List<GitHubAnalyticsCommitNode>();
             }
+
+            return new List<GitHubAnalyticsCommitNode>();
+        }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting commit history for {Owner}/{Name}", owner, name);
@@ -341,7 +303,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     throw new InvalidOperationException("GitHub API rate limit exceeded");
                 }
 
-                var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
                 var endpoint = $"repos/{owner}/{name}/issues?since={since}&state=all&per_page=100";
                 
                 var response = await _httpClient.GetAsync(endpoint);
@@ -470,7 +432,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var repository = JsonSerializer.Deserialize<GitHubRepositoryNode>(content);
+                    var repository = JsonSerializer.Deserialize<GitHubRestApiRepository>(content);
                     
                     await UpdateRateLimitAsync(response);
                     
@@ -481,13 +443,12 @@ namespace GainIt.API.Services.GitHub.Implementations
                         
                         var stats = new GitHubRepositoryStats
                         {
-                            StargazerCount = repository.StargazerCount,
-                            ForkCount = repository.ForkCount,
-                            WatcherCount = repository.Watchers?.TotalCount ?? 0,
-                            IssueCount = repository.Issues?.TotalCount ?? 0,
-                            PullRequestCount = repository.PullRequests?.TotalCount ?? 0,
+                            StargazerCount = repository.StargazersCount,
+                            ForkCount = repository.ForksCount,
+                            IssueCount = repository.OpenIssuesCount,
+                            PullRequestCount = 0, // Will be fetched separately if needed
                             BranchCount = branches,
-                            ReleaseCount = repository.Releases?.TotalCount ?? 0
+                            ReleaseCount = 0 // Will be fetched separately if needed
                         };
                         
                         _logger.LogInformation("Repository stats retrieved for {Owner}/{Name}: {Stars} stars, {Forks} forks, {Languages} languages, {Contributors} contributors", 
@@ -526,10 +487,10 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        private async Task<(Dictionary<string, int>? languages, List<GitHubUserNode>? contributors, int branches)> GetAdditionalStatsAsync(string owner, string name)
+        private async Task<(Dictionary<string, int>? languages, List<GitHubRestApiContributor>? contributors, int branches)> GetAdditionalStatsAsync(string owner, string name)
         {
             var languages = new Dictionary<string, int>();
-            var contributors = new List<GitHubUserNode>();
+            var contributors = new List<GitHubRestApiContributor>();
             var branchCount = 0;
 
             try
@@ -551,7 +512,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (contributorsResponse.IsSuccessStatusCode)
                 {
                     var contributorsContent = await contributorsResponse.Content.ReadAsStringAsync();
-                    var contributorsData = JsonSerializer.Deserialize<List<GitHubUserNode>>(contributorsContent);
+                    var contributorsData = JsonSerializer.Deserialize<List<GitHubRestApiContributor>>(contributorsContent);
                     if (contributorsData != null)
                     {
                         contributors = contributorsData;
@@ -640,7 +601,7 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<List<GitHubUserNode>> GetRepositoryContributorsAsync(string owner, string name)
+        public async Task<List<GitHubRestApiContributor>> GetRepositoryContributorsAsync(string owner, string name)
         {
             _logger.LogInformation("Getting repository contributors for {Owner}/{Name} via REST API", owner, name);
             
@@ -657,7 +618,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var contributors = JsonSerializer.Deserialize<List<GitHubUserNode>>(content);
+                    var contributors = JsonSerializer.Deserialize<List<GitHubRestApiContributor>>(content);
                     
                     await UpdateRateLimitAsync(response);
                     
@@ -678,12 +639,12 @@ namespace GainIt.API.Services.GitHub.Implementations
                     await UpdateRateLimitAsync(response);
                 }
                 
-                return new List<GitHubUserNode>();
+                return new List<GitHubRestApiContributor>();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting repository contributors for {Owner}/{Name}", owner, name);
-                return new List<GitHubUserNode>();
+                return new List<GitHubRestApiContributor>();
             }
             finally
             {
@@ -764,21 +725,30 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<bool> ValidateRepositoryAsync(string owner, string name)
+        public async Task<(bool IsValid, GitHubRestApiRepository? Repository, bool? IsPrivate)> ValidateRepositoryAsync(string owner, string name)
         {
             try
             {
-                _logger.LogInformation("Validating repository {Owner}/{Name} via REST API", owner, name);
                 var repository = await GetRepositoryAsync(owner, name);
-                var isValid = repository != null && !repository.IsPrivate;
+                
+                if (repository == null)
+                {
+                    _logger.LogWarning("Repository {Owner}/{Name} not found or inaccessible", owner, name);
+                    return (false, null, null);
+                }
+
+                var isValid = !string.IsNullOrEmpty(repository.Name) && !string.IsNullOrEmpty(repository.FullName);
+                var isPrivate = repository.Private;
+
                 _logger.LogInformation("Repository validation result: {IsValid}, Repository: {Repository}, IsPrivate: {IsPrivate}", 
-                    isValid, repository?.NameWithOwner ?? "null", repository?.IsPrivate);
-                return isValid;
+                    isValid, repository?.FullName ?? "null", isPrivate);
+
+                return (isValid, repository, isPrivate);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to validate repository {Owner}/{Name}", owner, name);
-                return false;
+                _logger.LogError(ex, "Error validating repository {Owner}/{Name}", owner, name);
+                return (false, null, null);
             }
         }
 

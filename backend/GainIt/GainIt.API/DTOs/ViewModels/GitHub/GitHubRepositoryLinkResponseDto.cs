@@ -8,13 +8,18 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
     public class GitHubRepositoryLinkResponseDto
     {
         /// <summary>
-        /// Success message
+        /// Whether the operation was successful
+        /// </summary>
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// Success or error message
         /// </summary>
         public string Message { get; set; } = string.Empty;
         
         /// <summary>
-        /// Repository information
+        /// Repository ID if successfully linked
         /// </summary>
-        public GitHubRepositoryInfoDto Repository { get; set; } = new();
+        public Guid? RepositoryId { get; set; }
     }
 }

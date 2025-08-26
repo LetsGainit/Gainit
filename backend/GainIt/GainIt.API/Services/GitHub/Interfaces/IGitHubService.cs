@@ -8,7 +8,7 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// <summary>
         /// Links a GitHub repository to a project
         /// </summary>
-        Task<GitHubRepository> LinkRepositoryAsync(Guid projectId, string repositoryUrl);
+        Task<GitHubRepositoryLinkResponseDto> LinkRepositoryAsync(Guid projectId, string repositoryUrl);
 
         /// <summary>
         /// Unlinks a GitHub repository from a project
@@ -77,6 +77,16 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// <param name="userQuery">The user's specific question or area of interest</param>
         /// <param name="daysPeriod">Number of days to analyze (default: 60, max: 365)</param>
         /// <returns>AI-powered insights tailored to the user's query</returns>
-        Task<string> GetPersonalizedAnalyticsInsightsAsync(Guid projectId, string userQuery, int daysPeriod = 60);
+        Task<string> GetPersonalizedAnalyticsInsightsAsync(Guid projectId, string userQuery, int daysPeriod = 30);
+
+        /// <summary>
+        /// Checks if a repository is already linked to any project
+        /// </summary>
+        Task<bool> IsRepositoryAlreadyLinkedAsync(string owner, string name);
+
+        /// <summary>
+        /// Gets the project ID that a repository is linked to
+        /// </summary>
+        Task<Guid?> GetProjectIdForRepositoryAsync(string owner, string name);
     }
 }

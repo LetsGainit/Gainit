@@ -555,59 +555,6 @@ namespace GainIt.API.Data
                 #endregion
 
                 #region GitHub Models Configuration
-                // Configure GitHubAnalytics entity
-                modelBuilder.Entity<GitHubAnalytics>(entity =>
-                {
-                    // Configure Dictionary<string, int> properties to be stored as JSON
-                    entity.Property(e => e.LanguageStats)
-                        .HasConversion(
-                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
-
-                    entity.Property(e => e.WeeklyCommits)
-                        .HasConversion(
-                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
-
-                    entity.Property(e => e.WeeklyIssues)
-                        .HasConversion(
-                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
-
-                    entity.Property(e => e.WeeklyPullRequests)
-                        .HasConversion(
-                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
-
-                    entity.Property(e => e.MonthlyCommits)
-                        .HasConversion(
-                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
-
-                    entity.Property(e => e.MonthlyIssues)
-                        .HasConversion(
-                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
-
-                    entity.Property(e => e.MonthlyPullRequests)
-                        .HasConversion(
-                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                            v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
-
-                    // Configure relationships
-                    entity.HasOne(e => e.Repository)
-                        .WithOne(r => r.Analytics)
-                        .HasForeignKey<GitHubAnalytics>(e => e.RepositoryId)
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
                 // Configure GitHubContribution entity
                 modelBuilder.Entity<GitHubContribution>(entity =>
                 {

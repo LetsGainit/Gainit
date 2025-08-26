@@ -5,9 +5,9 @@ namespace GainIt.API.Services.GitHub.Interfaces
     public interface IGitHubApiClient
     {
         /// <summary>
-        /// Gets repository information using REST API
+        /// Gets repository information via REST API
         /// </summary>
-        Task<GitHubRepositoryNode?> GetRepositoryAsync(string owner, string name);
+        Task<GitHubRestApiRepository?> GetRepositoryAsync(string owner, string name);
 
         /// <summary>
         /// Gets repository analytics data using REST API
@@ -47,7 +47,7 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// <summary>
         /// Gets repository contributors
         /// </summary>
-        Task<List<GitHubUserNode>> GetRepositoryContributorsAsync(string owner, string name);
+        Task<List<GitHubRestApiContributor>> GetRepositoryContributorsAsync(string owner, string name);
 
         /// <summary>
         /// Gets repository branches
@@ -55,9 +55,9 @@ namespace GainIt.API.Services.GitHub.Interfaces
         Task<List<string>> GetRepositoryBranchesAsync(string owner, string name);
 
         /// <summary>
-        /// Validates if a repository exists and is public
+        /// Validates if a repository exists and is accessible via REST API
         /// </summary>
-        Task<bool> ValidateRepositoryAsync(string owner, string name);
+        Task<(bool IsValid, GitHubRestApiRepository? Repository, bool? IsPrivate)> ValidateRepositoryAsync(string owner, string name);
 
         /// <summary>
         /// Gets the current rate limit status
@@ -77,7 +77,6 @@ namespace GainIt.API.Services.GitHub.Interfaces
     {
         public int StargazerCount { get; set; }
         public int ForkCount { get; set; }
-        public int WatcherCount { get; set; }
         public int IssueCount { get; set; }
         public int PullRequestCount { get; set; }
         public int BranchCount { get; set; }
