@@ -17,6 +17,7 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
         public int IssueCount { get; set; }
         public int PullRequestCount { get; set; }
         public int BranchCount { get; set; }
+        public List<string> Branches { get; set; } = new();
         public int ReleaseCount { get; set; }
 
         public int Contributors { get; set; }

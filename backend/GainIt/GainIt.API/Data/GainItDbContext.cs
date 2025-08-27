@@ -599,8 +599,14 @@ namespace GainIt.API.Data
                 // Configure GitHubRepository entity
                 modelBuilder.Entity<GitHubRepository>(entity =>
                 {
-                    // Configure List<string> property to be stored as JSON
+                    // Configure List<string> properties to be stored as JSON
                     entity.Property(e => e.Languages)
+                        .HasConversion(
+                            v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                            v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
+                        );
+
+                    entity.Property(e => e.Branches)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
@@ -749,7 +755,7 @@ namespace GainIt.API.Data
                 {
                     UserId = Guid.NewGuid(),
                     ExternalId = Guid.NewGuid().ToString(),
-                    FullName = "swve",  // a real top contributer on github
+                    FullName = "Yossi Rosenberg",  // a real top contributer on github
                     EmailAddress = "yossi.rosenberg@techlearner.dev",
                     EducationStatus = "Undergraduate",
                     AreasOfInterest = new List<string> { "Web Development", "UI/UX Design", "Cloud Computing" },
@@ -854,7 +860,7 @@ namespace GainIt.API.Data
                     EducationStatus = "Graduate",
                     AreasOfInterest = new List<string> { "AI", "Natural Language Processing", "Python" },
                     GitHubURL = "https://github.com/liorabarak",
-                    GitHubUsername = "chrishollandaise",  // Add GitHub username
+                    GitHubUsername = "chahmedejaz",  // Add GitHub username
                     LinkedInURL = "https://linkedin.com/in/liorabarak",
                     FacebookPageURL = "https://facebook.com/liora.barak",
                     ProfilePictureURL = "https://randomuser.me/api/portraits/women/77.jpg",
@@ -1060,7 +1066,7 @@ namespace GainIt.API.Data
                     ProjectSource = eProjectSource.Template,
                     DifficultyLevel = eDifficultyLevel.Beginner,
                     CreatedAtUtc = DateTime.UtcNow.AddDays(-10),
-                    RepositoryLink = "https://github.com/learnhouse/learnhouse",
+                    RepositoryLink = "https://github.com/openfoodfoundation/openfoodnetwork",
                     Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
                     ProjectPictureUrl = "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1000",
                     Duration = TimeSpan.FromDays(60),

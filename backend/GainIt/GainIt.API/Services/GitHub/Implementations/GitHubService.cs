@@ -114,6 +114,9 @@ namespace GainIt.API.Services.GitHub.Implementations
                     projectRepository.License = repositoryData.License?.Name;
                     projectRepository.IsArchived = repositoryData.Archived;
                     projectRepository.IsFork = repositoryData.Fork;
+                    
+                    // Store all branches
+                    projectRepository.Branches = branches ?? new List<string>();
 
                     repository = projectRepository;
                 }
@@ -121,17 +124,17 @@ namespace GainIt.API.Services.GitHub.Implementations
                 {
                     // Create new repository for this project
                     repository = new GitHubRepository
-                    {
-                        ProjectId = projectId,
-                        RepositoryName = name,
-                        OwnerName = owner,
+                {
+                    ProjectId = projectId,
+                    RepositoryName = name,
+                    OwnerName = owner,
                         FullName = repositoryData.FullName,
                         RepositoryUrl = repositoryData.HtmlUrl,
-                        Description = repositoryData.Description,
+                    Description = repositoryData.Description,
                         IsPublic = !repositoryData.Private,
-                        CreatedAtUtc = repositoryData.CreatedAt,
+                    CreatedAtUtc = repositoryData.CreatedAt,
                         LastSyncedAtUtc = DateTime.UtcNow,
-                        LastActivityAtUtc = repositoryData.PushedAt ?? repositoryData.UpdatedAt,
+                    LastActivityAtUtc = repositoryData.PushedAt ?? repositoryData.UpdatedAt,
                         StarsCount = repositoryData.StargazersCount,
                         ForksCount = repositoryData.ForksCount,
                         OpenIssuesCount = repositoryData.OpenIssuesCount,
@@ -141,7 +144,8 @@ namespace GainIt.API.Services.GitHub.Implementations
                         Languages = languages.Keys.ToList(),
                         License = repositoryData.License?.Name,
                         IsArchived = repositoryData.Archived,
-                        IsFork = repositoryData.Fork
+                        IsFork = repositoryData.Fork,
+                        Branches = branches ?? new List<string>()
                     };
 
                     _context.Set<GitHubRepository>().Add(repository);
@@ -270,6 +274,12 @@ namespace GainIt.API.Services.GitHub.Implementations
                             repository.Languages = languages.Keys.ToList();
                         }
 
+                        // Update branches from REST API
+                        if (branches != null && branches.Any())
+                        {
+                            repository.Branches = branches;
+                        }
+
                         await _context.SaveChangesAsync();
 
                         // Update sync log
@@ -306,7 +316,7 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<GitHubAnalytics?> GetProjectAnalyticsAsync(Guid projectId, int daysPeriod = 30)
+        public async Task<GitHubAnalytics?> GetProjectAnalyticsAsync(Guid projectId, int daysPeriod = 30, bool force = false)
         {
             try
             {
@@ -446,9 +456,12 @@ namespace GainIt.API.Services.GitHub.Implementations
                     }
                 }
 
-                // Always ensure contributions are up to date
-                _logger.LogDebug("Ensuring user contributions are up to date for project {ProjectId}", projectId);
-                await EnsureContributionsUpToDateAsync(projectId, daysPeriod);
+                // Do not recompute contributions here unless forced
+                if (force)
+                {
+                    _logger.LogDebug("Force=true: updating user contributions for project {ProjectId}", projectId);
+                    await EnsureContributionsUpToDateAsync(projectId, daysPeriod, force: true);
+                }
 
                 return analytics;
             }
@@ -462,12 +475,37 @@ namespace GainIt.API.Services.GitHub.Implementations
         /// <summary>
         /// Ensures user contributions are up to date for a project
         /// </summary>
-        private async Task EnsureContributionsUpToDateAsync(Guid projectId, int daysPeriod)
+        private async Task EnsureContributionsUpToDateAsync(Guid projectId, int daysPeriod, bool force = false)
         {
             try
             {
                 var repository = await GetRepositoryAsync(projectId);
                 if (repository == null) return;
+
+                // Freshness gating: skip if recent unless forced
+                var now = DateTime.UtcNow;
+                var cutoff = now.AddDays(-1); // 1 day freshness window
+                var minIntervalCutoff = now.AddHours(-1); // minimum 1 hour between updates
+
+                var latestContribution = await _context.Set<GitHubContribution>()
+                    .Where(c => c.RepositoryId == repository.RepositoryId)
+                    .OrderByDescending(c => c.CalculatedAtUtc)
+                    .FirstOrDefaultAsync();
+
+                if (!force && latestContribution != null)
+                {
+                    if (latestContribution.CalculatedAtUtc >= cutoff)
+                    {
+                        _logger.LogDebug("Skipping contributions update for project {ProjectId}: data is fresh (CalculatedAtUtc={CalculatedAtUtc})", projectId, latestContribution.CalculatedAtUtc);
+                        return;
+                    }
+
+                    if (latestContribution.CalculatedAtUtc >= minIntervalCutoff)
+                    {
+                        _logger.LogDebug("Skipping contributions update for project {ProjectId}: within min interval (CalculatedAtUtc={CalculatedAtUtc})", projectId, latestContribution.CalculatedAtUtc);
+                        return;
+                    }
+                }
 
                 // Create sync log entry for contributions update
                 var contributionsSyncLog = new GitHubSyncLog
@@ -516,15 +554,70 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                     _logger.LogDebug("Processed {ContributionCount} user contributions for project {ProjectId}", contributions.Count, projectId);
 
-                    // Remove old contributions and add new ones
-                    if (repository.Contributions.Any())
+                    // In-place upsert: do not overwrite with empty results and avoid re-inserting existing PKs
+                    var existingByUser = repository.Contributions.ToDictionary(c => c.UserId, c => c);
+                    foreach (var incoming in contributions)
                     {
-                        _logger.LogDebug("Removing {OldContributionCount} old contributions for project {ProjectId}", repository.Contributions.Count, projectId);
-                        _context.Set<GitHubContribution>().RemoveRange(repository.Contributions);
+                        bool hasMeaningfulData = incoming.TotalCommits > 0 || incoming.TotalIssuesCreated > 0 || incoming.TotalPullRequestsCreated > 0 || incoming.TotalReviews > 0;
+
+                        if (existingByUser.TryGetValue(incoming.UserId, out var existing))
+                        {
+                            if (hasMeaningfulData)
+                            {
+                                // Copy fields onto the existing tracked entity
+                                existing.GitHubUsername = incoming.GitHubUsername;
+                                existing.CalculatedAtUtc = incoming.CalculatedAtUtc;
+                                existing.DaysPeriod = incoming.DaysPeriod;
+                                existing.TotalCommits = incoming.TotalCommits;
+                                existing.TotalAdditions = incoming.TotalAdditions;
+                                existing.TotalDeletions = incoming.TotalDeletions;
+                                existing.TotalLinesChanged = incoming.TotalLinesChanged;
+                                existing.UniqueDaysWithCommits = incoming.UniqueDaysWithCommits;
+                                existing.TotalIssuesCreated = incoming.TotalIssuesCreated;
+                                existing.OpenIssuesCreated = incoming.OpenIssuesCreated;
+                                existing.ClosedIssuesCreated = incoming.ClosedIssuesCreated;
+                                existing.IssuesCommentedOn = incoming.IssuesCommentedOn;
+                                existing.IssuesAssigned = incoming.IssuesAssigned;
+                                existing.IssuesClosed = incoming.IssuesClosed;
+                                existing.TotalPullRequestsCreated = incoming.TotalPullRequestsCreated;
+                                existing.OpenPullRequestsCreated = incoming.OpenPullRequestsCreated;
+                                existing.MergedPullRequestsCreated = incoming.MergedPullRequestsCreated;
+                                existing.ClosedPullRequestsCreated = incoming.ClosedPullRequestsCreated;
+                                existing.PullRequestsReviewed = incoming.PullRequestsReviewed;
+                                existing.PullRequestsApproved = incoming.PullRequestsApproved;
+                                existing.PullRequestsRequestedChanges = incoming.PullRequestsRequestedChanges;
+                                existing.TotalReviews = incoming.TotalReviews;
+                                existing.ReviewsApproved = incoming.ReviewsApproved;
+                                existing.ReviewsRequestedChanges = incoming.ReviewsRequestedChanges;
+                                existing.ReviewsCommented = incoming.ReviewsCommented;
+                                existing.CommitsByDayOfWeek = incoming.CommitsByDayOfWeek;
+                                existing.CommitsByHour = incoming.CommitsByHour;
+                                existing.ActivityByMonth = incoming.ActivityByMonth;
+                                existing.FilesModified = incoming.FilesModified;
+                                existing.LanguagesContributed = incoming.LanguagesContributed;
+                                existing.LongestStreak = incoming.LongestStreak;
+                                existing.CurrentStreak = incoming.CurrentStreak;
+                                existing.CollaboratorsInteractedWith = incoming.CollaboratorsInteractedWith;
+                                existing.DiscussionsParticipated = incoming.DiscussionsParticipated;
+                                existing.WikiPagesEdited = incoming.WikiPagesEdited;
+                                existing.FirstCommitDate = incoming.FirstCommitDate;
+                                existing.LastCommitDate = incoming.LastCommitDate;
+                                existing.AverageCommitSize = incoming.AverageCommitSize;
+                                existing.AverageReviewTime = incoming.AverageReviewTime;
+                            }
+                            // else: skip updating to preserve last good snapshot
+                        }
+                        else
+                        {
+                            if (hasMeaningfulData)
+                            {
+                                // New contributor snapshot to insert
+                                _context.Set<GitHubContribution>().Add(incoming);
+                                repository.Contributions.Add(incoming);
+                            }
+                            // else: no previous and no data -> skip
+                        }
                     }
-                    
-                    repository.Contributions = contributions;
-                    _context.Set<GitHubContribution>().AddRange(contributions);
 
                     await _context.SaveChangesAsync();
                     
@@ -556,7 +649,7 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<List<GitHubContribution>> GetUserContributionsAsync(Guid projectId, int daysPeriod = 30)
+        public async Task<List<GitHubContribution>> GetUserContributionsAsync(Guid projectId, int daysPeriod = 30, bool force = false)
         {
             try
             {
@@ -564,6 +657,22 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (repository?.Contributions == null)
                 {
                     return new List<GitHubContribution>();
+                }
+
+                // If forced or stale, refresh before returning
+                var latest = repository.Contributions.OrderByDescending(c => c.CalculatedAtUtc).FirstOrDefault();
+                var freshCutoff = DateTime.UtcNow.AddDays(-1);
+                var minInterval = DateTime.UtcNow.AddHours(-1);
+                var needsRefresh = force || latest == null || latest.CalculatedAtUtc < freshCutoff;
+                if (!force && latest != null && latest.CalculatedAtUtc >= minInterval)
+                {
+                    needsRefresh = false;
+                }
+                if (needsRefresh)
+                {
+                    _logger.LogDebug("Refreshing contributions (force={Force}) for project {ProjectId}", force, projectId);
+                    await EnsureContributionsUpToDateAsync(projectId, daysPeriod, force);
+                    repository = await GetRepositoryAsync(projectId); // reload
                 }
 
                 // Filter contributions by the specified period
@@ -579,11 +688,11 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<GitHubContribution?> GetUserContributionAsync(Guid projectId, Guid userId, int daysPeriod = 30)
+        public async Task<GitHubContribution?> GetUserContributionAsync(Guid projectId, Guid userId, int daysPeriod = 30, bool force = false)
         {
             try
             {
-                var contributions = await GetUserContributionsAsync(projectId, daysPeriod);
+                var contributions = await GetUserContributionsAsync(projectId, daysPeriod, force);
                 return contributions.FirstOrDefault(c => c.UserId == userId);
             }
             catch (Exception ex)
@@ -748,7 +857,19 @@ namespace GainIt.API.Services.GitHub.Implementations
                     return null;
                 }
 
-                var repoStats = await _apiClient.GetRepositoryStatsAsync(repository.OwnerName, repository.RepositoryName);
+                // Short-lived cache for repo stats (10 minutes) using simple static cache
+                var cacheKey = $"repo-stats:{repository.OwnerName}/{repository.RepositoryName}";
+                var (hasCached, cached) = InMemoryGitHubCache.TryGet<GitHubRepositoryStats>(cacheKey);
+                GitHubRepositoryStats repoStats;
+                if (hasCached)
+                {
+                    repoStats = cached!;
+                }
+                else
+                {
+                    repoStats = await _apiClient.GetRepositoryStatsAsync(repository.OwnerName, repository.RepositoryName);
+                    InMemoryGitHubCache.Set(cacheKey, repoStats, TimeSpan.FromMinutes(10));
+                }
                 var analytics = await GetProjectAnalyticsAsync(projectId);
                 var contributions = await GetUserContributionsAsync(projectId);
 
@@ -777,7 +898,8 @@ namespace GainIt.API.Services.GitHub.Implementations
                     LastSyncedAtUtc = repository.LastSyncedAtUtc,
                     IssueCount = repoStats.IssueCount,
                     PullRequestCount = repoStats.PullRequestCount,
-                    BranchCount = repoStats.BranchCount,
+                    BranchCount = repository.Branches?.Count ?? 0, // Use stored branch count
+                    Branches = repository.Branches ?? new List<string>(), // ← Add actual branch names
                     ReleaseCount = repoStats.ReleaseCount,
                     Contributors = contributions.Count,
                     TopContributors = contributions
@@ -846,7 +968,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 {
                     var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
                         rawSummary, 
-                        $"Analyze this user's GitHub activity and provide insights about their contribution patterns, strengths, and areas for improvement"
+                        $"Analyze this user's GitHub activity and provide insights about their contribution patterns, strengths, and areas for improvement, adress the user in the first person, try to make the response consice and to the point"
                     );
                     
                     _logger.LogInformation("Successfully generated AI-enhanced user activity summary for user {UserId} in project {ProjectId}", userId, projectId);
@@ -885,7 +1007,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 {
                     var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
                         rawSummary, 
-                        $"Analyze this project's GitHub activity and provide insights about project health, team performance, and recommendations for improvement"
+                        $"Analyze this project's GitHub activity and provide insights about project health, team performance, and recommendations for improvement,  make the response consice and to the point"
                     );
                     
                     _logger.LogInformation("Successfully generated AI-enhanced project activity summary for project {ProjectId}", projectId);

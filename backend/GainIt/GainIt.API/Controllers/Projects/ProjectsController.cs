@@ -4,6 +4,7 @@ using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
 using GainIt.API.Services.Projects.Implementations;
+using GainIt.API.Services.GitHub.Interfaces;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.CompilerServices;
@@ -19,15 +20,18 @@ namespace GainIt.API.Controllers.Projects
         private readonly IProjectService r_ProjectService;
         
         private readonly IProjectMatchingService r_ProjectMatchingService;
+        private readonly IGitHubService r_GitHubService;
         private readonly ILogger<ProjectsController> r_logger;
 
         public ProjectsController(
             IProjectService i_ProjectService, 
             IProjectMatchingService r_ProjectMatchingService,
+            IGitHubService gitHubService,
             ILogger<ProjectsController> logger)
         {
             r_ProjectService = i_ProjectService;
             this.r_ProjectMatchingService = r_ProjectMatchingService;
+            r_GitHubService = gitHubService;
             r_logger = logger;
         }
 
@@ -561,6 +565,14 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
+                // Validate GitHub URL before persisting
+                var isValid = await r_GitHubService.ValidateRepositoryUrlAsync(repositoryLink);
+                if (!isValid)
+                {
+                    r_logger.LogWarning("Invalid GitHub repository URL provided for project {ProjectId}: {RepositoryLink}", projectId, repositoryLink);
+                    return BadRequest(new { Message = "Invalid or inaccessible GitHub repository URL. Only *public* repos are supported." });
+                }
+
                 UserProject updatedProject = await r_ProjectService.UpdateRepositoryLinkAsync(projectId, repositoryLink);
 
                 UserProjectViewModel userProjectViewModel = new UserProjectViewModel(updatedProject);

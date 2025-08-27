@@ -20,9 +20,19 @@ namespace GainIt.API.Services.GitHub.Interfaces
         Task<List<GitHubAnalyticsCommitNode>> GetUserContributionsAsync(string owner, string name, string username, int daysPeriod = 30);
 
         /// <summary>
+        /// Gets user contribution data for a specific branch in a repository
+        /// </summary>
+        Task<List<GitHubAnalyticsCommitNode>> GetUserContributionsForBranchAsync(string owner, string name, string username, string branch, int daysPeriod = 30);
+
+        /// <summary>
         /// Gets commit history for a repository
         /// </summary>
         Task<List<GitHubAnalyticsCommitNode>> GetCommitHistoryAsync(string owner, string name, int daysPeriod = 30);
+
+        /// <summary>
+        /// Gets detailed information for a specific commit (includes stats and files)
+        /// </summary>
+        Task<GitHubRestApiCommit?> GetCommitDetailsAsync(string owner, string name, string sha);
 
         /// <summary>
         /// Gets issues for a repository
@@ -33,6 +43,11 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// Gets pull requests for a repository
         /// </summary>
         Task<List<GitHubPullRequestNode>> GetPullRequestsAsync(string owner, string name, int daysPeriod = 30);
+
+        /// <summary>
+        /// Gets reviews for a specific pull request
+        /// </summary>
+        Task<List<GitHubPullRequestReviewNode>> GetPullRequestReviewsAsync(string owner, string name, int pullNumber);
 
         /// <summary>
         /// Gets repository statistics (stars, forks, etc.)

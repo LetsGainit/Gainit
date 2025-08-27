@@ -585,12 +585,19 @@ namespace GainIt.API.Models.Projects
 
     public class GitHubIssueNode
     {
+        [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
+        [JsonPropertyName("title")]
         public string Title { get; set; } = string.Empty;
+        [JsonPropertyName("state")]
         public string State { get; set; } = string.Empty;
+        [JsonPropertyName("created_at")]
         public DateTime CreatedAt { get; set; }
+        [JsonPropertyName("updated_at")]
         public DateTime? UpdatedAt { get; set; }
+        [JsonPropertyName("closed_at")]
         public DateTime? ClosedAt { get; set; }
+        [JsonPropertyName("user")]
         public GitHubRestApiUser? User { get; set; }
         public List<string> Labels { get; set; } = new List<string>();
         public int Comments { get; set; }
@@ -599,21 +606,50 @@ namespace GainIt.API.Models.Projects
 
     public class GitHubPullRequestNode
     {
+        [JsonPropertyName("number")]
+        public int Number { get; set; }
+        [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
+        [JsonPropertyName("title")]
         public string Title { get; set; } = string.Empty;
+        [JsonPropertyName("state")]
         public string State { get; set; } = string.Empty;
+        [JsonPropertyName("created_at")]
         public DateTime CreatedAt { get; set; }
+        [JsonPropertyName("updated_at")]
         public DateTime? UpdatedAt { get; set; }
+        [JsonPropertyName("closed_at")]
         public DateTime? ClosedAt { get; set; }
+        [JsonPropertyName("merged_at")]
         public DateTime? MergedAt { get; set; }
+        [JsonPropertyName("user")]
         public GitHubRestApiUser? User { get; set; }
+        [JsonPropertyName("merged_by")]
         public GitHubRestApiUser? MergedBy { get; set; }
+        [JsonPropertyName("body")]
         public string? Body { get; set; }
         public int Additions { get; set; }
         public int Deletions { get; set; }
         public int ChangedFiles { get; set; }
-        public string HeadRef { get; set; } = string.Empty;
-        public string BaseRef { get; set; } = string.Empty;
+        [JsonPropertyName("head")]
+        public object? Head { get; set; }
+        [JsonPropertyName("base")]
+        public object? Base { get; set; }
+    }
+
+    public class GitHubPullRequestReviewNode
+    {
+        [JsonPropertyName("id")]
+        public long Id { get; set; }
+
+        [JsonPropertyName("user")]
+        public GitHubRestApiCommitUser? User { get; set; }
+
+        [JsonPropertyName("state")]
+        public string State { get; set; } = string.Empty; // APPROVED, CHANGES_REQUESTED, COMMENTED, etc.
+
+        [JsonPropertyName("submitted_at")]
+        public DateTime? SubmittedAt { get; set; }
     }
 
     #endregion

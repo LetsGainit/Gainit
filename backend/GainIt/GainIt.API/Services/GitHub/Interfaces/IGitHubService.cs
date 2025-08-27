@@ -28,17 +28,17 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// <summary>
         /// Gets project-level analytics for a repository
         /// </summary>
-        Task<GitHubAnalytics?> GetProjectAnalyticsAsync(Guid projectId, int daysPeriod = 30);
+        Task<GitHubAnalytics?> GetProjectAnalyticsAsync(Guid projectId, int daysPeriod = 30, bool force = false);
 
         /// <summary>
         /// Gets user-level contribution analytics for a repository
         /// </summary>
-        Task<List<GitHubContribution>> GetUserContributionsAsync(Guid projectId, int daysPeriod = 30);
+        Task<List<GitHubContribution>> GetUserContributionsAsync(Guid projectId, int daysPeriod = 30, bool force = false);
 
         /// <summary>
         /// Gets contribution analytics for a specific user in a repository
         /// </summary>
-        Task<GitHubContribution?> GetUserContributionAsync(Guid projectId, Guid userId, int daysPeriod = 30);
+        Task<GitHubContribution?> GetUserContributionAsync(Guid projectId, Guid userId, int daysPeriod = 30, bool force = false);
 
         /// <summary>
         /// Syncs all analytics data for a repository

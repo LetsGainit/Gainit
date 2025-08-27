@@ -81,7 +81,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var commits = JsonSerializer.Deserialize<List<GitHubCommitNode>>(content);
+                    var commits = JsonSerializer.Deserialize<List<GitHubRestApiCommit>>(content);
                     
                     // Update rate limit
                     await UpdateRateLimitAsync(response);
@@ -99,13 +99,17 @@ namespace GainIt.API.Services.GitHub.Implementations
                                         TotalCount = commits.Count,
                                         Nodes = commits.Select(c => new GitHubAnalyticsCommitNode
                                         {
-                                            Id = c.Id,
-                                            Message = c.Message,
-                                            CommittedDate = c.CommittedDate,
-                                            Author = c.Author,
-                                            Additions = c.Additions,
-                                            Deletions = c.Deletions,
-                                            ChangedFiles = c.ChangedFiles
+                                            Id = c.Sha,
+                                            Message = c.Commit.Message,
+                                            CommittedDate = c.Commit.Author.Date,
+                                            Author = new GitHubCommitAuthor 
+                                            { 
+                                                Name = c.Commit.Author.Name, 
+                                                Email = c.Commit.Author.Email 
+                            },
+                                            Additions = c.Stats?.Additions ?? 0,
+                                            Deletions = c.Stats?.Deletions ?? 0,
+                                            ChangedFiles = c.Files?.Count ?? 0
                                         }).ToList()
                                     }
                                 }
@@ -167,7 +171,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var commits = JsonSerializer.Deserialize<List<GitHubCommitNode>>(content);
+                    var commits = JsonSerializer.Deserialize<List<GitHubRestApiCommit>>(content);
                     
                     await UpdateRateLimitAsync(response);
                     
@@ -175,13 +179,17 @@ namespace GainIt.API.Services.GitHub.Implementations
                     {
                         var contributions = commits.Select(c => new GitHubAnalyticsCommitNode
                         {
-                            Id = c.Id,
-                            Message = c.Message,
-                            CommittedDate = c.CommittedDate,
-                            Author = c.Author,
-                            Additions = c.Additions,
-                            Deletions = c.Deletions,
-                            ChangedFiles = c.ChangedFiles
+                            Id = c.Sha,
+                            Message = c.Commit.Message,
+                            CommittedDate = c.Commit.Author.Date,
+                            Author = new GitHubCommitAuthor 
+                            { 
+                                Name = c.Commit.Author.Name, 
+                                Email = c.Commit.Author.Email 
+                            },
+                            Additions = c.Stats?.Additions ?? 0,
+                            Deletions = c.Stats?.Deletions ?? 0,
+                            ChangedFiles = c.Files?.Count ?? 0
                         }).ToList();
                         
                         _logger.LogInformation("User contributions retrieved for {Username} in {Owner}/{Name}: {CommitCount} commits", 
@@ -220,6 +228,82 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
+        public async Task<List<GitHubAnalyticsCommitNode>> GetUserContributionsForBranchAsync(string owner, string name, string username, string branch, int daysPeriod = 30)
+        {
+            _logger.LogInformation("Getting user contributions for {Username} in {Owner}/{Name} on branch {Branch} via REST API", username, owner, name, branch);
+            
+            try
+            {
+                if (!await HasRateLimitQuotaAsync(1))
+                {
+                    throw new InvalidOperationException("GitHub API rate limit exceeded");
+                }
+
+                var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
+                var endpoint = $"repos/{owner}/{name}/commits?sha={branch}&author={username}&since={since}&per_page=100";
+                
+                var response = await _httpClient.GetAsync(endpoint);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var commits = JsonSerializer.Deserialize<List<GitHubRestApiCommit>>(content);
+                    
+                    await UpdateRateLimitAsync(response);
+                    
+                    if (commits != null)
+                    {
+                        var contributions = commits.Select(c => new GitHubAnalyticsCommitNode
+                        {
+                            Id = c.Sha,
+                            Message = c.Commit.Message,
+                            CommittedDate = c.Commit.Author.Date,
+                            Author = new GitHubCommitAuthor 
+                            { 
+                                Name = c.Commit.Author.Name, 
+                                Email = c.Commit.Author.Email 
+                            },
+                            Additions = c.Stats?.Additions ?? 0,
+                            Deletions = c.Stats?.Deletions ?? 0,
+                            ChangedFiles = c.Files?.Count ?? 0
+                        }).ToList();
+                        
+                        _logger.LogInformation("User contributions retrieved for {Username} in {Owner}/{Name} on branch {Branch}: {CommitCount} commits", 
+                            username, owner, name, branch, contributions.Count);
+                        
+                        return contributions;
+                    }
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("GitHub REST API error for user contributions {Owner}/{Name} on branch {Branch}: {StatusCode} - {Content}", 
+                        owner, name, branch, response.StatusCode, errorContent);
+                    
+                    await UpdateRateLimitAsync(response);
+            }
+
+            return new List<GitHubAnalyticsCommitNode>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user contributions for {Username} in {Owner}/{Name} on branch {Branch}", username, owner, name, branch);
+            return new List<GitHubAnalyticsCommitNode>();
+            }
+            finally
+            {
+                await _rateLimitSemaphore.WaitAsync();
+                try
+                {
+                    _remainingRequests = Math.Max(0, _remainingRequests - 1);
+                }
+                finally
+                {
+                    _rateLimitSemaphore.Release();
+                }
+            }
+        }
+
         public async Task<List<GitHubAnalyticsCommitNode>> GetCommitHistoryAsync(string owner, string name, int daysPeriod = 30)
         {
             _logger.LogInformation("Getting commit history for {Owner}/{Name} via REST API", owner, name);
@@ -231,7 +315,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     throw new InvalidOperationException("GitHub API rate limit exceeded");
                 }
 
-                var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
                 var endpoint = $"repos/{owner}/{name}/commits?since={since}&per_page=100";
                 
                 var response = await _httpClient.GetAsync(endpoint);
@@ -239,7 +323,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    var commits = JsonSerializer.Deserialize<List<GitHubCommitNode>>(content);
+                    var commits = JsonSerializer.Deserialize<List<GitHubRestApiCommit>>(content);
                     
                     await UpdateRateLimitAsync(response);
                     
@@ -247,13 +331,17 @@ namespace GainIt.API.Services.GitHub.Implementations
                     {
                         var commitHistory = commits.Select(c => new GitHubAnalyticsCommitNode
                         {
-                            Id = c.Id,
-                            Message = c.Message,
-                            CommittedDate = c.CommittedDate,
-                            Author = c.Author,
-                            Additions = c.Additions,
-                            Deletions = c.Deletions,
-                            ChangedFiles = c.ChangedFiles
+                            Id = c.Sha,
+                            Message = c.Commit.Message,
+                            CommittedDate = c.Commit.Author.Date,
+                            Author = new GitHubCommitAuthor 
+                            { 
+                                Name = c.Commit.Author.Name, 
+                                Email = c.Commit.Author.Email 
+                            },
+                            Additions = c.Stats?.Additions ?? 0,
+                            Deletions = c.Stats?.Deletions ?? 0,
+                            ChangedFiles = c.Files?.Count ?? 0
                         }).ToList();
                         
                         _logger.LogInformation("Commit history retrieved for {Owner}/{Name}: {CommitCount} commits", 
@@ -269,14 +357,63 @@ namespace GainIt.API.Services.GitHub.Implementations
                         owner, name, response.StatusCode, errorContent);
                     
                     await UpdateRateLimitAsync(response);
-            }
+                }
 
-            return new List<GitHubAnalyticsCommitNode>();
-        }
+                return new List<GitHubAnalyticsCommitNode>();
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting commit history for {Owner}/{Name}", owner, name);
                 return new List<GitHubAnalyticsCommitNode>();
+            }
+            finally
+            {
+                await _rateLimitSemaphore.WaitAsync();
+                try
+                {
+                    _remainingRequests = Math.Max(0, _remainingRequests - 1);
+                }
+                finally
+                {
+                    _rateLimitSemaphore.Release();
+                }
+            }
+        }
+
+        public async Task<GitHubRestApiCommit?> GetCommitDetailsAsync(string owner, string name, string sha)
+        {
+            _logger.LogInformation("Getting commit details for {Owner}/{Name}@{Sha} via REST API", owner, name, sha);
+            try
+            {
+                if (!await HasRateLimitQuotaAsync(1))
+                {
+                    throw new InvalidOperationException("GitHub API rate limit exceeded");
+                }
+
+                var endpoint = $"repos/{owner}/{name}/commits/{sha}";
+                var response = await _httpClient.GetAsync(endpoint);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var commit = JsonSerializer.Deserialize<GitHubRestApiCommit>(content);
+                    await UpdateRateLimitAsync(response);
+                    return commit;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("GitHub REST API error for commit details {Owner}/{Name}@{Sha}: {StatusCode} - {Content}", 
+                        owner, name, sha, response.StatusCode, errorContent);
+                    await UpdateRateLimitAsync(response);
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting commit details for {Owner}/{Name}@{Sha}", owner, name, sha);
+                return null;
             }
             finally
             {
@@ -330,9 +467,9 @@ namespace GainIt.API.Services.GitHub.Implementations
                         owner, name, response.StatusCode, errorContent);
                     
                     await UpdateRateLimitAsync(response);
-                }
-                
-                return new List<GitHubIssueNode>();
+            }
+
+            return new List<GitHubIssueNode>();
             }
             catch (Exception ex)
             {
@@ -364,7 +501,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     throw new InvalidOperationException("GitHub API rate limit exceeded");
                 }
 
-                var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
                 var endpoint = $"repos/{owner}/{name}/pulls?state=all&per_page=100";
                 
                 var response = await _httpClient.GetAsync(endpoint);
@@ -399,6 +536,55 @@ namespace GainIt.API.Services.GitHub.Implementations
             {
                 _logger.LogError(ex, "Error getting pull requests for {Owner}/{Name}", owner, name);
                 return new List<GitHubPullRequestNode>();
+            }
+            finally
+            {
+                await _rateLimitSemaphore.WaitAsync();
+                try
+                {
+                    _remainingRequests = Math.Max(0, _remainingRequests - 1);
+                }
+                finally
+                {
+                    _rateLimitSemaphore.Release();
+                }
+            }
+        }
+
+        public async Task<List<GitHubPullRequestReviewNode>> GetPullRequestReviewsAsync(string owner, string name, int pullNumber)
+        {
+            _logger.LogInformation("Getting pull request reviews for {Owner}/{Name} PR #{PR}", owner, name, pullNumber);
+            try
+            {
+                if (!await HasRateLimitQuotaAsync(1))
+                {
+                    throw new InvalidOperationException("GitHub API rate limit exceeded");
+                }
+
+                var endpoint = $"repos/{owner}/{name}/pulls/{pullNumber}/reviews";
+                var response = await _httpClient.GetAsync(endpoint);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var reviews = JsonSerializer.Deserialize<List<GitHubPullRequestReviewNode>>(content);
+                    await UpdateRateLimitAsync(response);
+                    return reviews ?? new List<GitHubPullRequestReviewNode>();
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("GitHub REST API error for PR reviews {Owner}/{Name} PR #{PR}: {StatusCode} - {Content}", 
+                        owner, name, pullNumber, response.StatusCode, errorContent);
+                    await UpdateRateLimitAsync(response);
+                }
+
+                return new List<GitHubPullRequestReviewNode>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting PR reviews for {Owner}/{Name} PR #{PR}", owner, name, pullNumber);
+                return new List<GitHubPullRequestReviewNode>();
             }
             finally
             {
@@ -464,9 +650,9 @@ namespace GainIt.API.Services.GitHub.Implementations
                         owner, name, response.StatusCode, errorContent);
                     
                     await UpdateRateLimitAsync(response);
-                }
-                
-                return new GitHubRepositoryStats();
+            }
+
+            return new GitHubRepositoryStats();
             }
             catch (Exception ex)
             {

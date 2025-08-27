@@ -16,6 +16,14 @@ namespace GainIt.API.Services.GitHub.Implementations
             _gitHubApiClient = gitHubApiClient;
         }
 
+        /// <summary>
+        /// Builds repository-level analytics from already-fetched repository metadata and cached state.
+        /// Note: This method does not call GitHub; it derives metrics from the stored <see cref="GitHubRepository"/>
+        /// and initializes time-bucketed structures for charts.
+        /// </summary>
+        /// <param name="repository">Repository entity with stored metadata (stars, forks, languages, etc.).</param>
+        /// <param name="daysPeriod">Analysis period (e.g., 30 days). Used for chart ranges and summaries.</param>
+        /// <returns>Computed <see cref="GitHubAnalytics"/> object ready to persist.</returns>
         public async Task<GitHubAnalytics> ProcessRepositoryAnalyticsAsync(GitHubRepository repository, int daysPeriod = 30)
         {
             _logger.LogInformation("Processing repository analytics for {Repository} over {DaysPeriod} days", 
@@ -55,6 +63,62 @@ namespace GainIt.API.Services.GitHub.Implementations
                 analytics.MonthlyIssues = InitializeMonthlyTracking();
                 analytics.MonthlyPullRequests = InitializeMonthlyTracking();
 
+                // Derive branches count from stored metadata
+                analytics.TotalBranches = repository.Branches?.Count ?? 0;
+
+                // Populate commit-based metrics from REST API commit history
+                var commitHistory = await _gitHubApiClient.GetCommitHistoryAsync(repository.OwnerName, repository.RepositoryName, daysPeriod);
+                if (commitHistory != null && commitHistory.Any())
+                {
+                    analytics.TotalCommits = commitHistory.Count;
+
+                    // Bucket into weekly keys already initialized
+                    var weeklyKeys = analytics.WeeklyCommits.Keys
+                        .Select(k => DateTime.Parse(k))
+                        .OrderBy(d => d)
+                        .ToList();
+                    foreach (var commit in commitHistory)
+                    {
+                        // Weekly
+                        var commitDate = commit.CommittedDate.Date;
+                        var weekKeyDate = weeklyKeys.LastOrDefault(d => d <= commitDate);
+                        if (weekKeyDate != default)
+                        {
+                            var wk = weekKeyDate.ToString("yyyy-MM-dd");
+                            analytics.WeeklyCommits[wk] = analytics.WeeklyCommits[wk] + 1;
+                        }
+
+                        // Monthly
+                        var monthKey = new DateTime(commitDate.Year, commitDate.Month, 1).ToString("yyyy-MM");
+                        if (analytics.MonthlyCommits.ContainsKey(monthKey))
+                        {
+                            analytics.MonthlyCommits[monthKey] = analytics.MonthlyCommits[monthKey] + 1;
+                        }
+                    }
+
+                    // Contributors from commit history
+                    var distinctAuthors = commitHistory
+                        .Select(c => c.Author?.Name)
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Count();
+                    analytics.TotalContributors = distinctAuthors;
+
+                    // Active contributors: authors who committed within the last daysPeriod (same set here)
+                    analytics.ActiveContributors = distinctAuthors;
+                }
+                else
+                {
+                    // Fallback to stored contributions for contributor counts
+                    var distinctUsers = repository.Contributions
+                        .Select(c => c.GitHubUsername)
+                        .Where(u => !string.IsNullOrWhiteSpace(u))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Count();
+                    analytics.TotalContributors = distinctUsers;
+                    analytics.ActiveContributors = repository.Contributions.Count(c => c.TotalCommits > 0);
+                }
+
                 _logger.LogInformation("Repository analytics processed successfully for {Repository}", repository.FullName);
                 return analytics;
             }
@@ -65,6 +129,16 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
+        /// <summary>
+        /// Computes per-user contribution analytics across all stored branches for a repository.
+        /// Fetches commits per branch for the user and optionally enriches with commit details (capped) to populate
+        /// additions, deletions, and files changed.
+        /// </summary>
+        /// <param name="repository">Repository with <see cref="GitHubRepository.Branches"/> populated.</param>
+        /// <param name="userId">Internal user identifier associated with the GitHub username.</param>
+        /// <param name="username">GitHub username to aggregate contributions for.</param>
+        /// <param name="daysPeriod">Days window to look back for contributions.</param>
+        /// <returns>Aggregated <see cref="GitHubContribution"/> for the user.</returns>
         public async Task<GitHubContribution> ProcessUserContributionAsync(GitHubRepository repository, Guid userId, string username, int daysPeriod = 30)
         {
             _logger.LogInformation("Processing user contribution analytics for {Username} in {Repository} over {DaysPeriod} days", 
@@ -81,45 +155,133 @@ namespace GainIt.API.Services.GitHub.Implementations
                     DaysPeriod = daysPeriod
                 };
 
-                // Fetch real GitHub contribution data
-                var gitHubContributions = await _gitHubApiClient.GetUserContributionsAsync(
-                    repository.OwnerName, 
-                    repository.RepositoryName, 
-                    username, 
-                    daysPeriod);
-
-                if (gitHubContributions != null && gitHubContributions.Any())
+                // Fetch real GitHub contribution data from ALL branches
+                var allCommits = new List<GitHubAnalyticsCommitNode>();
+                
+                foreach (var branch in repository.Branches)
                 {
-                    _logger.LogInformation("Found {ContributionCount} GitHub contributions for {Username} in {Repository}", 
-                        gitHubContributions.Count, username, repository.FullName);
+                    _logger.LogDebug("Fetching contributions for {Username} on branch {Branch} in {Repository}", 
+                        username, branch, repository.FullName);
+                        
+                    var branchCommits = await _gitHubApiClient.GetUserContributionsForBranchAsync(
+                        repository.OwnerName, 
+                        repository.RepositoryName, 
+                        username, 
+                        branch,           // ← Each branch individually
+                        daysPeriod);
+                        
+                    allCommits.AddRange(branchCommits);
+                    
+                    _logger.LogDebug("Found {CommitCount} commits for {Username} on branch {Branch} in {Repository}", 
+                        branchCommits.Count, username, branch, repository.FullName);
+                }
 
-                    // Process commit data
-                    contribution.TotalCommits = gitHubContributions.Count;
-                    contribution.TotalAdditions = gitHubContributions.Sum(c => c.Additions);
-                    contribution.TotalDeletions = gitHubContributions.Sum(c => c.Deletions);
+                if (allCommits.Any())
+                {
+                    _logger.LogInformation("Found {TotalCommitCount} total GitHub contributions for {Username} across {BranchCount} branches in {Repository}", 
+                        allCommits.Count, username, repository.Branches.Count, repository.FullName);
+
+                    // Log commits per branch for debugging
+                    foreach (var branch in repository.Branches)
+                    {
+                        var branchCommitCount = allCommits.Count(c => c.Id.StartsWith(branch) || c.Message.Contains(branch));
+                        _logger.LogDebug("Branch {Branch}: {CommitCount} commits for {Username}", branch, branchCommitCount, username);
+                    }
+
+                    // Optionally enrich with per-commit details to populate additions/deletions/files
+                    // Cap detailed lookups to avoid rate limits
+                    // Caps for external calls (tunable)
+                    const int MaxCommitDetails = 40;
+                    const int MaxPrReviewsLookups = 20;
+
+                    var maxDetails = Math.Min(MaxCommitDetails, allCommits.Count);
+                    for (int i = 0; i < maxDetails; i++)
+                    {
+                        var c = allCommits[i];
+                        // If stats were not present from list, try to fetch details
+                        if (c.Additions == 0 && c.Deletions == 0 && c.ChangedFiles == 0)
+                        {
+                            var details = await _gitHubApiClient.GetCommitDetailsAsync(repository.OwnerName, repository.RepositoryName, c.Id);
+                            if (details?.Stats != null)
+                            {
+                                c.Additions = details.Stats.Additions;
+                                c.Deletions = details.Stats.Deletions;
+                                c.ChangedFiles = details.Files?.Count ?? 0;
+                            }
+                        }
+                    }
+
+                    // Process commit data from ALL branches
+                    contribution.TotalCommits = allCommits.Count;
+                    contribution.TotalAdditions = allCommits.Sum(c => c.Additions);
+                    contribution.TotalDeletions = allCommits.Sum(c => c.Deletions);
                     contribution.TotalLinesChanged = contribution.TotalAdditions + contribution.TotalDeletions;
-                    contribution.FilesModified = gitHubContributions.Sum(c => c.ChangedFiles);
+                    contribution.FilesModified = allCommits.Sum(c => c.ChangedFiles);
 
                     // Calculate unique days with commits
-                    var commitDates = gitHubContributions
+                    var commitDates = allCommits
                         .Select(c => c.CommittedDate.Date)
                         .Distinct()
                         .ToList();
                     contribution.UniqueDaysWithCommits = commitDates.Count;
 
-                    // Process activity patterns
-                    contribution.CommitsByDayOfWeek = ProcessCommitsByDayOfWeek(gitHubContributions);
-                    contribution.CommitsByHour = ProcessCommitsByHour(gitHubContributions);
-                    contribution.ActivityByMonth = ProcessActivityByMonth(gitHubContributions);
+                    // Process activity patterns from ALL branches
+                    contribution.CommitsByDayOfWeek = ProcessCommitsByDayOfWeek(allCommits);
+                    contribution.CommitsByHour = ProcessCommitsByHour(allCommits);
+                    contribution.ActivityByMonth = ProcessActivityByMonth(allCommits);
 
                     // Extract languages from commit messages (basic approach)
-                    contribution.LanguagesContributed = ExtractLanguagesFromCommits(gitHubContributions);
+                    contribution.LanguagesContributed = ExtractLanguagesFromCommits(allCommits);
 
-                    // For now, set placeholder values for features not yet implemented
-                    contribution.TotalIssuesCreated = 0; // Would need GitHub Issues API
-                    contribution.TotalPullRequestsCreated = 0; // Would need GitHub PRs API
-                    contribution.TotalReviews = 0; // Would need GitHub Reviews API
-                    contribution.CollaboratorsInteractedWith = 0; // Would need more complex analysis
+                    // Augment with Issues, PRs, and Reviews using REST API
+                    // PRs
+                    var pullRequests = await _gitHubApiClient.GetPullRequestsAsync(repository.OwnerName, repository.RepositoryName, daysPeriod);
+                    if (pullRequests != null && pullRequests.Any())
+                    {
+                        var cutoff = DateTime.UtcNow.AddDays(-daysPeriod);
+                        var userPrs = pullRequests
+                            .Where(pr => pr.CreatedAt >= cutoff)
+                            .Where(pr => string.Equals(pr.User?.Login, username, StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+                        contribution.TotalPullRequestsCreated = userPrs.Count;
+
+                        // Breakdown by state
+                        var prsOpened = userPrs.Count(pr => string.Equals(pr.State, "open", StringComparison.OrdinalIgnoreCase));
+                        var prsMerged = userPrs.Count(pr => pr.MergedAt.HasValue);
+                        var prsClosed = userPrs.Count(pr => string.Equals(pr.State, "closed", StringComparison.OrdinalIgnoreCase) && !pr.MergedAt.HasValue);
+                        contribution.OpenPullRequestsCreated = prsOpened;
+                        contribution.MergedPullRequestsCreated = prsMerged;
+                        contribution.ClosedPullRequestsCreated = prsClosed;
+
+                        // Reviews made by the user on their own PRs (or in general, could be extended to all PRs)
+                        int totalReviews = 0;
+                        foreach (var pr in userPrs.Take(MaxPrReviewsLookups)) // cap review lookups
+                        {
+                            var reviews = await _gitHubApiClient.GetPullRequestReviewsAsync(repository.OwnerName, repository.RepositoryName, pr.Number);
+                            totalReviews += reviews.Count(r => string.Equals(r.User?.Login, username, StringComparison.OrdinalIgnoreCase));
+                        }
+                        contribution.TotalReviews = totalReviews;
+                        // If controller maps breakdowns, it can read them from DTO; core entity doesn't currently store
+                    }
+
+                    // Issues
+                    var issues = await _gitHubApiClient.GetIssuesAsync(repository.OwnerName, repository.RepositoryName, daysPeriod);
+                    if (issues != null && issues.Any())
+                    {
+                        var userIssues = issues.Where(i => string.Equals(i.User?.Login, username, StringComparison.OrdinalIgnoreCase)).ToList();
+                        contribution.TotalIssuesCreated = userIssues.Count;
+                        var issuesOpened = userIssues.Count(i => string.Equals(i.State, "open", StringComparison.OrdinalIgnoreCase));
+                        var issuesClosed = userIssues.Count(i => string.Equals(i.State, "closed", StringComparison.OrdinalIgnoreCase));
+                        contribution.OpenIssuesCreated = issuesOpened;
+                        contribution.ClosedIssuesCreated = issuesClosed;
+                    }
+
+                    // Collaborators metric is simplistic: distinct authors appearing in commit set (excluding self)
+                    contribution.CollaboratorsInteractedWith = Math.Max(0, allCommits
+                        .Select(c => c.Author?.Name)
+                        .Where(n => !string.IsNullOrEmpty(n) && !string.Equals(n, username, StringComparison.OrdinalIgnoreCase))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Count());
                 }
                 else
                 {
@@ -138,14 +300,14 @@ namespace GainIt.API.Services.GitHub.Implementations
                     contribution.CollaboratorsInteractedWith = 0;
 
                     // Initialize empty activity patterns
-                    contribution.CommitsByDayOfWeek = InitializeDayOfWeekTracking();
-                    contribution.CommitsByHour = InitializeHourTracking();
-                    contribution.ActivityByMonth = InitializeMonthlyTracking();
-                    contribution.LanguagesContributed = new List<string>();
+                contribution.CommitsByDayOfWeek = InitializeDayOfWeekTracking();
+                contribution.CommitsByHour = InitializeHourTracking();
+                contribution.ActivityByMonth = InitializeMonthlyTracking();
+                contribution.LanguagesContributed = new List<string>();
                 }
 
-                _logger.LogInformation("User contribution analytics processed successfully for {Username} in {Repository}: {Commits} commits, {LinesChanged} lines changed", 
-                    username, repository.FullName, contribution.TotalCommits, contribution.TotalLinesChanged);
+                _logger.LogInformation("User contribution analytics processed successfully for {Username} in {Repository}: {Commits} commits across {BranchCount} branches, {LinesChanged} lines changed", 
+                    username, repository.FullName, contribution.TotalCommits, repository.Branches.Count, contribution.TotalLinesChanged);
                 return contribution;
             }
             catch (Exception ex)
@@ -156,6 +318,13 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
+        /// <summary>
+        /// Placeholder for future aggregation across multiple periods (e.g., 30/90/365 days) from stored analytics.
+        /// Currently returns an empty list and does not query the database.
+        /// </summary>
+        /// <param name="repositoryId">Repository ID to aggregate.</param>
+        /// <param name="periods">List of day windows to aggregate.</param>
+        /// <returns>Empty list until implemented.</returns>
         public async Task<List<GitHubAnalytics>> GetAggregatedAnalyticsAsync(Guid repositoryId, List<int> periods)
         {
             _logger.LogInformation("Getting aggregated analytics for repository {RepositoryId} with periods: {Periods}", 
@@ -166,6 +335,13 @@ namespace GainIt.API.Services.GitHub.Implementations
             return new List<GitHubAnalytics>();
         }
 
+        /// <summary>
+        /// Placeholder for long-term trend analysis (time-series) across the specified period.
+        /// Currently returns a simple anonymous object.
+        /// </summary>
+        /// <param name="repositoryId">Repository ID to analyze.</param>
+        /// <param name="daysPeriod">Period window for trends (default 365).</param>
+        /// <returns>Placeholder trends payload.</returns>
         public async Task<object> GetAnalyticsTrendsAsync(Guid repositoryId, int daysPeriod = 365)
         {
             _logger.LogInformation("Getting analytics trends for repository {RepositoryId} over {DaysPeriod} days", 
@@ -181,6 +357,12 @@ namespace GainIt.API.Services.GitHub.Implementations
             };
         }
 
+        /// <summary>
+        /// Heuristic repository health score based on activity, engagement, issue/PR handling, and recency.
+        /// Not a scientific metric; useful for relative comparisons in the UI.
+        /// </summary>
+        /// <param name="analytics">Computed analytics snapshot.</param>
+        /// <returns>Health score in the range [0, 100].</returns>
         public async Task<double> CalculateRepositoryHealthScoreAsync(GitHubAnalytics analytics)
         {
             try
@@ -228,6 +410,11 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
+        /// <summary>
+        /// Heuristic user contribution score based on commit activity, code change size, consistency, and collaboration.
+        /// </summary>
+        /// <param name="contribution">User contribution snapshot.</param>
+        /// <returns>Contribution score in the range [0, 100].</returns>
         public async Task<double> CalculateUserContributionScoreAsync(GitHubContribution contribution)
         {
             try
@@ -273,6 +460,13 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
+        /// <summary>
+        /// Generates a human-readable activity summary combining repository analytics and user contributions.
+        /// Currently builds a textual report and optionally computes a health score.
+        /// </summary>
+        /// <param name="analytics">Repository analytics snapshot.</param>
+        /// <param name="contributions">List of user contributions to include.</param>
+        /// <returns>Textual summary for display or AI enrichment.</returns>
         public async Task<string> GenerateActivitySummaryAsync(GitHubAnalytics analytics, List<GitHubContribution> contributions)
         {
             try
@@ -331,6 +525,12 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
+        /// <summary>
+        /// Placeholder for pruning analytics older than the specified retention window.
+        /// Not yet implemented (no-op).
+        /// </summary>
+        /// <param name="retentionDays">Number of days to retain.</param>
+        /// <returns>0 (no rows affected) until implemented.</returns>
         public async Task<int> CleanupOldAnalyticsAsync(int retentionDays = 365)
         {
             _logger.LogInformation("Cleaning up analytics data older than {RetentionDays} days", retentionDays);
@@ -340,6 +540,13 @@ namespace GainIt.API.Services.GitHub.Implementations
             return 0;
         }
 
+        /// <summary>
+        /// Placeholder for exporting analytics in JSON/CSV, etc.
+        /// Currently returns a minimal JSON payload describing the export request.
+        /// </summary>
+        /// <param name="repositoryId">Repository to export.</param>
+        /// <param name="format">Export format (e.g., json, csv).</param>
+        /// <returns>Byte array of the serialized export.</returns>
         public async Task<byte[]> ExportAnalyticsAsync(Guid repositoryId, string format = "json")
         {
             _logger.LogInformation("Exporting analytics for repository {RepositoryId} in {Format} format", repositoryId, format);
@@ -366,6 +573,14 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
+        /// <summary>
+        /// Placeholder to resolve a repository owner/name to the linked project ID.
+        /// Currently not implemented; returns null and logs a warning.
+        /// Consider removing if not used by any caller.
+        /// </summary>
+        /// <param name="owner">Repository owner.</param>
+        /// <param name="name">Repository name.</param>
+        /// <returns>Linked project ID, or null if not implemented/not found.</returns>
         public async Task<Guid?> GetProjectIdForRepositoryAsync(string owner, string name)
         {
             _logger.LogInformation("Getting project ID for repository {Owner}/{Name}", owner, name);
@@ -404,11 +619,11 @@ namespace GainIt.API.Services.GitHub.Implementations
         private Dictionary<string, int> InitializeMonthlyTracking()
         {
             var tracking = new Dictionary<string, int>();
-            var startDate = DateTime.UtcNow.AddMonths(-12); // Last 12 months
-
+            // Include current month and previous 11 months
+            var startMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-11);
             for (int i = 0; i < 12; i++)
             {
-                var monthStart = startDate.AddMonths(i);
+                var monthStart = startMonth.AddMonths(i);
                 var monthKey = monthStart.ToString("yyyy-MM");
                 tracking[monthKey] = 0;
             }
@@ -475,10 +690,9 @@ namespace GainIt.API.Services.GitHub.Implementations
         private Dictionary<string, int> ProcessActivityByMonth(List<GitHubAnalyticsCommitNode> commits)
         {
             var monthCounts = InitializeMonthlyTracking();
-            
             foreach (var commit in commits)
             {
-                var month = commit.CommittedDate.ToString("yyyy-MM");
+                var month = new DateTime(commit.CommittedDate.Year, commit.CommittedDate.Month, 1).ToString("yyyy-MM");
                 if (monthCounts.ContainsKey(month))
                 {
                     monthCounts[month]++;

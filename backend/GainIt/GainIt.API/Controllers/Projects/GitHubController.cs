@@ -168,7 +168,7 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("projects/{projectId}/analytics")]
         [ProducesResponseType(typeof(GitHubProjectAnalyticsResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetProjectAnalytics(Guid projectId, [FromQuery] int daysPeriod = 30)
+        public async Task<IActionResult> GetProjectAnalytics(Guid projectId, [FromQuery] int daysPeriod = 30, [FromQuery] bool force = false)
         {
             _logger.LogDebug("GetProjectAnalytics called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
             
@@ -180,8 +180,8 @@ namespace GainIt.API.Controllers.Projects
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
                 }
 
-                _logger.LogDebug("Calling _gitHubService.GetProjectAnalyticsAsync for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
-                var analytics = await _gitHubService.GetProjectAnalyticsAsync(projectId, daysPeriod);
+                _logger.LogDebug("Calling _gitHubService.GetProjectAnalyticsAsync for project {ProjectId} with daysPeriod {DaysPeriod}, force={Force}", projectId, daysPeriod, force);
+                var analytics = await _gitHubService.GetProjectAnalyticsAsync(projectId, daysPeriod, force);
                 
                 if (analytics == null)
                 {
@@ -215,7 +215,7 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("projects/{projectId}/contributions")]
         [ProducesResponseType(typeof(GitHubUserContributionsResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetUserContributions(Guid projectId, [FromQuery] int daysPeriod = 30)
+        public async Task<IActionResult> GetUserContributions(Guid projectId, [FromQuery] int daysPeriod = 30, [FromQuery] bool force = false)
         {
             _logger.LogDebug("GetUserContributions called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
             
@@ -227,8 +227,8 @@ namespace GainIt.API.Controllers.Projects
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
                 }
 
-                _logger.LogDebug("Calling _gitHubService.GetUserContributionsAsync for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
-                var contributions = await _gitHubService.GetUserContributionsAsync(projectId, daysPeriod);
+                _logger.LogDebug("Calling _gitHubService.GetUserContributionsAsync for project {ProjectId} with daysPeriod {DaysPeriod}, force={Force}", projectId, daysPeriod, force);
+                var contributions = await _gitHubService.GetUserContributionsAsync(projectId, daysPeriod, force);
                 
                 _logger.LogDebug("Retrieved {ContributionsCount} contributions for project {ProjectId}", contributions.Count, projectId);
                 
@@ -267,7 +267,7 @@ namespace GainIt.API.Controllers.Projects
         [HttpGet("projects/{projectId}/users/{userId}/contributions")]
         [ProducesResponseType(typeof(GitHubUserContributionDetailResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetUserContribution(Guid projectId, Guid userId, [FromQuery] int daysPeriod = 30)
+        public async Task<IActionResult> GetUserContribution(Guid projectId, Guid userId, [FromQuery] int daysPeriod = 30, [FromQuery] bool force = false)
         {
             try
             {
@@ -276,7 +276,7 @@ namespace GainIt.API.Controllers.Projects
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
                 }
 
-                var contribution = await _gitHubService.GetUserContributionAsync(projectId, userId, daysPeriod);
+                var contribution = await _gitHubService.GetUserContributionAsync(projectId, userId, daysPeriod, force);
                 
                 if (contribution == null)
                 {
@@ -301,7 +301,13 @@ namespace GainIt.API.Controllers.Projects
                         UniqueDaysWithCommits = contribution.UniqueDaysWithCommits,
                         FilesModified = contribution.FilesModified.ToString(),
                         LanguagesContributed = contribution.LanguagesContributed,
-                        CalculatedAtUtc = contribution.CalculatedAtUtc
+                        CalculatedAtUtc = contribution.CalculatedAtUtc,
+                        // Real breakdowns mapped from entity
+                        PullRequestsOpened = contribution.OpenPullRequestsCreated,
+                        PullRequestsMerged = contribution.MergedPullRequestsCreated,
+                        PullRequestsClosed = contribution.ClosedPullRequestsCreated,
+                        IssuesOpened = contribution.OpenIssuesCreated,
+                        IssuesClosed = contribution.ClosedIssuesCreated
                     }
                 };
 

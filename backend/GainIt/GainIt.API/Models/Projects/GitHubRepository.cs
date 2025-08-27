@@ -61,6 +61,9 @@ namespace GainIt.API.Models.Projects
         public bool IsArchived { get; set; } = false;
         public bool IsFork { get; set; } = false;
 
+        // Store all repository branches
+        public List<string> Branches { get; set; } = new();
+
         // Navigation properties
         [ForeignKey("ProjectId")]
         public virtual UserProject Project { get; set; } = null!;

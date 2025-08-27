@@ -13,6 +13,12 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
         public int TotalIssuesCreated { get; set; }
         public int TotalPullRequestsCreated { get; set; }
         public int TotalReviews { get; set; }
+        // Optional breakdowns for richer UI
+        public int PullRequestsOpened { get; set; }
+        public int PullRequestsMerged { get; set; }
+        public int PullRequestsClosed { get; set; }
+        public int IssuesOpened { get; set; }
+        public int IssuesClosed { get; set; }
         public int UniqueDaysWithCommits { get; set; }
         public string? FilesModified { get; set; }
         public List<string> LanguagesContributed { get; set; } = new();
