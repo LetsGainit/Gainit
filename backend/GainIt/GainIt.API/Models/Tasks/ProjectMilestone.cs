@@ -23,7 +23,13 @@ namespace GainIt.API.Models.Tasks
 
         public eMilestoneStatus Status { get; set; } = eMilestoneStatus.Planned;
 
+        public int OrderIndex { get; set; }
+
+        public DateTime? TargetDateUtc { get; set; }
+
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        public Guid CreatedByUserId { get; set; }
 
         [JsonIgnore] public List<ProjectTask> Tasks { get; set; } = new();
     }

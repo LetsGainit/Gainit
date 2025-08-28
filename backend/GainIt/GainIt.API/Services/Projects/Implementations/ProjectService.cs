@@ -13,7 +13,9 @@ namespace GainIt.API.Services.Projects.Implementations
         private readonly GainItDbContext r_DbContext;
         private readonly ILogger<ProjectService> r_logger;
 
-        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger)
+        public ProjectService(
+            GainItDbContext i_DbContext, 
+            ILogger<ProjectService> i_logger)
         {
             r_DbContext = i_DbContext;
             r_logger = i_logger;

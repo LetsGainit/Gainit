@@ -23,7 +23,6 @@ namespace GainIt.API.Models.Tasks
         public eTaskPriority Priority { get; set; } = eTaskPriority.Medium;
 
         public bool IsBlocked { get; set; }
-        [StringLength(300)]
 
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
         public Guid CreatedByUserId { get; set; }

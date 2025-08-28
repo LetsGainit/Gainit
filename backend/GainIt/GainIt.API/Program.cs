@@ -331,7 +331,9 @@ try
         builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
         builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
         builder.Services.AddScoped<IMilestoneService, MilestoneService>();
+        builder.Services.AddScoped<ITaskService, TaskService>();
         builder.Services.AddScoped<ITaskNotificationService, TaskNotificationService>();
+        builder.Services.AddScoped<IPlanningService, PlanningService>();
     
         // GitHub Services
         builder.Services.AddScoped<IGitHubService, GitHubService>();

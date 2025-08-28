@@ -18,5 +18,9 @@ namespace GainIt.API.DTOs.ViewModels.Tasks
         public Guid? AssignedUserId { get; set; }
         public Guid? MilestoneId { get; set; }
         public string? MilestoneTitle { get; set; }
+        
+        // Subtask summary for list views
+        public int SubtaskCount { get; set; }
+        public int CompletedSubtaskCount { get; set; }
     }
 }
