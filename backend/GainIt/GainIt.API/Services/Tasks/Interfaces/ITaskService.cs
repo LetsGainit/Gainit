@@ -9,8 +9,8 @@ namespace GainIt.API.Services.Tasks.Interfaces
         // Queries
         Task<ProjectTaskViewModel?> GetTaskAsync(Guid i_ProjectId, Guid i_TaskId, Guid i_ActorUserId);
 
-        Task<IReadOnlyList<ProjectTaskListItemViewModel>> ListMyTasksAsync(Guid i_ProjectId, Guid i_UserId, TaskListQueryDto i_TaskListQuery);
-        Task<IReadOnlyList<ProjectTaskListItemViewModel>> ListBoardAsync(Guid i_ProjectId, TaskBoardQueryDto i_TaskBoardQuery);
+        //Task<IReadOnlyList<ProjectTaskListItemViewModel>> ListMyTasksAsync(Guid i_ProjectId, Guid i_UserId, TaskListQueryDto i_TaskListQuery);
+        //Task<IReadOnlyList<ProjectTaskListItemViewModel>> ListBoardAsync(Guid i_ProjectId, TaskBoardQueryDto i_TaskBoardQuery);
 
         // CRUD
         Task<ProjectTaskViewModel> CreateAsync(Guid i_ProjectId, ProjectTaskCreateDto i_TaskCreateModel, Guid i_ActorUserId);
