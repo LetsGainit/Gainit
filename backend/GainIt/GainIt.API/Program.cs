@@ -224,12 +224,20 @@ try
     Log.Information("Environment: {Environment}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
     Log.Information("Current Directory: {CurrentDirectory}", Directory.GetCurrentDirectory());
     
-    var b2c = builder.Configuration.GetSection("AzureAdB2C");
-    Log.Information("AzureAdB2C section exists: {Exists}", b2c.Exists());
-    Log.Information("AzureAdB2C section path: {Path}", b2c.Path);
+    // Check both configuration sources
+    var b2cFromBuilder = builder.Configuration.GetSection("AzureAdB2C");
+    var b2cFromSerilog = configuration.GetSection("AzureAdB2C");
     
-    // List all configuration keys from builder.Configuration
-    var allKeys = builder.Configuration.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
+    Log.Information("AzureAdB2C from builder.Configuration - exists: {Exists}, path: {Path}", 
+        b2cFromBuilder.Exists(), b2cFromBuilder.Path);
+    Log.Information("AzureAdB2C from Serilog configuration - exists: {Exists}, path: {Path}", 
+        b2cFromSerilog.Exists(), b2cFromSerilog.Path);
+    
+    // Use the configuration that actually has the values
+    var b2c = b2cFromSerilog.Exists() ? b2cFromSerilog : b2cFromBuilder;
+    
+    // List all configuration keys from the working configuration
+    var allKeys = b2c.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
     Log.Information("Found {Count} Azure AD B2C configuration keys: {Keys}", 
         allKeys.Count, string.Join(", ", allKeys.Select(k => $"{k.Key}={k.Value}")));
     
@@ -273,6 +281,12 @@ try
             ValidIssuer = authority,  // Set the valid issuer
             ValidAudience = b2c["Audience"]  // Set the valid audience
         };
+        
+        // Log the actual values being used for JWT validation
+        Log.Information("=== JWT VALIDATION PARAMETERS ===");
+        Log.Information("ValidIssuer: {ValidIssuer}", authority);
+        Log.Information("ValidAudience: {ValidAudience}", b2c["Audience"]);
+        Log.Information("Authority: {Authority}", authority);
         
         // Add this to see what's happening during JWT validation
         o.Events = new JwtBearerEvents

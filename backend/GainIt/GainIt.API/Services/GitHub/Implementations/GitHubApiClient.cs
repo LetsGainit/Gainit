@@ -43,7 +43,6 @@ namespace GainIt.API.Services.GitHub.Implementations
             if (!string.IsNullOrWhiteSpace(token))
             {
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                _logger.LogInformation("GitHub API client configured with token authentication (env GITHUB_TOKEN or config GitHub:Token)");
             }
             else
             {
