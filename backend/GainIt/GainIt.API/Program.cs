@@ -223,18 +223,40 @@ try
     var authority = $"{b2c["Instance"]!.TrimEnd('/')}/{b2c["Domain"]}/{b2c["SignUpSignInPolicyId"]}/v2.0";
 
     builder.Services
-        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(o =>
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(o =>
+    {
+        o.Authority = authority;
+        o.Audience = b2c["Audience"];
+        o.TokenValidationParameters = new TokenValidationParameters
         {
-            o.Authority = authority;                                            // https://gainitauth.ciamlogin.com/.../GainitauthUF1/v2.0
-            o.Audience = b2c["Audience"];                                      // api://gainitwebapp-...azurewebsites.net
-            o.TokenValidationParameters = new TokenValidationParameters
+            NameClaimType = "name",
+            ValidateIssuer = true,
+            ValidateAudience = true
+        };
+        
+        // Add this to see what's happening during JWT validation
+        o.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
             {
-                NameClaimType = "name",
-                ValidateIssuer = true,
-                ValidateAudience = true
-            };
-        });
+                Log.Error("JWT Authentication failed: {Error}", context.Exception.Message);
+                Log.Error("JWT Authentication failed details: {Details}", context.Exception);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Log.Information("JWT Token validated successfully for user: {User}", context.Principal?.Identity?.Name);
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                Log.Warning("JWT Challenge issued: {Error}", context.Error);
+                Log.Warning("JWT Challenge description: {Description}", context.ErrorDescription);
+                return Task.CompletedTask;
+            }
+        };
+    });
 
     builder.Services.AddAuthorization(options =>
     {
