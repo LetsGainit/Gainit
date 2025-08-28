@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenAI.Chat;
 using System.Text.Json;
+using System.ClientModel;
 
 
 namespace GainIt.API.Services.Projects.Implementations
@@ -240,25 +241,67 @@ namespace GainIt.API.Services.Projects.Implementations
         /// <param name="analyticsSummary">Raw GitHub analytics summary</param>
         /// <param name="userQuery">Optional user query for context</param>
         /// <returns>Enhanced analytics explanation with AI insights</returns>
-        public async Task<string> GetGitHubAnalyticsExplanationAsync(string analyticsSummary, string? userQuery = null)
+        public async Task<string> GetGitHubAnalyticsExplanationAsync(string analyticsSummary, string? userQuery = null, GitHubInsightsMode mode = GitHubInsightsMode.QA)
         {
             r_logger.LogInformation("Generating GitHub analytics explanation: SummaryLength={SummaryLength}, HasUserQuery={HasUserQuery}", 
                 analyticsSummary.Length, !string.IsNullOrEmpty(userQuery));
 
             try
             {
-                var systemPrompt = "You are a GitHub analytics expert that provides intelligent insights and actionable recommendations. " +
-                    "Analyze the provided GitHub analytics data and give insights about:\n" +
-                    "1. Project health and activity levels\n" +
-                    "2. Team performance and contribution patterns\n" +
-                    "3. Areas for improvement and optimization\n" +
-                    "4. Success metrics and achievements\n" +
-                    "Provide clear, actionable recommendations based on the data. " +
-                    "Keep the response professional and focused on business value.";
+                // Truncate overly long summaries to reduce latency and token usage
+                var safeSummary = analyticsSummary.Length > 2000 
+                    ? analyticsSummary.Substring(0, 2000) + "..." 
+                    : analyticsSummary;
 
-                var userPrompt = string.IsNullOrEmpty(userQuery) 
-                    ? $"Analyze this GitHub analytics data and provide insights:\n\n{analyticsSummary}"
-                    : $"User query: {userQuery}\n\nGitHub Analytics:\n{analyticsSummary}\n\nProvide insights relevant to the user's query.";
+                // Light sanitization to avoid triggering content filter and keep questions scoped
+                var safeUserQuery = userQuery?.Trim();
+                if (!string.IsNullOrWhiteSpace(safeUserQuery))
+                {
+                    safeUserQuery = safeUserQuery
+                        .Replace("timeline", "schedule", StringComparison.OrdinalIgnoreCase)
+                        .Replace("finish", "complete", StringComparison.OrdinalIgnoreCase)
+                        .Replace("when ", "", StringComparison.OrdinalIgnoreCase);
+                }
+
+                bool hasQuestion = !string.IsNullOrWhiteSpace(safeUserQuery);
+                string systemPrompt;
+                string userPrompt;
+
+                switch (mode)
+                {
+                    case GitHubInsightsMode.UserSummary:
+                        systemPrompt = "You are a mentor producing a detailed, motivating progress report for a contributor. " +
+                                       "Use only the provided analytics. Output bullet points only. Structure up to 3 sections: " +
+                                       "Activity (5–7 bullets: commits, lines +/- , files, active days, issues/PRs breakdowns, reviews, top day/hour, languages, streaks, latest PR/Commit), " +
+                                       "Impact (2–3 bullets with concrete outcomes), " +
+                                       "Next steps (3–4 specific, project-scoped actions).";
+                        userPrompt = $"GitHub Analytics (public data):\n{safeSummary}\n\nGenerate the three sections as bullets only.";
+                        break;
+
+                    case GitHubInsightsMode.ProjectSummary:
+                        systemPrompt = "You are a mentor writing a motivating team status update. Use only the provided analytics. " +
+                                       "Output bullets only: start with strongest stat, add 2 concrete wins, include repository health score (and drivers), " +
+                                       "then 2–3 next actions grounded in the data, and end with one short, supportive bullet.";
+                        userPrompt = $"GitHub Analytics (public data):\n{safeSummary}\n\nProduce the status update as instructed.";
+                        break;
+
+                    case GitHubInsightsMode.QA:
+                    default:
+                        if (hasQuestion)
+                        {
+                            systemPrompt = "You analyze GitHub repository activity and answer the user's question strictly from the provided data. " +
+                                           "Do not provide an overview. If unsupported (e.g., exact dates), reply: 'Timeline cannot be inferred from analytics.' " +
+                                           "Prefer last 7 days for 'this week'. Output at most 3 concise bullets (<=15 words).";
+                            userPrompt = $"User question: {safeUserQuery}\n\nGitHub Analytics (public data):\n{safeSummary}\n\nAnswer only the question in up to 3 bullets.";
+                        }
+                        else
+                        {
+                            systemPrompt = "You analyze GitHub repository activity and produce insights strictly from the provided data. " +
+                                           "Respond in four sections with concise bullets: 1) health/activity, 2) team patterns, 3) improvements, 4) successes.";
+                            userPrompt = $"GitHub Analytics (public data):\n{safeSummary}\n\nOutput the four sections as bullets.";
+                        }
+                        break;
+                }
 
                 var messages = new ChatMessage[]
                 {
@@ -268,14 +311,32 @@ namespace GainIt.API.Services.Projects.Implementations
 
                 var options = new ChatCompletionOptions
                 {
-                    Temperature = 0.3f // Slightly higher than project matching for more creative insights
+                    Temperature = 0.3f
                 };
 
-                ChatCompletion completion = await r_chatClient.CompleteChatAsync(messages, options);
-                var explanation = completion.Content[0].Text.Trim();
+                try
+                {
+                    ChatCompletion completion = await r_chatClient.CompleteChatAsync(messages, options);
+                    var explanation = completion.Content[0].Text.Trim();
+                    r_logger.LogInformation("GitHub analytics explanation generated successfully: ExplanationLength={ExplanationLength}", explanation.Length);
+                    return explanation;
+                }
+                catch (ClientResultException crex) when (crex.Status == 400)
+                {
+                    // Retry once with a safer, generic prompt (no user query)
+                    r_logger.LogWarning(crex, "Content filter triggered. Retrying with generic prompt.");
 
-                r_logger.LogInformation("GitHub analytics explanation generated successfully: ExplanationLength={ExplanationLength}", explanation.Length);
-                return explanation;
+                    var fallbackMessages = new ChatMessage[]
+                    {
+                        new SystemChatMessage(systemPrompt),
+                        new UserChatMessage($"GitHub Analytics (public data):\n{safeSummary}\n\nProvide concise insights only from this data.")
+                    };
+
+                    ChatCompletion completion = await r_chatClient.CompleteChatAsync(fallbackMessages, options);
+                    var explanation = completion.Content[0].Text.Trim();
+                    r_logger.LogInformation("GitHub analytics explanation generated on retry: ExplanationLength={ExplanationLength}", explanation.Length);
+                    return explanation;
+                }
             }
             catch (Exception ex)
             {

@@ -38,14 +38,12 @@ namespace GainIt.API.Services.GitHub.Implementations
                     DaysPeriod = daysPeriod
                 };
 
-                // Process basic repository stats
+                // Process basic repository stats (static fields from stored repository)
                 analytics.TotalStars = repository.StarsCount ?? 0;
                 analytics.TotalForks = repository.ForksCount ?? 0;
-                analytics.TotalWatchers = 0; // Will be populated from API data
-                analytics.TotalIssues = repository.OpenIssuesCount ?? 0;
-                analytics.TotalPullRequests = repository.OpenPullRequestsCount ?? 0;
-                analytics.TotalBranches = 0; // Will be populated from API data
-                analytics.TotalReleases = 0; // Will be populated from API data
+                analytics.TotalWatchers = 0; // Not tracked currently
+                analytics.TotalBranches = repository.Branches?.Count ?? 0;
+                analytics.TotalReleases = 0; // Not tracked currently
                 analytics.TotalTags = 0; // Will be populated from API data
 
                 // Set activity dates
@@ -63,8 +61,38 @@ namespace GainIt.API.Services.GitHub.Implementations
                 analytics.MonthlyIssues = InitializeMonthlyTracking();
                 analytics.MonthlyPullRequests = InitializeMonthlyTracking();
 
-                // Derive branches count from stored metadata
+                // Derive branches count from stored metadata (already set above)
                 analytics.TotalBranches = repository.Branches?.Count ?? 0;
+
+                // Repository-level Issues (open/closed) within the analysis window
+                var repoIssues = await _gitHubApiClient.GetIssuesAsync(repository.OwnerName, repository.RepositoryName, daysPeriod);
+                if (repoIssues != null)
+                {
+                    var cutoffIssues = DateTime.UtcNow.AddDays(-daysPeriod);
+                    var issuesOnly = repoIssues
+                        .Where(i => i.PullRequest == null)
+                        .Where(i => i.CreatedAt >= cutoffIssues)
+                        .ToList();
+
+                    var openIssues = issuesOnly.Count(i => string.Equals(i.State, "open", StringComparison.OrdinalIgnoreCase));
+                    var closedIssues = issuesOnly.Count(i => string.Equals(i.State, "closed", StringComparison.OrdinalIgnoreCase));
+                    analytics.OpenIssues = openIssues;
+                    analytics.ClosedIssues = closedIssues;
+                    analytics.TotalIssues = openIssues + closedIssues;
+                }
+
+                // Repository-level PRs (open/merged/closed) within the analysis window
+                var repoPrs = await _gitHubApiClient.GetPullRequestsAsync(repository.OwnerName, repository.RepositoryName, daysPeriod);
+                if (repoPrs != null)
+                {
+                    var openPr = repoPrs.Count(pr => string.Equals(pr.State, "open", StringComparison.OrdinalIgnoreCase));
+                    var mergedPr = repoPrs.Count(pr => pr.MergedAt.HasValue);
+                    var closedPr = repoPrs.Count(pr => string.Equals(pr.State, "closed", StringComparison.OrdinalIgnoreCase) && !pr.MergedAt.HasValue);
+
+                    analytics.OpenPullRequests = openPr;
+                    analytics.MergedPullRequests = mergedPr;
+                    analytics.TotalPullRequests = openPr + mergedPr + closedPr;
+                }
 
                 // Populate commit-based metrics from REST API commit history
                 var commitHistory = await _gitHubApiClient.GetCommitHistoryAsync(repository.OwnerName, repository.RepositoryName, daysPeriod);

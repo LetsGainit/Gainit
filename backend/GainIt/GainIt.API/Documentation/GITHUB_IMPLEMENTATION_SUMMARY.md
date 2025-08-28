@@ -48,6 +48,7 @@ No GitHub App configuration is used. Access is to public repositories via REST.
 ### Summaries
 - `GET /api/github/projects/{projectId}/users/{userId}/activity`
 - `GET /api/github/projects/{projectId}/activity-summary`
+- `GET /api/github/projects/{projectId}/insights?userQuery=...`
 
 ### Sync
 - `POST /api/github/projects/{projectId}/sync`

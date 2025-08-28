@@ -64,6 +64,12 @@ No GitHub App configuration is required. The integration accesses public reposit
 ### Activity Summaries
 - `GET /api/github/projects/{projectId}/users/{userId}/activity`: Get user activity summary
 - `GET /api/github/projects/{projectId}/activity-summary`: Get project activity summary
+- `GET /api/github/projects/{projectId}/insights?userQuery=...`: Get personalized analytics  insights from a query 
+
+## AI Summaries
+
+- User and project summaries are generated from repository analytics and contribution data.
+- Endpoints: user activity (`/users/{userId}/activity`), project activity (`/activity-summary`), and personalized insights (`/insights?userQuery=...`).
 
 ### Synchronization
 - `POST /api/github/projects/{projectId}/sync`: Trigger sync (`repository`, `analytics`, or `all`)

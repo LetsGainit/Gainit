@@ -996,8 +996,9 @@ namespace GainIt.API.Services.GitHub.Implementations
                 try
                 {
                     var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
-                        rawSummary, 
-                        "You are a mentor writing a brief, motivating progress summary for a junior contributor. Output must be concise bullet points (no paragraphs, no sign-off). Use concrete facts from the provided context only; do NOT invent placeholders (e.g., PR #X, module Z, [Your Name]). If a specific ID/name is missing, omit it. If 'Latest PR' or 'Latest Commit' are present, include one bullet referencing them. Include top activity day and, if available, top hour/week. Suggest exactly 2 next steps strictly within this project and grounded in the data. Audience: Israel (write in English)."
+                        rawSummary,
+                        null,
+                        Services.Projects.Interfaces.GitHubInsightsMode.UserSummary
                     );
                     
                     _logger.LogInformation("Successfully generated AI-enhanced user activity summary for user {UserId} in project {ProjectId}", userId, projectId);
@@ -1035,8 +1036,9 @@ namespace GainIt.API.Services.GitHub.Implementations
                 try
                 {
                     var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
-                        rawSummary, 
-                        "You are a mentor writing a brief, motivating team status update. Output must be concise bullet points (no paragraphs, no sign-off), strictly within this project’s scope. Use only concrete facts from the context; do NOT use placeholders (e.g., PR #X, module Z, [Your Name]). If 'Latest PR' or 'Latest Commit' are present, include one bullet referencing them. Start with the strongest stat, add 2 concrete wins, then list 2–3 next actions grounded in the data (e.g., ‘triage 12 open issues in backlog’, ‘add tests for report exporter’). If blockers exist and an owner is known, name owner + next step; otherwise state the blocker without guessing. Audience: Israel (write in English)."
+                        rawSummary,
+                        null,
+                        Services.Projects.Interfaces.GitHubInsightsMode.ProjectSummary
                     );
                     
                     _logger.LogInformation("Successfully generated AI-enhanced project activity summary for project {ProjectId}", projectId);
