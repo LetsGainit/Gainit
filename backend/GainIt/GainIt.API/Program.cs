@@ -33,9 +33,7 @@ var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true, reloadOnChange: true)
-    .AddJsonFile("appsettings.GitHub.json", optional: true, reloadOnChange: true) // Base GitHub config (empty values for production)
-    .AddJsonFile("appsettings.GitHub.Development.json", optional: true, reloadOnChange: true) // Development GitHub config (local dev only)
-    .AddEnvironmentVariables(); // Production: GitHub secrets from Azure Web App environment variables
+    .AddEnvironmentVariables();
 
 var configuration = configBuilder.Build();
 
@@ -46,14 +44,6 @@ var loggerConfig = new LoggerConfiguration()
 // Add Application Insights sink if instrumentation key is available
 var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
 var connectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
-
-// Add GitHub environment variables (same pattern as Application Insights)
-var githubAppId = Environment.GetEnvironmentVariable("GITHUB__APPID");
-var githubClientId = Environment.GetEnvironmentVariable("GITHUB__CLIENTID");
-var githubClientSecret = Environment.GetEnvironmentVariable("GITHUB__CLIENTSECRET");
-var githubPrivateKey = Environment.GetEnvironmentVariable("GITHUB__PRIVATEKEYCONTENT");
-var githubInstallationId = Environment.GetEnvironmentVariable("GITHUB__INSTALLATIONID");
-
 
 
 if (!string.IsNullOrWhiteSpace(connectionString))
@@ -97,6 +87,7 @@ if (!string.IsNullOrWhiteSpace(connectionString) || !string.IsNullOrWhiteSpace(i
     Log.Information("=== IMMEDIATE TEST: Application Insights sink test ===");
     Log.Warning("=== IMMEDIATE TEST: This warning should appear in Application Insights ===");
     Log.Error("=== IMMEDIATE TEST: This error should appear in Application Insights ===");
+    
 }
 
 try
@@ -108,11 +99,6 @@ try
     // Clear default logging providers to prevent duplicate logs
     builder.Logging.ClearProviders();
 
-    // Ensure GitHub configuration files are included in builder.Configuration as well
-    builder.Configuration
-        .AddJsonFile("appsettings.GitHub.json", optional: true, reloadOnChange: true)
-        .AddJsonFile("appsettings.GitHub.Development.json", optional: true, reloadOnChange: true);
-
     // Use the pre-configured Serilog
     builder.Host.UseSerilog();
 
@@ -120,13 +106,6 @@ try
     Log.Information("=== ENVIRONMENT VARIABLES DEBUG ===");
     Log.Information($"APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrEmpty(instrumentationKey) ? "NOT SET" : "SET")}");
     Log.Information($"APPLICATIONINSIGHTS_CONNECTION_STRING: {(string.IsNullOrEmpty(connectionString) ? "NOT SET" : "SET")}");
-    
-    // Debug: Check GitHub environment variables
-    Log.Information($"GITHUB__APPID: {(string.IsNullOrEmpty(githubAppId) ? "NOT SET" : "SET")}");
-    Log.Information($"GITHUB__CLIENTID: {(string.IsNullOrEmpty(githubClientId) ? "NOT SET" : "SET")}");
-    Log.Information($"GITHUB__CLIENTSECRET: {(string.IsNullOrEmpty(githubClientSecret) ? "NOT SET" : "SET")}");
-    Log.Information($"GITHUB__PRIVATEKEYCONTENT: {(string.IsNullOrEmpty(githubPrivateKey) ? "NOT SET" : "SET")}");
-    Log.Information($"GITHUB__INSTALLATIONID: {(string.IsNullOrEmpty(githubInstallationId) ? "NOT SET" : "SET")}");
 
     if (!string.IsNullOrEmpty(connectionString))
     {
@@ -141,16 +120,7 @@ try
         Log.Warning("No Application Insights environment variables found - logging will be limited to console/file");
     }
 
-    if (!string.IsNullOrEmpty(githubAppId) || !string.IsNullOrEmpty(githubClientId) || 
-        !string.IsNullOrEmpty(githubClientSecret) || !string.IsNullOrEmpty(githubPrivateKey) || 
-        !string.IsNullOrEmpty(githubInstallationId))
-    {
-        Log.Information("Will use GitHub environment variables for GitHub configuration (production)");
-    }
-    else
-    {
-        Log.Information("Will use appsettings.GitHub.Development.json for GitHub configuration (local development)");
-    }
+    
 
     // Check for other possible environment variable names
     try
@@ -202,42 +172,7 @@ try
         Log.Warning("Serilog section not found in configuration");
     }
 
-    // Debug: Check GitHub configuration
-    Log.Information("=== GITHUB CONFIGURATION DEBUG ===");
-    var githubSection = configuration.GetSection("GitHub");
-    
-    if (githubSection.Exists())
-    {
-        var appId = githubSection["AppId"];
-        var clientId = githubSection["ClientId"];
-        var installationId = githubSection["InstallationId"];
-        
-        Log.Information($"GitHub AppId configured: {(!string.IsNullOrEmpty(appId) ? "YES" : "NO")}");
-        Log.Information($"GitHub ClientId configured: {(!string.IsNullOrEmpty(clientId) ? "YES" : "NO")}");
-        Log.Information($"GitHub InstallationId configured: {(!string.IsNullOrEmpty(installationId) ? "YES" : "NO")}");
-        Log.Information($"GitHub PrivateKey configured: {(!string.IsNullOrEmpty(githubSection["PrivateKeyContent"]) ? "YES" : "NO")}");
-        
-        // Clarify configuration source
-        if (!string.IsNullOrEmpty(githubAppId) || !string.IsNullOrEmpty(githubClientId) || 
-            !string.IsNullOrEmpty(githubClientSecret) || !string.IsNullOrEmpty(githubPrivateKey) || 
-            !string.IsNullOrEmpty(githubInstallationId))
-        {
-            Log.Information("Configuration source: Azure Web App environment variables (production)");
-        }
-        else if (!string.IsNullOrEmpty(appId) || !string.IsNullOrEmpty(clientId) || 
-                 !string.IsNullOrEmpty(installationId) || !string.IsNullOrEmpty(githubSection["PrivateKeyContent"]))
-        {
-            Log.Information("Configuration source: appsettings.GitHub.Development.json (local development)");
-        }
-        else
-        {
-            Log.Information("Configuration source: appsettings.GitHub.json (base configuration, no secrets)");
-        }
-    }
-    else
-    {
-        Log.Warning("GitHub section not found in configuration");
-    }
+    Log.Information("GitHub integration configured for REST API (no configuration file needed)");
 
     // Application Insights is configured via Serilog above - don't add it again here
     // builder.Services.AddApplicationInsightsTelemetry(); // DISABLED to prevent conflicts
@@ -256,8 +191,6 @@ try
         builder.Configuration["SignalR:ConnectionString"]);
     builder.Services.Configure<JoinRequestOptions>(
         builder.Configuration.GetSection("JoinRequests"));
-    builder.Services.Configure<GitHubOptions>(
-        builder.Configuration.GetSection("GitHub"));
 
     builder.Services.AddSingleton(sp =>
     {

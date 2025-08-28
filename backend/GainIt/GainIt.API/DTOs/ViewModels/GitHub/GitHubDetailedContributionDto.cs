@@ -13,9 +13,22 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
         public int TotalIssuesCreated { get; set; }
         public int TotalPullRequestsCreated { get; set; }
         public int TotalReviews { get; set; }
+        // Optional breakdowns for richer UI
+        public int PullRequestsOpened { get; set; }
+        public int PullRequestsMerged { get; set; }
+        public int PullRequestsClosed { get; set; }
+        public int IssuesOpened { get; set; }
+        public int IssuesClosed { get; set; }
         public int UniqueDaysWithCommits { get; set; }
         public string? FilesModified { get; set; }
         public List<string> LanguagesContributed { get; set; } = new();
         public DateTime CalculatedAtUtc { get; set; }
+
+        // Latest work context (non-persisted)
+        public string? LatestPullRequestTitle { get; set; }
+        public int? LatestPullRequestNumber { get; set; }
+        public DateTime? LatestPullRequestCreatedAt { get; set; }
+        public string? LatestCommitMessage { get; set; }
+        public DateTime? LatestCommitDate { get; set; }
     }
 }

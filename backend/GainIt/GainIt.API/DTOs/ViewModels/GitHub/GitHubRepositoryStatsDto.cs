@@ -14,10 +14,10 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
         public DateTime? LastActivityAtUtc { get; set; }
         public DateTime? LastSyncedAtUtc { get; set; }
 
-        public int WatcherCount { get; set; }
         public int IssueCount { get; set; }
         public int PullRequestCount { get; set; }
         public int BranchCount { get; set; }
+        public List<string> Branches { get; set; } = new();
         public int ReleaseCount { get; set; }
 
         public int Contributors { get; set; }

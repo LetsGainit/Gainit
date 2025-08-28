@@ -31,86 +31,143 @@ namespace GainIt.API.Services.GitHub.Implementations
             _logger = logger;
         }
 
-        public async Task<GitHubRepository> LinkRepositoryAsync(Guid projectId, string repositoryUrl)
+        public async Task<GitHubRepositoryLinkResponseDto> LinkRepositoryAsync(Guid projectId, string repositoryUrl)
+        {
+            try
         {
             _logger.LogInformation("Linking GitHub repository {RepositoryUrl} to project {ProjectId}", repositoryUrl, projectId);
 
-            try
-            {
-                // Validate the repository URL
-                if (!await ValidateRepositoryUrlAsync(repositoryUrl))
+                // Extract owner and name from URL
+                var (owner, name) = ParseGitHubUrl(repositoryUrl);
+                if (string.IsNullOrEmpty(owner) || string.IsNullOrEmpty(name))
                 {
-                    throw new ArgumentException("Invalid or inaccessible GitHub repository URL");
+                    return new GitHubRepositoryLinkResponseDto
+                    {
+                        Success = false,
+                        Message = "Invalid GitHub repository URL format"
+                    };
                 }
 
-                // Parse the repository URL to extract owner and name
-                var (owner, name) = ParseGitHubUrl(repositoryUrl);
+                // Validate repository exists and is public
+                var (isValid, repositoryData, isPrivate) = await _apiClient.ValidateRepositoryAsync(owner, name);
+                
+                if (!isValid || repositoryData == null)
+                {
+                    return new GitHubRepositoryLinkResponseDto
+                    {
+                        Success = false,
+                        Message = "Invalid or inaccessible GitHub repository URL"
+                    };
+                }
 
-                // Check if repository is already linked to this project
+                if (isPrivate == true)
+                {
+                    return new GitHubRepositoryLinkResponseDto
+                    {
+                        Success = false,
+                        Message = "Private repositories are not supported"
+                    };
+                }
+
+                // Check if this repository is already linked to another project
                 var existingRepository = await _context.Set<GitHubRepository>()
+                    .FirstOrDefaultAsync(r => r.OwnerName == owner && r.RepositoryName == name);
+
+                if (existingRepository != null && existingRepository.ProjectId != projectId)
+                {
+                    return new GitHubRepositoryLinkResponseDto
+                    {
+                        Success = false,
+                        Message = $"Repository {owner}/{name} is already linked to another project"
+                    };
+                }
+
+                // Get additional repository data
+                var languages = await _apiClient.GetRepositoryLanguagesAsync(owner, name);
+                var contributors = await _apiClient.GetRepositoryContributorsAsync(owner, name);
+                var branches = await _apiClient.GetRepositoryBranchesAsync(owner, name);
+
+                // Check if this project already has a repository linked
+                var projectRepository = await _context.Set<GitHubRepository>()
                     .FirstOrDefaultAsync(r => r.ProjectId == projectId);
 
-                if (existingRepository != null)
-                {
-                    throw new InvalidOperationException("Project already has a linked GitHub repository");
-                }
+                GitHubRepository repository;
 
-                // Get repository data from GitHub API
-                var repositoryData = await _apiClient.GetRepositoryAsync(owner, name);
-                if (repositoryData == null)
+                if (projectRepository != null)
                 {
-                    throw new InvalidOperationException("Failed to retrieve repository data from GitHub");
-                }
+                    // Update existing repository for this project
+                    projectRepository.RepositoryName = name;
+                    projectRepository.OwnerName = owner;
+                    projectRepository.FullName = repositoryData.FullName;
+                    projectRepository.RepositoryUrl = repositoryData.HtmlUrl;
+                    projectRepository.Description = repositoryData.Description;
+                    projectRepository.IsPublic = !repositoryData.Private;
+                    projectRepository.LastSyncedAtUtc = DateTime.UtcNow;
+                    projectRepository.LastActivityAtUtc = repositoryData.PushedAt ?? repositoryData.UpdatedAt;
+                    projectRepository.StarsCount = repositoryData.StargazersCount;
+                    projectRepository.ForksCount = repositoryData.ForksCount;
+                    projectRepository.OpenIssuesCount = repositoryData.OpenIssuesCount;
+                    projectRepository.OpenPullRequestsCount = 0; // Will be fetched separately if needed
+                    projectRepository.DefaultBranch = repositoryData.DefaultBranch;
+                    projectRepository.PrimaryLanguage = repositoryData.Language;
+                    projectRepository.Languages = languages.Keys.ToList();
+                    projectRepository.License = repositoryData.License?.Name;
+                    projectRepository.IsArchived = repositoryData.Archived;
+                    projectRepository.IsFork = repositoryData.Fork;
+                    
+                    // Store all branches
+                    projectRepository.Branches = branches ?? new List<string>();
 
-                // Create new repository record
-                var repository = new GitHubRepository
+                    repository = projectRepository;
+                }
+                else
+                {
+                    // Create new repository for this project
+                    repository = new GitHubRepository
                 {
                     ProjectId = projectId,
                     RepositoryName = name,
                     OwnerName = owner,
-                    FullName = repositoryData.NameWithOwner,
-                    RepositoryUrl = repositoryUrl,
+                        FullName = repositoryData.FullName,
+                        RepositoryUrl = repositoryData.HtmlUrl,
                     Description = repositoryData.Description,
-                    IsPublic = !repositoryData.IsPrivate,
-                    IsArchived = repositoryData.IsArchived,
-                    IsFork = repositoryData.IsFork,
-                    DefaultBranch = repositoryData.DefaultBranchRef?.Name,
-                    PrimaryLanguage = repositoryData.PrimaryLanguage?.Name,
-                    StarsCount = repositoryData.StargazerCount,
-                    ForksCount = repositoryData.ForkCount,
-                    OpenIssuesCount = repositoryData.Issues?.TotalCount,
-                    OpenPullRequestsCount = repositoryData.PullRequests?.TotalCount,
+                        IsPublic = !repositoryData.Private,
                     CreatedAtUtc = repositoryData.CreatedAt,
+                        LastSyncedAtUtc = DateTime.UtcNow,
                     LastActivityAtUtc = repositoryData.PushedAt ?? repositoryData.UpdatedAt,
-                    LastSyncedAtUtc = DateTime.UtcNow
-                };
+                        StarsCount = repositoryData.StargazersCount,
+                        ForksCount = repositoryData.ForksCount,
+                        OpenIssuesCount = repositoryData.OpenIssuesCount,
+                        OpenPullRequestsCount = 0, // Will be fetched separately if needed
+                        DefaultBranch = repositoryData.DefaultBranch,
+                        PrimaryLanguage = repositoryData.Language,
+                        Languages = languages.Keys.ToList(),
+                        License = repositoryData.License?.Name,
+                        IsArchived = repositoryData.Archived,
+                        IsFork = repositoryData.Fork,
+                        Branches = branches ?? new List<string>()
+                    };
 
-                // Add languages
-                if (repositoryData.Languages?.Nodes != null)
-                {
-                    repository.Languages = repositoryData.Languages.Nodes.Select(l => l.Name).ToList();
+                    _context.Set<GitHubRepository>().Add(repository);
                 }
 
-                // Add license info
-                if (repositoryData.LicenseInfo != null)
-                {
-                    repository.License = repositoryData.LicenseInfo.Name;
-                }
-
-                // Save to database
-                _context.Set<GitHubRepository>().Add(repository);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Successfully linked GitHub repository {Repository} to project {ProjectId}", 
-                    repository.FullName, projectId);
-
-                return repository;
+                return new GitHubRepositoryLinkResponseDto
+                {
+                    Success = true,
+                    Message = $"Successfully linked repository {repositoryData.FullName}",
+                    RepositoryId = repository.RepositoryId
+                };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error linking GitHub repository {RepositoryUrl} to project {ProjectId}", 
-                    repositoryUrl, projectId);
-                throw;
+                _logger.LogError(ex, "Error linking GitHub repository {RepositoryUrl} to project {ProjectId}", repositoryUrl, projectId);
+                return new GitHubRepositoryLinkResponseDto
+                {
+                    Success = false,
+                    Message = "An error occurred while linking the repository"
+                };
             }
         }
 
@@ -198,19 +255,32 @@ namespace GainIt.API.Services.GitHub.Implementations
                     var repositoryData = await _apiClient.GetRepositoryAsync(repository.OwnerName, repository.RepositoryName);
                     if (repositoryData != null)
                     {
+                        // Get additional repository data
+                        var languages = await _apiClient.GetRepositoryLanguagesAsync(repository.OwnerName, repository.RepositoryName);
+                        var contributors = await _apiClient.GetRepositoryContributorsAsync(repository.OwnerName, repository.RepositoryName);
+                        var branches = await _apiClient.GetRepositoryBranchesAsync(repository.OwnerName, repository.RepositoryName);
+                        // Fetch PRs and count open ones to persist in DB
+                        var prs = await _apiClient.GetPullRequestsAsync(repository.OwnerName, repository.RepositoryName, 30);
+                        var openPrCount = prs?.Count(pr => string.Equals(pr.State, "open", StringComparison.OrdinalIgnoreCase)) ?? 0;
+
                         // Update repository information
                         repository.Description = repositoryData.Description;
-                        repository.StarsCount = repositoryData.StargazerCount;
-                        repository.ForksCount = repositoryData.ForkCount;
-                        repository.OpenIssuesCount = repositoryData.Issues?.TotalCount;
-                        repository.OpenPullRequestsCount = repositoryData.PullRequests?.TotalCount;
+                        repository.StarsCount = repositoryData.StargazersCount;
+                        repository.ForksCount = repositoryData.ForksCount;
+                        repository.OpenIssuesCount = repositoryData.OpenIssuesCount;
+                        repository.OpenPullRequestsCount = openPrCount;
                         repository.LastActivityAtUtc = repositoryData.PushedAt ?? repositoryData.UpdatedAt;
-                        repository.LastSyncedAtUtc = DateTime.UtcNow;
 
-                        // Update languages
-                        if (repositoryData.Languages?.Nodes != null)
+                        // Update languages from REST API
+                        if (languages != null && languages.Any())
                         {
-                            repository.Languages = repositoryData.Languages.Nodes.Select(l => l.Name).ToList();
+                            repository.Languages = languages.Keys.ToList();
+                        }
+
+                        // Update branches from REST API
+                        if (branches != null && branches.Any())
+                        {
+                            repository.Branches = branches;
                         }
 
                         await _context.SaveChangesAsync();
@@ -249,25 +319,154 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<GitHubAnalytics?> GetProjectAnalyticsAsync(Guid projectId, int daysPeriod = 30)
+        public async Task<GitHubAnalytics?> GetProjectAnalyticsAsync(Guid projectId, int daysPeriod = 30, bool force = false)
         {
             try
             {
+                _logger.LogDebug("GetProjectAnalyticsAsync called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
+                
                 var repository = await GetRepositoryAsync(projectId);
-                if (repository?.Analytics == null)
+                if (repository == null)
                 {
+                    _logger.LogWarning("Repository not found for project {ProjectId}", projectId);
                     return null;
                 }
 
-                // Check if analytics are fresh enough
-                var analyticsAge = DateTime.UtcNow - repository.Analytics.CalculatedAtUtc;
-                if (analyticsAge.TotalDays > 1) // Refresh if older than 1 day
+                _logger.LogDebug("Repository found for project {ProjectId}: {RepositoryName}", projectId, repository.RepositoryName);
+                
+                // Check if analytics exist and are fresh
+                var analytics = await _context.Set<GitHubAnalytics>()
+                    .FirstOrDefaultAsync(a => a.RepositoryId == repository.RepositoryId);
+
+                if (analytics == null)
                 {
-                    await SyncAnalyticsAsync(projectId, daysPeriod);
-                    repository = await GetRepositoryAsync(projectId);
+                    _logger.LogInformation("No analytics record found for repository {RepositoryId} in project {ProjectId}, creating analytics automatically", repository.RepositoryId, projectId);
+                    
+                    // Create sync log entry for analytics creation
+                    var syncLog = new GitHubSyncLog
+                    {
+                        RepositoryId = repository.RepositoryId,
+                        SyncType = "Analytics",
+                        Status = "InProgress",
+                        StartedAtUtc = DateTime.UtcNow
+                    };
+                    _context.Set<GitHubSyncLog>().Add(syncLog);
+                    await _context.SaveChangesAsync();
+
+                    try
+                    {
+                        // Create analytics record automatically
+                        analytics = await _analyticsService.ProcessRepositoryAnalyticsAsync(repository, daysPeriod);
+                        if (analytics != null)
+                        {
+                            _context.Set<GitHubAnalytics>().Add(analytics);
+                            await _context.SaveChangesAsync();
+                            
+                            // Update sync log
+                            syncLog.Status = "Completed";
+                            syncLog.CompletedAtUtc = DateTime.UtcNow;
+                            syncLog.ItemsProcessed = 1;
+                            syncLog.TotalItems = 1;
+                            await _context.SaveChangesAsync();
+                            
+                            _logger.LogInformation("Created analytics record for repository {RepositoryId} in project {ProjectId}", repository.RepositoryId, projectId);
+                        }
+                        else
+                        {
+                            syncLog.Status = "Failed";
+                            syncLog.ErrorMessage = "Failed to process repository analytics";
+                            syncLog.CompletedAtUtc = DateTime.UtcNow;
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        syncLog.Status = "Failed";
+                        syncLog.ErrorMessage = ex.Message;
+                        syncLog.CompletedAtUtc = DateTime.UtcNow;
+                        await _context.SaveChangesAsync();
+                        throw;
+                    }
+                }
+                else
+                {
+                    _logger.LogDebug("Analytics record found for repository {RepositoryId}: CalculatedAt={CalculatedAt}", repository.RepositoryId, analytics.CalculatedAtUtc);
+
+                    // Check if analytics are fresh (less than 1 day old)
+                    var isFresh = analytics.CalculatedAtUtc >= DateTime.UtcNow.AddDays(-1);
+                    _logger.LogDebug("Analytics freshness check: IsFresh={IsFresh}, CalculatedAt={CalculatedAt}, Now={Now}", 
+                        isFresh, analytics.CalculatedAtUtc, DateTime.UtcNow);
+
+                    if (!isFresh)
+                    {
+                        _logger.LogInformation("Analytics for project {ProjectId} are stale (last calculated: {CalculatedAt}), refreshing automatically", 
+                            projectId, analytics.CalculatedAtUtc);
+                        
+                        // Create sync log entry for analytics refresh
+                        var refreshSyncLog = new GitHubSyncLog
+                        {
+                            RepositoryId = repository.RepositoryId,
+                            SyncType = "AnalyticsRefresh",
+                            Status = "InProgress",
+                            StartedAtUtc = DateTime.UtcNow
+                        };
+                        _context.Set<GitHubSyncLog>().Add(refreshSyncLog);
+                        await _context.SaveChangesAsync();
+
+                        try
+                        {
+                            // Refresh analytics automatically
+                            var refreshedAnalytics = await _analyticsService.ProcessRepositoryAnalyticsAsync(repository, daysPeriod);
+                            if (refreshedAnalytics != null)
+                            {
+                                // Update existing analytics
+                                analytics.LanguageStats = refreshedAnalytics.LanguageStats;
+                                analytics.WeeklyCommits = refreshedAnalytics.WeeklyCommits;
+                                analytics.WeeklyIssues = refreshedAnalytics.WeeklyIssues;
+                                analytics.WeeklyPullRequests = refreshedAnalytics.WeeklyPullRequests;
+                                analytics.MonthlyCommits = refreshedAnalytics.MonthlyCommits;
+                                analytics.MonthlyIssues = refreshedAnalytics.MonthlyIssues;
+                                analytics.MonthlyPullRequests = refreshedAnalytics.MonthlyPullRequests;
+                                analytics.CalculatedAtUtc = DateTime.UtcNow;
+                                
+                                await _context.SaveChangesAsync();
+                                
+                                // Update sync log
+                                refreshSyncLog.Status = "Completed";
+                                refreshSyncLog.CompletedAtUtc = DateTime.UtcNow;
+                                refreshSyncLog.ItemsProcessed = 1;
+                                refreshSyncLog.TotalItems = 1;
+                                await _context.SaveChangesAsync();
+                                
+                                _logger.LogInformation("Refreshed analytics for repository {RepositoryId} in project {ProjectId}", repository.RepositoryId, projectId);
+                            }
+                            else
+                            {
+                                refreshSyncLog.Status = "Failed";
+                                refreshSyncLog.ErrorMessage = "Failed to refresh repository analytics";
+                                refreshSyncLog.CompletedAtUtc = DateTime.UtcNow;
+                                await _context.SaveChangesAsync();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            refreshSyncLog.Status = "Failed";
+                            refreshSyncLog.ErrorMessage = ex.Message;
+                            refreshSyncLog.CompletedAtUtc = DateTime.UtcNow;
+                            await _context.SaveChangesAsync();
+                            throw;
+                        }
+                    }
                 }
 
-                return repository?.Analytics;
+                // Do not recompute contributions here unless forced
+                if (force)
+                {
+                    _logger.LogDebug("Force=true: updating user contributions for project {ProjectId}", projectId);
+                    await EnsureContributionsUpToDateAsync(projectId, daysPeriod, force: true);
+                }
+
+                return analytics;
             }
             catch (Exception ex)
             {
@@ -276,7 +475,184 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<List<GitHubContribution>> GetUserContributionsAsync(Guid projectId, int daysPeriod = 30)
+        /// <summary>
+        /// Ensures user contributions are up to date for a project
+        /// </summary>
+        private async Task EnsureContributionsUpToDateAsync(Guid projectId, int daysPeriod, bool force = false)
+        {
+            try
+            {
+                var repository = await GetRepositoryAsync(projectId);
+                if (repository == null) return;
+
+                // Freshness gating: skip if recent unless forced
+                var now = DateTime.UtcNow;
+                var cutoff = now.AddDays(-1); // 1 day freshness window
+                var minIntervalCutoff = now.AddHours(-1); // minimum 1 hour between updates
+
+                var latestContribution = await _context.Set<GitHubContribution>()
+                    .Where(c => c.RepositoryId == repository.RepositoryId)
+                    .OrderByDescending(c => c.CalculatedAtUtc)
+                    .FirstOrDefaultAsync();
+
+                if (!force && latestContribution != null)
+                {
+                    if (latestContribution.CalculatedAtUtc >= cutoff)
+                    {
+                        _logger.LogDebug("Skipping contributions update for project {ProjectId}: data is fresh (CalculatedAtUtc={CalculatedAtUtc})", projectId, latestContribution.CalculatedAtUtc);
+                        return;
+                    }
+
+                    if (latestContribution.CalculatedAtUtc >= minIntervalCutoff)
+                    {
+                        _logger.LogDebug("Skipping contributions update for project {ProjectId}: within min interval (CalculatedAtUtc={CalculatedAtUtc})", projectId, latestContribution.CalculatedAtUtc);
+                        return;
+                    }
+                }
+
+                // Create sync log entry for contributions update
+                var contributionsSyncLog = new GitHubSyncLog
+                {
+                    RepositoryId = repository.RepositoryId,
+                    SyncType = "Contributions",
+                    Status = "InProgress",
+                    StartedAtUtc = DateTime.UtcNow
+                };
+                _context.Set<GitHubSyncLog>().Add(contributionsSyncLog);
+                await _context.SaveChangesAsync();
+
+                try
+                {
+                    // Get project members to process contributions
+                    var projectMembers = await _context.Set<ProjectMember>()
+                        .Where(pm => pm.ProjectId == projectId && pm.LeftAtUtc == null)
+                        .Include(pm => pm.User)
+                        .ToListAsync();
+
+                    _logger.LogDebug("Found {MemberCount} active project members for project {ProjectId}", projectMembers.Count, projectId);
+
+                    // Process user contributions
+                    var contributions = new List<GitHubContribution>();
+                    foreach (var member in projectMembers)
+                    {
+                        // Use stored GitHubUsername if available, fallback to extracting from GitHubURL
+                        string? username = member.User.GitHubUsername;
+                        if (string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(member.User.GitHubURL))
+                        {
+                            username = ExtractGitHubUsername(member.User.GitHubURL);
+                        }
+                        
+                        if (!string.IsNullOrEmpty(username))
+                        {
+                            _logger.LogDebug("Processing contribution for user {UserId} with GitHub username {GitHubUsername}", member.UserId, username);
+                            var contribution = await _analyticsService.ProcessUserContributionAsync(
+                                repository, member.UserId, username, daysPeriod);
+                            contributions.Add(contribution);
+                        }
+                        else
+                        {
+                            _logger.LogDebug("Skipping user {UserId} - no GitHub username found", member.UserId);
+                        }
+                    }
+
+                    _logger.LogDebug("Processed {ContributionCount} user contributions for project {ProjectId}", contributions.Count, projectId);
+
+                    // In-place upsert: do not overwrite with empty results and avoid re-inserting existing PKs
+                    var existingByUser = repository.Contributions.ToDictionary(c => c.UserId, c => c);
+                    foreach (var incoming in contributions)
+                    {
+                        bool hasMeaningfulData = incoming.TotalCommits > 0 || incoming.TotalIssuesCreated > 0 || incoming.TotalPullRequestsCreated > 0 || incoming.TotalReviews > 0;
+
+                        if (existingByUser.TryGetValue(incoming.UserId, out var existing))
+                        {
+                            if (hasMeaningfulData)
+                            {
+                                // Copy fields onto the existing tracked entity
+                                existing.GitHubUsername = incoming.GitHubUsername;
+                                existing.CalculatedAtUtc = incoming.CalculatedAtUtc;
+                                existing.DaysPeriod = incoming.DaysPeriod;
+                                existing.TotalCommits = incoming.TotalCommits;
+                                existing.TotalAdditions = incoming.TotalAdditions;
+                                existing.TotalDeletions = incoming.TotalDeletions;
+                                existing.TotalLinesChanged = incoming.TotalLinesChanged;
+                                existing.UniqueDaysWithCommits = incoming.UniqueDaysWithCommits;
+                                existing.TotalIssuesCreated = incoming.TotalIssuesCreated;
+                                existing.OpenIssuesCreated = incoming.OpenIssuesCreated;
+                                existing.ClosedIssuesCreated = incoming.ClosedIssuesCreated;
+                                existing.IssuesCommentedOn = incoming.IssuesCommentedOn;
+                                existing.IssuesAssigned = incoming.IssuesAssigned;
+                                existing.IssuesClosed = incoming.IssuesClosed;
+                                existing.TotalPullRequestsCreated = incoming.TotalPullRequestsCreated;
+                                existing.OpenPullRequestsCreated = incoming.OpenPullRequestsCreated;
+                                existing.MergedPullRequestsCreated = incoming.MergedPullRequestsCreated;
+                                existing.ClosedPullRequestsCreated = incoming.ClosedPullRequestsCreated;
+                                existing.PullRequestsReviewed = incoming.PullRequestsReviewed;
+                                existing.PullRequestsApproved = incoming.PullRequestsApproved;
+                                existing.PullRequestsRequestedChanges = incoming.PullRequestsRequestedChanges;
+                                existing.TotalReviews = incoming.TotalReviews;
+                                existing.ReviewsApproved = incoming.ReviewsApproved;
+                                existing.ReviewsRequestedChanges = incoming.ReviewsRequestedChanges;
+                                existing.ReviewsCommented = incoming.ReviewsCommented;
+                                existing.CommitsByDayOfWeek = incoming.CommitsByDayOfWeek;
+                                existing.CommitsByHour = incoming.CommitsByHour;
+                                existing.ActivityByMonth = incoming.ActivityByMonth;
+                                existing.FilesModified = incoming.FilesModified;
+                                existing.LanguagesContributed = incoming.LanguagesContributed;
+                                existing.LongestStreak = incoming.LongestStreak;
+                                existing.CurrentStreak = incoming.CurrentStreak;
+                                existing.CollaboratorsInteractedWith = incoming.CollaboratorsInteractedWith;
+                                existing.DiscussionsParticipated = incoming.DiscussionsParticipated;
+                                existing.WikiPagesEdited = incoming.WikiPagesEdited;
+                                existing.FirstCommitDate = incoming.FirstCommitDate;
+                                existing.LastCommitDate = incoming.LastCommitDate;
+                                existing.AverageCommitSize = incoming.AverageCommitSize;
+                                existing.AverageReviewTime = incoming.AverageReviewTime;
+                            }
+                            // else: skip updating to preserve last good snapshot
+                        }
+                        else
+                        {
+                            if (hasMeaningfulData)
+                            {
+                                // New contributor snapshot to insert
+                                _context.Set<GitHubContribution>().Add(incoming);
+                                repository.Contributions.Add(incoming);
+                            }
+                            // else: no previous and no data -> skip
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    
+                    // Update sync log
+                    contributionsSyncLog.Status = "Completed";
+                    contributionsSyncLog.CompletedAtUtc = DateTime.UtcNow;
+                    contributionsSyncLog.ItemsProcessed = contributions.Count;
+                    contributionsSyncLog.TotalItems = projectMembers.Count;
+                    await _context.SaveChangesAsync();
+                    
+                    _logger.LogDebug("Updated {ContributionCount} contributions for project {ProjectId}", contributions.Count, projectId);
+                }
+                catch (Exception ex)
+                {
+                    // Update sync log with error
+                    contributionsSyncLog.Status = "Failed";
+                    contributionsSyncLog.ErrorMessage = ex.Message;
+                    contributionsSyncLog.CompletedAtUtc = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    
+                    _logger.LogError(ex, "Error ensuring contributions are up to date for project {ProjectId}", projectId);
+                    // Don't throw - this is a background operation
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error ensuring contributions are up to date for project {ProjectId}", projectId);
+                // Don't throw - this is a background operation
+            }
+        }
+
+        public async Task<List<GitHubContribution>> GetUserContributionsAsync(Guid projectId, int daysPeriod = 30, bool force = false)
         {
             try
             {
@@ -284,6 +660,22 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (repository?.Contributions == null)
                 {
                     return new List<GitHubContribution>();
+                }
+
+                // If forced or stale, refresh before returning
+                var latest = repository.Contributions.OrderByDescending(c => c.CalculatedAtUtc).FirstOrDefault();
+                var freshCutoff = DateTime.UtcNow.AddDays(-1);
+                var minInterval = DateTime.UtcNow.AddHours(-1);
+                var needsRefresh = force || latest == null || latest.CalculatedAtUtc < freshCutoff;
+                if (!force && latest != null && latest.CalculatedAtUtc >= minInterval)
+                {
+                    needsRefresh = false;
+                }
+                if (needsRefresh)
+                {
+                    _logger.LogDebug("Refreshing contributions (force={Force}) for project {ProjectId}", force, projectId);
+                    await EnsureContributionsUpToDateAsync(projectId, daysPeriod, force);
+                    repository = await GetRepositoryAsync(projectId); // reload
                 }
 
                 // Filter contributions by the specified period
@@ -299,11 +691,11 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<GitHubContribution?> GetUserContributionAsync(Guid projectId, Guid userId, int daysPeriod = 30)
+        public async Task<GitHubContribution?> GetUserContributionAsync(Guid projectId, Guid userId, int daysPeriod = 30, bool force = false)
         {
             try
             {
-                var contributions = await GetUserContributionsAsync(projectId, daysPeriod);
+                var contributions = await GetUserContributionsAsync(projectId, daysPeriod, force);
                 return contributions.FirstOrDefault(c => c.UserId == userId);
             }
             catch (Exception ex)
@@ -315,48 +707,42 @@ namespace GainIt.API.Services.GitHub.Implementations
 
         public async Task<bool> SyncAnalyticsAsync(Guid projectId, int daysPeriod = 30)
         {
-            _logger.LogInformation("Syncing analytics for project {ProjectId} over {DaysPeriod} days", projectId, daysPeriod);
-
             try
             {
+                _logger.LogDebug("SyncAnalyticsAsync called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
+                
                 var repository = await GetRepositoryAsync(projectId);
                 if (repository == null)
                 {
-                    _logger.LogWarning("No GitHub repository found for project {ProjectId}", projectId);
+                    _logger.LogWarning("Repository not found for project {ProjectId}, cannot sync analytics", projectId);
                     return false;
                 }
 
-                // Create sync log entry
+                _logger.LogDebug("Repository found for project {ProjectId}: {RepositoryName}", projectId, repository.RepositoryName);
+
+                // Create sync log
                 var syncLog = new GitHubSyncLog
                 {
                     RepositoryId = repository.RepositoryId,
-                    SyncType = "Analytics",
-                    Status = "InProgress",
+                    SyncType = "analytics",
+                    Status = "Started",
                     StartedAtUtc = DateTime.UtcNow
                 };
 
                 _context.Set<GitHubSyncLog>().Add(syncLog);
                 await _context.SaveChangesAsync();
 
+                                    _logger.LogDebug("Created sync log for analytics sync: {SyncLogId}", syncLog.SyncLogId);
+
                 try
                 {
-                    // Get project members to sync their contributions
+                    // Get project members to process contributions
                     var projectMembers = await _context.Set<ProjectMember>()
-                        .Where(pm => pm.ProjectId == projectId)
+                        .Where(pm => pm.ProjectId == projectId && pm.LeftAtUtc == null)
                         .Include(pm => pm.User)
                         .ToListAsync();
 
-                    // Process repository analytics
-                    var analytics = await _analyticsService.ProcessRepositoryAnalyticsAsync(repository, daysPeriod);
-                    
-                    // Remove old analytics and add new ones
-                    if (repository.Analytics != null)
-                    {
-                        _context.Set<GitHubAnalytics>().Remove(repository.Analytics);
-                    }
-                    
-                    repository.Analytics = analytics;
-                    _context.Set<GitHubAnalytics>().Add(analytics);
+                    _logger.LogDebug("Found {MemberCount} active project members for project {ProjectId}", projectMembers.Count, projectId);
 
                     // Process user contributions
                     var contributions = new List<GitHubContribution>();
@@ -371,15 +757,23 @@ namespace GainIt.API.Services.GitHub.Implementations
                         
                         if (!string.IsNullOrEmpty(username))
                         {
+                            _logger.LogDebug("Processing contribution for user {UserId} with GitHub username {GitHubUsername}", member.UserId, username);
                             var contribution = await _analyticsService.ProcessUserContributionAsync(
                                 repository, member.UserId, username, daysPeriod);
                             contributions.Add(contribution);
                         }
+                        else
+                        {
+                            _logger.LogDebug("Skipping user {UserId} - no GitHub username found", member.UserId);
+                        }
                     }
+
+                    _logger.LogDebug("Processed {ContributionCount} user contributions for project {ProjectId}", contributions.Count, projectId);
 
                     // Remove old contributions and add new ones
                     if (repository.Contributions.Any())
                     {
+                        _logger.LogDebug("Removing {OldContributionCount} old contributions for project {ProjectId}", repository.Contributions.Count, projectId);
                         _context.Set<GitHubContribution>().RemoveRange(repository.Contributions);
                     }
                     
@@ -387,6 +781,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     _context.Set<GitHubContribution>().AddRange(contributions);
 
                     await _context.SaveChangesAsync();
+                    _logger.LogDebug("Saved {ContributionCount} contributions to database for project {ProjectId}", contributions.Count, projectId);
 
                     // Update sync log
                     syncLog.Status = "Completed";
@@ -394,10 +789,11 @@ namespace GainIt.API.Services.GitHub.Implementations
                     syncLog.ItemsProcessed = 1 + contributions.Count;
                     syncLog.TotalItems = 1 + contributions.Count;
 
-                    _logger.LogInformation("Successfully synced analytics for project {ProjectId}", projectId);
+                    _logger.LogInformation("Successfully synced analytics for project {ProjectId}: {ContributionCount} contributions processed", projectId, contributions.Count);
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogError(ex, "Error during analytics sync for project {ProjectId}", projectId);
                     syncLog.Status = "Failed";
                     syncLog.ErrorMessage = ex.Message;
                     syncLog.CompletedAtUtc = DateTime.UtcNow;
@@ -444,7 +840,8 @@ namespace GainIt.API.Services.GitHub.Implementations
             try
             {
                 var (owner, name) = ParseGitHubUrl(repositoryUrl);
-                return await _apiClient.ValidateRepositoryAsync(owner, name);
+                var (isValid, _, _) = await _apiClient.ValidateRepositoryAsync(owner, name);
+                return isValid;
             }
             catch (Exception ex)
             {
@@ -463,9 +860,38 @@ namespace GainIt.API.Services.GitHub.Implementations
                     return null;
                 }
 
-                var repoStats = await _apiClient.GetRepositoryStatsAsync(repository.OwnerName, repository.RepositoryName);
+                // Short-lived cache for repo stats (10 minutes) using simple static cache
+                var cacheKey = $"repo-stats:{repository.OwnerName}/{repository.RepositoryName}";
+                var (hasCached, cached) = InMemoryGitHubCache.TryGet<GitHubRepositoryStats>(cacheKey);
+                GitHubRepositoryStats repoStats;
+                if (hasCached)
+                {
+                    repoStats = cached!;
+                }
+                else
+                {
+                    repoStats = await _apiClient.GetRepositoryStatsAsync(repository.OwnerName, repository.RepositoryName);
+                    InMemoryGitHubCache.Set(cacheKey, repoStats, TimeSpan.FromMinutes(10));
+                }
                 var analytics = await GetProjectAnalyticsAsync(projectId);
                 var contributions = await GetUserContributionsAsync(projectId);
+
+                _logger.LogDebug("Repository stats for project {ProjectId}: Found {ContributionCount} contributions", 
+                    projectId, contributions.Count);
+
+                // Log contribution details for debugging
+                foreach (var contribution in contributions)
+                {
+                    _logger.LogDebug("Contribution for user {UserId}: Commits={Commits}, LinesChanged={LinesChanged}, Username={Username}", 
+                        contribution.UserId, contribution.TotalCommits, contribution.TotalLinesChanged, contribution.GitHubUsername);
+                }
+
+                // De-duplicate contributions by GitHubUsername (pick latest snapshot per user)
+                var distinctContributions = contributions
+                    .Where(c => !string.IsNullOrWhiteSpace(c.GitHubUsername))
+                    .GroupBy(c => c.GitHubUsername!, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.OrderByDescending(c => c.CalculatedAtUtc).First())
+                    .ToList();
 
                 var dto = new GitHubRepositoryStatsDto
                 {
@@ -480,13 +906,14 @@ namespace GainIt.API.Services.GitHub.Implementations
                     Languages = repository.Languages,
                     LastActivityAtUtc = repository.LastActivityAtUtc,
                     LastSyncedAtUtc = repository.LastSyncedAtUtc,
-                    WatcherCount = repoStats.WatcherCount,
                     IssueCount = repoStats.IssueCount,
                     PullRequestCount = repoStats.PullRequestCount,
-                    BranchCount = repoStats.BranchCount,
+                    BranchCount = repository.Branches?.Count ?? 0, // Use stored branch count
+                    Branches = repository.Branches ?? new List<string>(), // ← Add actual branch names
                     ReleaseCount = repoStats.ReleaseCount,
-                    Contributors = contributions.Count,
-                    TopContributors = contributions
+                    Contributors = distinctContributions.Count,
+                    TopContributors = distinctContributions
+                        .Where(c => c.TotalCommits > 0)
                         .OrderByDescending(c => c.TotalCommits)
                         .Take(5)
                         .Select(c => new TopContributorDto
@@ -531,11 +958,30 @@ namespace GainIt.API.Services.GitHub.Implementations
                 rawSummary += $"• Pull Requests: {contribution.TotalPullRequestsCreated}\n";
                 rawSummary += $"• Code Reviews: {contribution.TotalReviews}\n\n";
 
+                // Latest work context (if available)
+                if (!string.IsNullOrWhiteSpace(contribution.LatestPullRequestTitle))
+                {
+                    var prWhen = contribution.LatestPullRequestCreatedAt?.ToString("yyyy-MM-dd") ?? "";
+                    var prNum = contribution.LatestPullRequestNumber.HasValue ? $"#{contribution.LatestPullRequestNumber}" : string.Empty;
+                    rawSummary += $"🆕 Latest PR: {contribution.LatestPullRequestTitle} {prNum} {prWhen}\n";
+                }
+                if (!string.IsNullOrWhiteSpace(contribution.LatestCommitMessage))
+                {
+                    var cWhen = contribution.LatestCommitDate?.ToString("yyyy-MM-dd HH:mm") ?? "";
+                    rawSummary += $"🆕 Latest Commit: {contribution.LatestCommitMessage} ({cWhen} UTC)\n\n";
+                }
+
                 rawSummary += $"📊 Activity Patterns:\n";
                 if (contribution.CommitsByDayOfWeek.Any())
                 {
                     var mostActiveDay = contribution.CommitsByDayOfWeek.OrderByDescending(x => x.Value).First();
                     rawSummary += $"• Most Active Day: {mostActiveDay.Key} ({mostActiveDay.Value} commits)\n";
+                }
+
+                if (contribution.CommitsByHour.Any())
+                {
+                    var mostActiveHour = contribution.CommitsByHour.OrderByDescending(x => x.Value).First();
+                    rawSummary += $"• Most Active Hour: {mostActiveHour.Key}:00 ({mostActiveHour.Value} commits)\n";
                 }
 
                 if (contribution.LanguagesContributed.Any())
@@ -550,8 +996,9 @@ namespace GainIt.API.Services.GitHub.Implementations
                 try
                 {
                     var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
-                        rawSummary, 
-                        $"Analyze this user's GitHub activity and provide insights about their contribution patterns, strengths, and areas for improvement"
+                        rawSummary,
+                        null,
+                        Services.Projects.Interfaces.GitHubInsightsMode.UserSummary
                     );
                     
                     _logger.LogInformation("Successfully generated AI-enhanced user activity summary for user {UserId} in project {ProjectId}", userId, projectId);
@@ -589,8 +1036,9 @@ namespace GainIt.API.Services.GitHub.Implementations
                 try
                 {
                     var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
-                        rawSummary, 
-                        $"Analyze this project's GitHub activity and provide insights about project health, team performance, and recommendations for improvement"
+                        rawSummary,
+                        null,
+                        Services.Projects.Interfaces.GitHubInsightsMode.ProjectSummary
                     );
                     
                     _logger.LogInformation("Successfully generated AI-enhanced project activity summary for project {ProjectId}", projectId);
@@ -663,6 +1111,50 @@ namespace GainIt.API.Services.GitHub.Implementations
             {
                 _logger.LogError(ex, "Error getting personalized analytics insights for project {ProjectId} with query: {UserQuery}", projectId, userQuery);
                 return "Unable to generate personalized analytics insights due to an error.";
+            }
+        }
+
+        /// <summary>
+        /// Checks if a repository is already linked to any project
+        /// </summary>
+        /// <param name="owner">Repository owner</param>
+        /// <param name="name">Repository name</param>
+        /// <returns>True if repository is already linked, false otherwise</returns>
+        public async Task<bool> IsRepositoryAlreadyLinkedAsync(string owner, string name)
+        {
+            try
+            {
+                var existingRepository = await _context.Set<GitHubRepository>()
+                    .FirstOrDefaultAsync(r => r.OwnerName == owner && r.RepositoryName == name);
+                
+                return existingRepository != null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking if repository {Owner}/{Name} is already linked", owner, name);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets the project ID that a repository is linked to
+        /// </summary>
+        /// <param name="owner">Repository owner</param>
+        /// <param name="name">Repository name</param>
+        /// <returns>Project ID if repository is linked, null otherwise</returns>
+        public async Task<Guid?> GetProjectIdForRepositoryAsync(string owner, string name)
+        {
+            try
+            {
+                var repository = await _context.Set<GitHubRepository>()
+                    .FirstOrDefaultAsync(r => r.OwnerName == owner && r.RepositoryName == name);
+                
+                return repository?.ProjectId;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting project ID for repository {Owner}/{Name}", owner, name);
+                return null;
             }
         }
 

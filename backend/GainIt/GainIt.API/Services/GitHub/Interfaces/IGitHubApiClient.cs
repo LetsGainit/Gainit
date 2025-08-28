@@ -5,12 +5,12 @@ namespace GainIt.API.Services.GitHub.Interfaces
     public interface IGitHubApiClient
     {
         /// <summary>
-        /// Gets repository information using GraphQL
+        /// Gets repository information via REST API
         /// </summary>
-        Task<GitHubRepositoryNode?> GetRepositoryAsync(string owner, string name);
+        Task<GitHubRestApiRepository?> GetRepositoryAsync(string owner, string name);
 
         /// <summary>
-        /// Gets repository analytics data using GraphQL
+        /// Gets repository analytics data using REST API
         /// </summary>
         Task<GitHubAnalyticsRepository?> GetRepositoryAnalyticsAsync(string owner, string name, int daysPeriod = 30);
 
@@ -20,9 +20,19 @@ namespace GainIt.API.Services.GitHub.Interfaces
         Task<List<GitHubAnalyticsCommitNode>> GetUserContributionsAsync(string owner, string name, string username, int daysPeriod = 30);
 
         /// <summary>
+        /// Gets user contribution data for a specific branch in a repository
+        /// </summary>
+        Task<List<GitHubAnalyticsCommitNode>> GetUserContributionsForBranchAsync(string owner, string name, string username, string branch, int daysPeriod = 30);
+
+        /// <summary>
         /// Gets commit history for a repository
         /// </summary>
         Task<List<GitHubAnalyticsCommitNode>> GetCommitHistoryAsync(string owner, string name, int daysPeriod = 30);
+
+        /// <summary>
+        /// Gets detailed information for a specific commit (includes stats and files)
+        /// </summary>
+        Task<GitHubRestApiCommit?> GetCommitDetailsAsync(string owner, string name, string sha);
 
         /// <summary>
         /// Gets issues for a repository
@@ -35,14 +45,34 @@ namespace GainIt.API.Services.GitHub.Interfaces
         Task<List<GitHubPullRequestNode>> GetPullRequestsAsync(string owner, string name, int daysPeriod = 30);
 
         /// <summary>
+        /// Gets reviews for a specific pull request
+        /// </summary>
+        Task<List<GitHubPullRequestReviewNode>> GetPullRequestReviewsAsync(string owner, string name, int pullNumber);
+
+        /// <summary>
         /// Gets repository statistics (stars, forks, etc.)
         /// </summary>
         Task<GitHubRepositoryStats> GetRepositoryStatsAsync(string owner, string name);
 
         /// <summary>
-        /// Validates if a repository exists and is public
+        /// Gets repository languages with byte counts
         /// </summary>
-        Task<bool> ValidateRepositoryAsync(string owner, string name);
+        Task<Dictionary<string, int>> GetRepositoryLanguagesAsync(string owner, string name);
+
+        /// <summary>
+        /// Gets repository contributors
+        /// </summary>
+        Task<List<GitHubRestApiContributor>> GetRepositoryContributorsAsync(string owner, string name);
+
+        /// <summary>
+        /// Gets repository branches
+        /// </summary>
+        Task<List<string>> GetRepositoryBranchesAsync(string owner, string name);
+
+        /// <summary>
+        /// Validates if a repository exists and is accessible via REST API
+        /// </summary>
+        Task<(bool IsValid, GitHubRestApiRepository? Repository, bool? IsPrivate)> ValidateRepositoryAsync(string owner, string name);
 
         /// <summary>
         /// Gets the current rate limit status
@@ -62,7 +92,6 @@ namespace GainIt.API.Services.GitHub.Interfaces
     {
         public int StargazerCount { get; set; }
         public int ForkCount { get; set; }
-        public int WatcherCount { get; set; }
         public int IssueCount { get; set; }
         public int PullRequestCount { get; set; }
         public int BranchCount { get; set; }
