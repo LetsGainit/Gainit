@@ -219,8 +219,19 @@ try
         return new Azure.Communication.Email.EmailClient(cfg.ConnectionString);
     });
 
+    // Debug configuration loading
+    Log.Information("=== CONFIGURATION DEBUG ===");
+    Log.Information("Environment: {Environment}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
+    Log.Information("Current Directory: {CurrentDirectory}", Directory.GetCurrentDirectory());
+    
     var b2c = builder.Configuration.GetSection("AzureAdB2C");
-    var authority = $"{b2c["Instance"]!.TrimEnd('/')}/{b2c["Domain"]}/{b2c["SignUpSignInPolicyId"]}/v2.0";
+    Log.Information("AzureAdB2C section exists: {Exists}", b2c.Exists());
+    Log.Information("AzureAdB2C section path: {Path}", b2c.Path);
+    
+    // List all configuration keys from builder.Configuration
+    var allKeys = builder.Configuration.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
+    Log.Information("Found {Count} Azure AD B2C configuration keys: {Keys}", 
+        allKeys.Count, string.Join(", ", allKeys.Select(k => $"{k.Key}={k.Value}")));
     
     // Log the Azure AD B2C configuration for debugging
     Log.Information("=== AZURE AD B2C CONFIGURATION ===");
@@ -228,6 +239,24 @@ try
     Log.Information("Domain: {Domain}", b2c["Domain"]);
     Log.Information("SignUpSignInPolicyId: {PolicyId}", b2c["SignUpSignInPolicyId"]);
     Log.Information("Audience: {Audience}", b2c["Audience"]);
+    
+    // Check if any values are null or empty
+    if (string.IsNullOrWhiteSpace(b2c["Instance"]) || 
+        string.IsNullOrWhiteSpace(b2c["Domain"]) || 
+        string.IsNullOrWhiteSpace(b2c["SignUpSignInPolicyId"]) || 
+        string.IsNullOrWhiteSpace(b2c["Audience"]))
+    {
+        Log.Error("=== AZURE AD B2C CONFIGURATION ERROR ===");
+        Log.Error("One or more Azure AD B2C configuration values are null or empty!");
+        Log.Error("Instance: '{Instance}'", b2c["Instance"] ?? "NULL");
+        Log.Error("Domain: '{Domain}'", b2c["Domain"] ?? "NULL");
+        Log.Error("SignUpSignInPolicyId: '{PolicyId}'", b2c["SignUpSignInPolicyId"] ?? "NULL");
+        Log.Error("Audience: '{Audience}'", b2c["Audience"] ?? "NULL");
+        
+        throw new InvalidOperationException("Azure AD B2C configuration is incomplete. Check your appsettings.json or environment variables.");
+    }
+    
+    var authority = $"{b2c["Instance"]!.TrimEnd('/')}/{b2c["Domain"]}/{b2c["SignUpSignInPolicyId"]}/v2.0";
     Log.Information("Authority: {Authority}", authority);
 
     builder.Services
