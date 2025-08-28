@@ -307,7 +307,12 @@ namespace GainIt.API.Controllers.Projects
                         PullRequestsMerged = contribution.MergedPullRequestsCreated,
                         PullRequestsClosed = contribution.ClosedPullRequestsCreated,
                         IssuesOpened = contribution.OpenIssuesCreated,
-                        IssuesClosed = contribution.ClosedIssuesCreated
+                        IssuesClosed = contribution.ClosedIssuesCreated,
+                        LatestPullRequestTitle = contribution.LatestPullRequestTitle,
+                        LatestPullRequestNumber = contribution.LatestPullRequestNumber,
+                        LatestPullRequestCreatedAt = contribution.LatestPullRequestCreatedAt,
+                        LatestCommitMessage = contribution.LatestCommitMessage,
+                        LatestCommitDate = contribution.LatestCommitDate
                     }
                 };
 
@@ -551,6 +556,31 @@ namespace GainIt.API.Controllers.Projects
             {
                 _logger.LogError(ex, "Error validating repository URL: {RepositoryUrl}", request.RepositoryUrl);
                 return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while validating the URL" });
+            }
+        }
+
+        /// <summary>
+        /// Resolves a GitHub repository (owner/name) to the linked projectId, if any
+        /// </summary>
+        [HttpGet("repositories/{owner}/{name}/project")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLinkedProjectByRepository(string owner, string name)
+        {
+            try
+            {
+                var projectId = await _gitHubService.GetProjectIdForRepositoryAsync(owner, name);
+                if (projectId == null)
+                {
+                    return NotFound(new ErrorResponseDto { Error = "Repository is not linked to any project" });
+                }
+
+                return Ok(new { projectId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resolving project for repository {Owner}/{Name}", owner, name);
+                return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while resolving the repository link" });
             }
         }
     }

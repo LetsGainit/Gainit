@@ -586,7 +586,7 @@ namespace GainIt.API.Models.Projects
     public class GitHubIssueNode
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; } = string.Empty;
+        public long Id { get; set; }
         [JsonPropertyName("title")]
         public string Title { get; set; } = string.Empty;
         [JsonPropertyName("state")]
@@ -599,6 +599,9 @@ namespace GainIt.API.Models.Projects
         public DateTime? ClosedAt { get; set; }
         [JsonPropertyName("user")]
         public GitHubRestApiUser? User { get; set; }
+        // Present when this item is actually a PR returned by the issues endpoint
+        [JsonPropertyName("pull_request")]
+        public object? PullRequest { get; set; }
         public List<string> Labels { get; set; } = new List<string>();
         public int Comments { get; set; }
         public string? Body { get; set; }
@@ -609,7 +612,7 @@ namespace GainIt.API.Models.Projects
         [JsonPropertyName("number")]
         public int Number { get; set; }
         [JsonPropertyName("id")]
-        public string Id { get; set; } = string.Empty;
+        public long Id { get; set; }
         [JsonPropertyName("title")]
         public string Title { get; set; } = string.Empty;
         [JsonPropertyName("state")]

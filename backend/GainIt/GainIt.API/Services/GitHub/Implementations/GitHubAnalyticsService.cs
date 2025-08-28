@@ -96,27 +96,27 @@ namespace GainIt.API.Services.GitHub.Implementations
                         }
                     }
 
-                    // Contributors from commit history
-                    var distinctAuthors = commitHistory
-                        .Select(c => c.Author?.Name)
-                        .Where(n => !string.IsNullOrWhiteSpace(n))
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .Count();
-                    analytics.TotalContributors = distinctAuthors;
-
-                    // Active contributors: authors who committed within the last daysPeriod (same set here)
-                    analytics.ActiveContributors = distinctAuthors;
-                }
-                else
-                {
-                    // Fallback to stored contributions for contributor counts
+                    // Contributors: prefer stored per-user contributions (deduped) over raw commit author names
                     var distinctUsers = repository.Contributions
-                        .Select(c => c.GitHubUsername)
-                        .Where(u => !string.IsNullOrWhiteSpace(u))
+                        .Where(c => c.TotalCommits > 0)
+                        .Where(c => !string.IsNullOrWhiteSpace(c.GitHubUsername))
+                        .Select(c => c.GitHubUsername!)
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .Count();
                     analytics.TotalContributors = distinctUsers;
-                    analytics.ActiveContributors = repository.Contributions.Count(c => c.TotalCommits > 0);
+                    analytics.ActiveContributors = distinctUsers;
+                }
+                else
+                {
+                    // Fallback: use stored contributions (deduped by username, with activity)
+                    var distinctUsers = repository.Contributions
+                        .Where(c => c.TotalCommits > 0)
+                        .Where(c => !string.IsNullOrWhiteSpace(c.GitHubUsername))
+                        .Select(c => c.GitHubUsername!)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Count();
+                    analytics.TotalContributors = distinctUsers;
+                    analytics.ActiveContributors = distinctUsers;
                 }
 
                 _logger.LogInformation("Repository analytics processed successfully for {Repository}", repository.FullName);
@@ -157,8 +157,21 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                 // Fetch real GitHub contribution data from ALL branches
                 var allCommits = new List<GitHubAnalyticsCommitNode>();
-                
-                foreach (var branch in repository.Branches)
+
+                // Normalize and de-duplicate branch list before calling the API
+                var distinctBranches = (repository.Branches ?? new List<string>())
+                    .Where(b => !string.IsNullOrWhiteSpace(b))
+                    .Select(b => b.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (distinctBranches.Count != (repository.Branches?.Count ?? 0))
+                {
+                    _logger.LogDebug("Normalized branch list for {Repository}: {OriginalCount} -> {DistinctCount}",
+                        repository.FullName, repository.Branches?.Count ?? 0, distinctBranches.Count);
+                }
+
+                foreach (var branch in distinctBranches)
                 {
                     _logger.LogDebug("Fetching contributions for {Username} on branch {Branch} in {Repository}", 
                         username, branch, repository.FullName);
@@ -179,10 +192,10 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (allCommits.Any())
                 {
                     _logger.LogInformation("Found {TotalCommitCount} total GitHub contributions for {Username} across {BranchCount} branches in {Repository}", 
-                        allCommits.Count, username, repository.Branches.Count, repository.FullName);
+                        allCommits.Count, username, distinctBranches.Count, repository.FullName);
 
                     // Log commits per branch for debugging
-                    foreach (var branch in repository.Branches)
+                    foreach (var branch in distinctBranches)
                     {
                         var branchCommitCount = allCommits.Count(c => c.Id.StartsWith(branch) || c.Message.Contains(branch));
                         _logger.LogDebug("Branch {Branch}: {CommitCount} commits for {Username}", branch, branchCommitCount, username);
@@ -201,12 +214,20 @@ namespace GainIt.API.Services.GitHub.Implementations
                         // If stats were not present from list, try to fetch details
                         if (c.Additions == 0 && c.Deletions == 0 && c.ChangedFiles == 0)
                         {
-                            var details = await _gitHubApiClient.GetCommitDetailsAsync(repository.OwnerName, repository.RepositoryName, c.Id);
-                            if (details?.Stats != null)
+                            try
                             {
-                                c.Additions = details.Stats.Additions;
-                                c.Deletions = details.Stats.Deletions;
-                                c.ChangedFiles = details.Files?.Count ?? 0;
+                                var details = await _gitHubApiClient.GetCommitDetailsAsync(repository.OwnerName, repository.RepositoryName, c.Id);
+                                if (details?.Stats != null)
+                                {
+                                    c.Additions = details.Stats.Additions;
+                                    c.Deletions = details.Stats.Deletions;
+                                    c.ChangedFiles = details.Files?.Count ?? 0;
+                                }
+                            }
+                            catch (InvalidOperationException ex) when (ex.Message.Contains("rate limit", StringComparison.OrdinalIgnoreCase))
+                            {
+                                _logger.LogWarning("Rate limit hit during commit detail enrichment. Stopping enrichment early at index {Index}.", i);
+                                break; // early-stop enrichment to preserve quota
                             }
                         }
                     }
@@ -225,13 +246,43 @@ namespace GainIt.API.Services.GitHub.Implementations
                         .ToList();
                     contribution.UniqueDaysWithCommits = commitDates.Count;
 
+                    // Calculate streaks (longest and current) from commitDates
+                    var orderedDays = commitDates.OrderBy(d => d).ToList();
+                    int longest = 0, current = 0;
+                    DateTime? prevDay = null;
+                    foreach (var day in orderedDays)
+                    {
+                        if (prevDay.HasValue && (day - prevDay.Value).TotalDays == 1)
+                        {
+                            current++;
+                        }
+                        else
+                        {
+                            current = 1;
+                        }
+                        if (current > longest) longest = current;
+                        prevDay = day;
+                    }
+                    contribution.LongestStreak = longest;
+                    contribution.CurrentStreak = current;
+
                     // Process activity patterns from ALL branches
                     contribution.CommitsByDayOfWeek = ProcessCommitsByDayOfWeek(allCommits);
                     contribution.CommitsByHour = ProcessCommitsByHour(allCommits);
                     contribution.ActivityByMonth = ProcessActivityByMonth(allCommits);
 
-                    // Extract languages from commit messages (basic approach)
-                    contribution.LanguagesContributed = ExtractLanguagesFromCommits(allCommits);
+                    // Languages: prefer repository languages (stable) over commit-message heuristics
+                    contribution.LanguagesContributed = repository.Languages?.Any() == true
+                        ? repository.Languages
+                        : ExtractLanguagesFromCommits(allCommits);
+
+                    // Latest commit details
+                    var latestCommit = allCommits.OrderByDescending(c => c.CommittedDate).FirstOrDefault();
+                    if (latestCommit != null)
+                    {
+                        contribution.LatestCommitMessage = latestCommit.Message;
+                        contribution.LatestCommitDate = latestCommit.CommittedDate;
+                    }
 
                     // Augment with Issues, PRs, and Reviews using REST API
                     // PRs
@@ -253,6 +304,17 @@ namespace GainIt.API.Services.GitHub.Implementations
                         contribution.MergedPullRequestsCreated = prsMerged;
                         contribution.ClosedPullRequestsCreated = prsClosed;
 
+                        // Latest PR details
+                        var latestPr = userPrs
+                            .OrderByDescending(pr => pr.UpdatedAt ?? pr.CreatedAt)
+                            .FirstOrDefault();
+                        if (latestPr != null)
+                        {
+                            contribution.LatestPullRequestTitle = latestPr.Title;
+                            contribution.LatestPullRequestNumber = latestPr.Number;
+                            contribution.LatestPullRequestCreatedAt = latestPr.CreatedAt;
+                        }
+
                         // Reviews made by the user on their own PRs (or in general, could be extended to all PRs)
                         int totalReviews = 0;
                         foreach (var pr in userPrs.Take(MaxPrReviewsLookups)) // cap review lookups
@@ -268,7 +330,13 @@ namespace GainIt.API.Services.GitHub.Implementations
                     var issues = await _gitHubApiClient.GetIssuesAsync(repository.OwnerName, repository.RepositoryName, daysPeriod);
                     if (issues != null && issues.Any())
                     {
-                        var userIssues = issues.Where(i => string.Equals(i.User?.Login, username, StringComparison.OrdinalIgnoreCase)).ToList();
+                        var cutoffIssues = DateTime.UtcNow.AddDays(-daysPeriod);
+                        // Exclude PRs returned by issues endpoint, respect time window by CreatedAt
+                        var userIssues = issues
+                            .Where(i => i.PullRequest == null)
+                            .Where(i => i.CreatedAt >= cutoffIssues)
+                            .Where(i => string.Equals(i.User?.Login, username, StringComparison.OrdinalIgnoreCase))
+                            .ToList();
                         contribution.TotalIssuesCreated = userIssues.Count;
                         var issuesOpened = userIssues.Count(i => string.Equals(i.State, "open", StringComparison.OrdinalIgnoreCase));
                         var issuesClosed = userIssues.Count(i => string.Equals(i.State, "closed", StringComparison.OrdinalIgnoreCase));
@@ -307,7 +375,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 }
 
                 _logger.LogInformation("User contribution analytics processed successfully for {Username} in {Repository}: {Commits} commits across {BranchCount} branches, {LinesChanged} lines changed", 
-                    username, repository.FullName, contribution.TotalCommits, repository.Branches.Count, contribution.TotalLinesChanged);
+                    username, repository.FullName, contribution.TotalCommits, distinctBranches.Count, contribution.TotalLinesChanged);
                 return contribution;
             }
             catch (Exception ex)
@@ -368,7 +436,6 @@ namespace GainIt.API.Services.GitHub.Implementations
             try
             {
                 var score = 0.0;
-                var maxScore = 100.0;
 
                 // Activity score (30 points)
                 var activityScore = Math.Min(30.0, (analytics.TotalCommits / 100.0) * 30);
@@ -420,7 +487,6 @@ namespace GainIt.API.Services.GitHub.Implementations
             try
             {
                 var score = 0.0;
-                var maxScore = 100.0;
 
                 // Commit activity score (40 points)
                 var commitScore = Math.Min(40.0, (contribution.TotalCommits / 50.0) * 40);
@@ -573,31 +639,6 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        /// <summary>
-        /// Placeholder to resolve a repository owner/name to the linked project ID.
-        /// Currently not implemented; returns null and logs a warning.
-        /// Consider removing if not used by any caller.
-        /// </summary>
-        /// <param name="owner">Repository owner.</param>
-        /// <param name="name">Repository name.</param>
-        /// <returns>Linked project ID, or null if not implemented/not found.</returns>
-        public async Task<Guid?> GetProjectIdForRepositoryAsync(string owner, string name)
-        {
-            _logger.LogInformation("Getting project ID for repository {Owner}/{Name}", owner, name);
-            
-            try
-            {
-                // This would typically query the database to find the project ID
-                // For now, return null as this method is not yet fully implemented
-                _logger.LogWarning("GetProjectIdForRepositoryAsync not yet implemented for {Owner}/{Name}", owner, name);
-                return null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting project ID for repository {Owner}/{Name}", owner, name);
-                return null;
-            }
-        }
 
         #region Helper Methods
 
@@ -658,10 +699,12 @@ namespace GainIt.API.Services.GitHub.Implementations
         private Dictionary<string, int> ProcessCommitsByDayOfWeek(List<GitHubAnalyticsCommitNode> commits)
         {
             var dayOfWeekCounts = InitializeDayOfWeekTracking();
-            
+            var tz = ResolveIsraelTimeZone();
+
             foreach (var commit in commits)
             {
-                var dayOfWeek = commit.CommittedDate.DayOfWeek.ToString();
+                var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(commit.CommittedDate, DateTimeKind.Utc), tz);
+                var dayOfWeek = local.DayOfWeek.ToString();
                 if (dayOfWeekCounts.ContainsKey(dayOfWeek))
                 {
                     dayOfWeekCounts[dayOfWeek]++;
@@ -674,10 +717,12 @@ namespace GainIt.API.Services.GitHub.Implementations
         private Dictionary<string, int> ProcessCommitsByHour(List<GitHubAnalyticsCommitNode> commits)
         {
             var hourCounts = InitializeHourTracking();
-            
+            var tz = ResolveIsraelTimeZone();
+
             foreach (var commit in commits)
             {
-                var hour = commit.CommittedDate.Hour.ToString("00");
+                var local = TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(commit.CommittedDate, DateTimeKind.Utc), tz);
+                var hour = local.Hour.ToString("00");
                 if (hourCounts.ContainsKey(hour))
                 {
                     hourCounts[hour]++;
@@ -685,6 +730,26 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
             
             return hourCounts;
+        }
+
+        private TimeZoneInfo ResolveIsraelTimeZone()
+        {
+            // Prefer Windows ID on Windows; try IANA as fallback
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Israel Standard Time");
+            }
+            catch
+            {
+                try
+                {
+                    return TimeZoneInfo.FindSystemTimeZoneById("Asia/Jerusalem");
+                }
+                catch
+                {
+                    return TimeZoneInfo.Utc; // fallback to UTC
+                }
+            }
         }
 
         private Dictionary<string, int> ProcessActivityByMonth(List<GitHubAnalyticsCommitNode> commits)

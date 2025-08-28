@@ -49,9 +49,6 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// </summary>
         Task<byte[]> ExportAnalyticsAsync(Guid repositoryId, string format = "json");
 
-        /// <summary>
-        /// Gets the project ID that a repository is linked to
-        /// </summary>
-        Task<Guid?> GetProjectIdForRepositoryAsync(string owner, string name);
+        // Repo-to-project resolution lives in IGitHubService, not here
     }
 }

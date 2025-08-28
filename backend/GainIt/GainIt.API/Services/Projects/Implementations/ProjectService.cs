@@ -3,6 +3,7 @@ using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
 using GainIt.API.Services.Projects.Interfaces;
+using GainIt.API.Services.GitHub.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -12,11 +13,13 @@ namespace GainIt.API.Services.Projects.Implementations
     {
         private readonly GainItDbContext r_DbContext;
         private readonly ILogger<ProjectService> r_logger;
+        private readonly IGitHubService r_gitHubService;
 
-        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger)
+        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService)
         {
             r_DbContext = i_DbContext;
             r_logger = i_logger;
+            r_gitHubService = i_gitHubService;
         }
 
         public async Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId, string i_Role)
@@ -609,10 +612,29 @@ namespace GainIt.API.Services.Projects.Implementations
                 throw new KeyNotFoundException($"Project with ID {i_ProjectId} not found");
             }
 
+            // If a GitHub repo is already linked, unlink and delete its data first
+            var existingRepo = await r_DbContext.Set<GitHubRepository>()
+                .FirstOrDefaultAsync(r => r.ProjectId == i_ProjectId);
+
+            if (existingRepo != null)
+            {
+                r_logger.LogInformation("Existing GitHub repository found for ProjectId={ProjectId}. Unlinking and deleting related data.", i_ProjectId);
+                await r_gitHubService.UnlinkRepositoryAsync(i_ProjectId);
+            }
+
+            // Update the project link
             project.RepositoryLink = i_RepositoryLink;
             await r_DbContext.SaveChangesAsync();
 
-            r_logger.LogInformation("Successfully updated project repository link: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", i_ProjectId, i_RepositoryLink);
+            // Attempt to link the new repository via GitHubService (validates URL, stores metadata, branches, etc.)
+            var linkResult = await r_gitHubService.LinkRepositoryAsync(i_ProjectId, i_RepositoryLink);
+            if (!linkResult.Success)
+            {
+                r_logger.LogWarning("Failed to link new GitHub repo for ProjectId={ProjectId}: {Message}", i_ProjectId, linkResult.Message);
+                throw new InvalidOperationException(linkResult.Message ?? "Failed to link GitHub repository");
+            }
+
+            r_logger.LogInformation("Successfully updated and re-linked GitHub repository: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", i_ProjectId, i_RepositoryLink);
             return project;
         }
     }

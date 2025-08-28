@@ -76,6 +76,18 @@ namespace GainIt.API.Models.Projects
         public int DiscussionsParticipated { get; set; }
         public int WikiPagesEdited { get; set; }
 
+        // Transient, non-persisted context about latest work items
+        [NotMapped]
+        public string? LatestPullRequestTitle { get; set; }
+        [NotMapped]
+        public int? LatestPullRequestNumber { get; set; }
+        [NotMapped]
+        public DateTime? LatestPullRequestCreatedAt { get; set; }
+        [NotMapped]
+        public string? LatestCommitMessage { get; set; }
+        [NotMapped]
+        public DateTime? LatestCommitDate { get; set; }
+
         // Navigation properties
         [ForeignKey("RepositoryId")]
         public virtual GitHubRepository Repository { get; set; } = null!;

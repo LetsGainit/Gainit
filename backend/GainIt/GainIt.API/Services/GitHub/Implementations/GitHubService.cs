@@ -259,13 +259,16 @@ namespace GainIt.API.Services.GitHub.Implementations
                         var languages = await _apiClient.GetRepositoryLanguagesAsync(repository.OwnerName, repository.RepositoryName);
                         var contributors = await _apiClient.GetRepositoryContributorsAsync(repository.OwnerName, repository.RepositoryName);
                         var branches = await _apiClient.GetRepositoryBranchesAsync(repository.OwnerName, repository.RepositoryName);
+                        // Fetch PRs and count open ones to persist in DB
+                        var prs = await _apiClient.GetPullRequestsAsync(repository.OwnerName, repository.RepositoryName, 30);
+                        var openPrCount = prs?.Count(pr => string.Equals(pr.State, "open", StringComparison.OrdinalIgnoreCase)) ?? 0;
 
                         // Update repository information
                         repository.Description = repositoryData.Description;
                         repository.StarsCount = repositoryData.StargazersCount;
                         repository.ForksCount = repositoryData.ForksCount;
                         repository.OpenIssuesCount = repositoryData.OpenIssuesCount;
-                        repository.OpenPullRequestsCount = 0; // Will be fetched separately if needed
+                        repository.OpenPullRequestsCount = openPrCount;
                         repository.LastActivityAtUtc = repositoryData.PushedAt ?? repositoryData.UpdatedAt;
 
                         // Update languages from REST API
@@ -883,6 +886,13 @@ namespace GainIt.API.Services.GitHub.Implementations
                         contribution.UserId, contribution.TotalCommits, contribution.TotalLinesChanged, contribution.GitHubUsername);
                 }
 
+                // De-duplicate contributions by GitHubUsername (pick latest snapshot per user)
+                var distinctContributions = contributions
+                    .Where(c => !string.IsNullOrWhiteSpace(c.GitHubUsername))
+                    .GroupBy(c => c.GitHubUsername!, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.OrderByDescending(c => c.CalculatedAtUtc).First())
+                    .ToList();
+
                 var dto = new GitHubRepositoryStatsDto
                 {
                     RepositoryName = repository.RepositoryName,
@@ -901,9 +911,9 @@ namespace GainIt.API.Services.GitHub.Implementations
                     BranchCount = repository.Branches?.Count ?? 0, // Use stored branch count
                     Branches = repository.Branches ?? new List<string>(), // ← Add actual branch names
                     ReleaseCount = repoStats.ReleaseCount,
-                    Contributors = contributions.Count,
-                    TopContributors = contributions
-                        .Where(c => c.TotalCommits > 0) // Only show contributors with actual commits
+                    Contributors = distinctContributions.Count,
+                    TopContributors = distinctContributions
+                        .Where(c => c.TotalCommits > 0)
                         .OrderByDescending(c => c.TotalCommits)
                         .Take(5)
                         .Select(c => new TopContributorDto
@@ -948,11 +958,30 @@ namespace GainIt.API.Services.GitHub.Implementations
                 rawSummary += $"• Pull Requests: {contribution.TotalPullRequestsCreated}\n";
                 rawSummary += $"• Code Reviews: {contribution.TotalReviews}\n\n";
 
+                // Latest work context (if available)
+                if (!string.IsNullOrWhiteSpace(contribution.LatestPullRequestTitle))
+                {
+                    var prWhen = contribution.LatestPullRequestCreatedAt?.ToString("yyyy-MM-dd") ?? "";
+                    var prNum = contribution.LatestPullRequestNumber.HasValue ? $"#{contribution.LatestPullRequestNumber}" : string.Empty;
+                    rawSummary += $"🆕 Latest PR: {contribution.LatestPullRequestTitle} {prNum} {prWhen}\n";
+                }
+                if (!string.IsNullOrWhiteSpace(contribution.LatestCommitMessage))
+                {
+                    var cWhen = contribution.LatestCommitDate?.ToString("yyyy-MM-dd HH:mm") ?? "";
+                    rawSummary += $"🆕 Latest Commit: {contribution.LatestCommitMessage} ({cWhen} UTC)\n\n";
+                }
+
                 rawSummary += $"📊 Activity Patterns:\n";
                 if (contribution.CommitsByDayOfWeek.Any())
                 {
                     var mostActiveDay = contribution.CommitsByDayOfWeek.OrderByDescending(x => x.Value).First();
                     rawSummary += $"• Most Active Day: {mostActiveDay.Key} ({mostActiveDay.Value} commits)\n";
+                }
+
+                if (contribution.CommitsByHour.Any())
+                {
+                    var mostActiveHour = contribution.CommitsByHour.OrderByDescending(x => x.Value).First();
+                    rawSummary += $"• Most Active Hour: {mostActiveHour.Key}:00 ({mostActiveHour.Value} commits)\n";
                 }
 
                 if (contribution.LanguagesContributed.Any())
@@ -968,7 +997,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 {
                     var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
                         rawSummary, 
-                        $"Analyze this user's GitHub activity and provide insights about their contribution patterns, strengths, and areas for improvement, adress the user in the first person, try to make the response consice and to the point"
+                        "You are a mentor writing a brief, motivating progress summary for a junior contributor. Output must be concise bullet points (no paragraphs, no sign-off). Use concrete facts from the provided context only; do NOT invent placeholders (e.g., PR #X, module Z, [Your Name]). If a specific ID/name is missing, omit it. If 'Latest PR' or 'Latest Commit' are present, include one bullet referencing them. Include top activity day and, if available, top hour/week. Suggest exactly 2 next steps strictly within this project and grounded in the data. Audience: Israel (write in English)."
                     );
                     
                     _logger.LogInformation("Successfully generated AI-enhanced user activity summary for user {UserId} in project {ProjectId}", userId, projectId);
@@ -1007,7 +1036,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 {
                     var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
                         rawSummary, 
-                        $"Analyze this project's GitHub activity and provide insights about project health, team performance, and recommendations for improvement,  make the response consice and to the point"
+                        "You are a mentor writing a brief, motivating team status update. Output must be concise bullet points (no paragraphs, no sign-off), strictly within this project’s scope. Use only concrete facts from the context; do NOT use placeholders (e.g., PR #X, module Z, [Your Name]). If 'Latest PR' or 'Latest Commit' are present, include one bullet referencing them. Start with the strongest stat, add 2 concrete wins, then list 2–3 next actions grounded in the data (e.g., ‘triage 12 open issues in backlog’, ‘add tests for report exporter’). If blockers exist and an owner is known, name owner + next step; otherwise state the blocker without guessing. Audience: Israel (write in English)."
                     );
                     
                     _logger.LogInformation("Successfully generated AI-enhanced project activity summary for project {ProjectId}", projectId);

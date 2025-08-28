@@ -16,14 +16,17 @@ namespace GainIt.API.Services.GitHub.Implementations
         private readonly ILogger<GitHubApiClient> _logger;
         private readonly SemaphoreSlim _rateLimitSemaphore;
         private DateTime _rateLimitResetAt = DateTime.UtcNow.AddHours(1);
-        private int _remainingRequests = 60; // Public API rate limit
+        private int _remainingRequests = 5000; // Public API rate limit
+        private readonly IConfiguration _configuration;
 
         public GitHubApiClient(
             HttpClient httpClient,
-            ILogger<GitHubApiClient> logger)
+            ILogger<GitHubApiClient> logger,
+            IConfiguration configuration)
         {
             _httpClient = httpClient;
             _logger = logger;
+            _configuration = configuration;
             _rateLimitSemaphore = new SemaphoreSlim(1, 1);
 
             // Configure HTTP client for GitHub REST API
@@ -33,6 +36,20 @@ namespace GainIt.API.Services.GitHub.Implementations
             // Set GitHub API version and user agent
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "GainIt-Platform");
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3+json");
+
+            // Optional token to raise rate limits if provided via env var
+            var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN")
+                        ?? _configuration["GitHub:Token"];
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                _logger.LogInformation("GitHub API client configured with token authentication (env GITHUB_TOKEN or config GitHub:Token)");
+            }
+            else
+            {
+                _logger.LogError("GitHub token is required but was not found (set env GITHUB_TOKEN or config GitHub:Token)");
+                throw new InvalidOperationException("Missing GitHub token configuration");
+            }
         }
 
         public async Task<GitHubRestApiRepository?> GetRepositoryAsync(string owner, string name)
@@ -439,8 +456,15 @@ namespace GainIt.API.Services.GitHub.Implementations
                 {
                     throw new InvalidOperationException("GitHub API rate limit exceeded");
                 }
+                // 10-minute cache for issues
+                var cacheKey = $"issues:{owner}/{name}:{daysPeriod}";
+                var (hit, cached) = InMemoryGitHubCache.TryGet<List<GitHubIssueNode>>(cacheKey);
+                if (hit)
+                {
+                    return cached ?? new List<GitHubIssueNode>();
+                }
 
-            var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
+                var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
                 var endpoint = $"repos/{owner}/{name}/issues?since={since}&state=all&per_page=100";
                 
                 var response = await _httpClient.GetAsync(endpoint);
@@ -456,7 +480,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     {
                         _logger.LogInformation("Issues retrieved for {Owner}/{Name}: {IssueCount} issues", 
                             owner, name, issues.Count);
-                        
+                        InMemoryGitHubCache.Set(cacheKey, issues, TimeSpan.FromMinutes(10));
                         return issues;
                     }
                 }
@@ -500,8 +524,15 @@ namespace GainIt.API.Services.GitHub.Implementations
                 {
                     throw new InvalidOperationException("GitHub API rate limit exceeded");
                 }
+                // 10-minute cache for PRs
+                var cacheKey = $"prs:{owner}/{name}:{daysPeriod}";
+                var (hit, cached) = InMemoryGitHubCache.TryGet<List<GitHubPullRequestNode>>(cacheKey);
+                if (hit)
+                {
+                    return cached ?? new List<GitHubPullRequestNode>();
+                }
 
-            var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
+                var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
                 var endpoint = $"repos/{owner}/{name}/pulls?state=all&per_page=100";
                 
                 var response = await _httpClient.GetAsync(endpoint);
@@ -517,7 +548,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     {
                         _logger.LogInformation("Pull requests retrieved for {Owner}/{Name}: {PRCount} PRs", 
                             owner, name, pullRequests.Count);
-                        
+                        InMemoryGitHubCache.Set(cacheKey, pullRequests, TimeSpan.FromMinutes(10));
                         return pullRequests;
                     }
                 }
@@ -538,15 +569,15 @@ namespace GainIt.API.Services.GitHub.Implementations
                 return new List<GitHubPullRequestNode>();
             }
             finally
+        {
+            await _rateLimitSemaphore.WaitAsync();
+            try
             {
-                await _rateLimitSemaphore.WaitAsync();
-                try
-                {
                     _remainingRequests = Math.Max(0, _remainingRequests - 1);
-                }
-                finally
-                {
-                    _rateLimitSemaphore.Release();
+            }
+            finally
+            {
+                _rateLimitSemaphore.Release();
                 }
             }
         }
@@ -592,10 +623,10 @@ namespace GainIt.API.Services.GitHub.Implementations
                 try
                 {
                     _remainingRequests = Math.Max(0, _remainingRequests - 1);
-                }
-                finally
-                {
-                    _rateLimitSemaphore.Release();
+            }
+            finally
+            {
+                _rateLimitSemaphore.Release();
                 }
             }
         }
@@ -626,13 +657,16 @@ namespace GainIt.API.Services.GitHub.Implementations
                     {
                         // Get additional stats from separate endpoints
                         var (languages, contributors, branches) = await GetAdditionalStatsAsync(owner, name);
+                        // Fetch PRs (cached for 10 minutes) and count open PRs
+                        var prs = await GetPullRequestsAsync(owner, name, 30);
+                        var openPrCount = prs?.Count(pr => string.Equals(pr.State, "open", StringComparison.OrdinalIgnoreCase)) ?? 0;
                         
                         var stats = new GitHubRepositoryStats
                         {
                             StargazerCount = repository.StargazersCount,
                             ForkCount = repository.ForksCount,
                             IssueCount = repository.OpenIssuesCount,
-                            PullRequestCount = 0, // Will be fetched separately if needed
+                            PullRequestCount = openPrCount,
                             BranchCount = branches,
                             ReleaseCount = 0 // Will be fetched separately if needed
                         };
@@ -833,15 +867,15 @@ namespace GainIt.API.Services.GitHub.Implementations
                 return new List<GitHubRestApiContributor>();
             }
             finally
-            {
-                await _rateLimitSemaphore.WaitAsync();
-                try
                 {
+                    await _rateLimitSemaphore.WaitAsync();
+                    try
+                    {
                     _remainingRequests = Math.Max(0, _remainingRequests - 1);
-                }
-                finally
-                {
-                    _rateLimitSemaphore.Release();
+                    }
+                    finally
+                    {
+                        _rateLimitSemaphore.Release();
                 }
             }
         }
