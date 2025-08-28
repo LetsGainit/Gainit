@@ -221,6 +221,14 @@ try
 
     var b2c = builder.Configuration.GetSection("AzureAdB2C");
     var authority = $"{b2c["Instance"]!.TrimEnd('/')}/{b2c["Domain"]}/{b2c["SignUpSignInPolicyId"]}/v2.0";
+    
+    // Log the Azure AD B2C configuration for debugging
+    Log.Information("=== AZURE AD B2C CONFIGURATION ===");
+    Log.Information("Instance: {Instance}", b2c["Instance"]);
+    Log.Information("Domain: {Domain}", b2c["Domain"]);
+    Log.Information("SignUpSignInPolicyId: {PolicyId}", b2c["SignUpSignInPolicyId"]);
+    Log.Information("Audience: {Audience}", b2c["Audience"]);
+    Log.Information("Authority: {Authority}", authority);
 
     builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -232,7 +240,9 @@ try
         {
             NameClaimType = "name",
             ValidateIssuer = true,
-            ValidateAudience = true
+            ValidateAudience = true,
+            ValidIssuer = authority,  // Set the valid issuer
+            ValidAudience = b2c["Audience"]  // Set the valid audience
         };
         
         // Add this to see what's happening during JWT validation
@@ -242,17 +252,35 @@ try
             {
                 Log.Error("JWT Authentication failed: {Error}", context.Exception.Message);
                 Log.Error("JWT Authentication failed details: {Details}", context.Exception);
+                
+                // Log additional context information
+                if (context.HttpContext.Request.Headers.ContainsKey("Authorization"))
+                {
+                    var authHeader = context.HttpContext.Request.Headers["Authorization"].ToString();
+                    Log.Error("Authorization header: {AuthHeader}", authHeader.Substring(0, Math.Min(50, authHeader.Length)) + "...");
+                }
+                
                 return Task.CompletedTask;
             },
             OnTokenValidated = context =>
             {
                 Log.Information("JWT Token validated successfully for user: {User}", context.Principal?.Identity?.Name);
+                
+                // Log token claims for debugging
+                var claims = context.Principal?.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
+                Log.Information("Token claims: {Claims}", string.Join(", ", claims ?? new List<string>()));
+                
                 return Task.CompletedTask;
             },
             OnChallenge = context =>
             {
                 Log.Warning("JWT Challenge issued: {Error}", context.Error);
                 Log.Warning("JWT Challenge description: {Description}", context.ErrorDescription);
+                return Task.CompletedTask;
+            },
+            OnMessageReceived = context =>
+            {
+                Log.Debug("JWT Message received from: {RemoteIP}", context.HttpContext.Connection.RemoteIpAddress);
                 return Task.CompletedTask;
             }
         };
