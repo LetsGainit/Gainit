@@ -287,7 +287,7 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v2 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v3 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
@@ -298,7 +298,7 @@ try
         o.Audience = b2c["Audience"];
         o.TokenValidationParameters = new TokenValidationParameters
         {
-            NameClaimType = "name",
+            NameClaimType = "preferred_username",
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidIssuer = baseAuthority,
@@ -358,12 +358,14 @@ try
         options.AddPolicy("RequireAccessAsUser", policy =>
             policy.RequireAssertion(ctx =>
             {
-                // scp is a space-delimited list in delegated-user tokens
-                var scp = ctx.User.FindFirst("scp")?.Value ?? string.Empty;
-                if (!string.IsNullOrWhiteSpace(scp))
+                // Support both 'scp' and the full URI scope claim
+                var scp = ctx.User.FindFirst("scp")?.Value;
+                var scopeUri = ctx.User.FindFirst("http://schemas.microsoft.com/identity/claims/scope")?.Value;
+                var scopesCombined = string.Join(' ', new[] { scp, scopeUri }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                if (!string.IsNullOrWhiteSpace(scopesCombined))
                 {
-                    return scp.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                              .Contains("access_as_user", StringComparer.Ordinal);
+                    return scopesCombined.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                         .Contains("access_as_user", StringComparer.Ordinal);
                 }
 
                 // optional fallback for app roles (client credentials / roles tokens)
