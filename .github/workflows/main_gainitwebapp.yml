@@ -30,6 +30,21 @@ jobs:
       - name: dotnet publish
         run: dotnet publish backend/GainIt/GainIt.API/GainIt.API.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
+      - name: Install Sysinternals Strings
+        shell: pwsh
+        run: choco install sysinternals -y
+
+      - name: Verify built DLL contains new auth marker
+        shell: pwsh
+        run: |
+          $dll = "${{env.DOTNET_ROOT}}/myapp/GainIt.API.dll"
+          Write-Host "Checking DLL for marker: $dll"
+          $stringsExe = "C:\\ProgramData\\chocolatey\\lib\\sysinternals\\tools\\strings.exe"
+          if (-not (Test-Path $stringsExe)) { Write-Error "strings.exe not found at $stringsExe"; exit 1 }
+          $hasMarker = & $stringsExe $dll | Select-String "AUTH CONFIG VERSION v3" -Quiet
+          if (-not $hasMarker) { Write-Error "AUTH CONFIG VERSION v3 marker NOT found in GainIt.API.dll"; exit 1 }
+          Write-Host "Marker found. Proceeding."
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
