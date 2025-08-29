@@ -262,7 +262,6 @@ try
     // Check if any values are null or empty
     if (string.IsNullOrWhiteSpace(b2c["Instance"]) || 
         string.IsNullOrWhiteSpace(b2c["Domain"]) || 
-        string.IsNullOrWhiteSpace(b2c["SignUpSignInPolicyId"]) || 
         string.IsNullOrWhiteSpace(b2c["Audience"]))
     {
         Log.Error("=== AZURE AD B2C CONFIGURATION ERROR ===");
@@ -276,35 +275,41 @@ try
         Log.Warning("Continuing with default Azure AD B2C configuration - authentication may fail");
         
         // Set default values to prevent null reference exceptions
-        if (string.IsNullOrWhiteSpace(b2c["Instance"])) b2c["Instance"] = "https://gainitauth.ciamlogin.com/";
-        if (string.IsNullOrWhiteSpace(b2c["Domain"])) b2c["Domain"] = "gainitauth.onmicrosoft.com";
-        if (string.IsNullOrWhiteSpace(b2c["SignUpSignInPolicyId"])) b2c["SignUpSignInPolicyId"] = "GainitauthUF1";
+        if (string.IsNullOrWhiteSpace(b2c["Instance"])) b2c["Instance"] = "https://559c1923-19d9-428c-a51a-36c92e884239.ciamlogin.com/";
+        if (string.IsNullOrWhiteSpace(b2c["Domain"])) b2c["Domain"] = "559c1923-19d9-428c-a51a-36c92e884239";
         if (string.IsNullOrWhiteSpace(b2c["Audience"])) b2c["Audience"] = "api://gainitwebapp-dvhfcxbkezgyfwf6.israelcentral-01.azurewebsites.net";
     }
     
-    var authority = $"{b2c["Instance"]!.TrimEnd('/')}/{b2c["Domain"]}/{b2c["SignUpSignInPolicyId"]}/v2.0";
-    Log.Information("Authority: {Authority}", authority);
+    // Build authority without policy to match tokens like .../{tenantId}/v2.0
+    var tenantId = b2c["Domain"];
+    var baseAuthority = $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/v2.0";
+    var policy = b2c["SignUpSignInPolicyId"];
+    var policyAuthority = !string.IsNullOrWhiteSpace(policy)
+        ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
+        : null;
+    Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
     {
-        o.Authority = authority;
+        o.Authority = baseAuthority;
         o.Audience = b2c["Audience"];
         o.TokenValidationParameters = new TokenValidationParameters
         {
             NameClaimType = "name",
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidIssuer = authority,  // Set the valid issuer
-            ValidAudience = b2c["Audience"]  // Set the valid audience
+            ValidIssuer = baseAuthority,
+            ValidIssuers = policyAuthority is not null ? new[] { baseAuthority, policyAuthority } : new[] { baseAuthority },
+            ValidAudiences = new[] { b2c["Audience"]!, "ee13203e-e81d-48cb-8402-422cace331dc" }
         };
         
         // Log the actual values being used for JWT validation
         Log.Information("=== JWT VALIDATION PARAMETERS ===");
-        Log.Information("ValidIssuer: {ValidIssuer}", authority);
-        Log.Information("ValidAudience: {ValidAudience}", b2c["Audience"]);
-        Log.Information("Authority: {Authority}", authority);
+        Log.Information("ValidIssuer: {ValidIssuer}", baseAuthority);
+        Log.Information("ValidAudiences: {ValidAudiences}", string.Join(", ", new[] { b2c["Audience"], "ee13203e-e81d-48cb-8402-422cace331dc" }.Where(x => !string.IsNullOrWhiteSpace(x))));
+        Log.Information("Authority: {Authority}", baseAuthority);
         
         // Add this to see what's happening during JWT validation
         o.Events = new JwtBearerEvents
