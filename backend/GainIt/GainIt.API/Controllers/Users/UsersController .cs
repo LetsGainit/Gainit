@@ -64,6 +64,7 @@ namespace GainIt.API.Controllers.Users
             
             try
             {
+                
                 var externalId =
                     tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
                  ?? tryGetClaim(User, "sub")
@@ -80,13 +81,17 @@ namespace GainIt.API.Controllers.Users
                          ?? tryGetClaim(User, "email")
                          ?? tryGetClaim(User, "preferred_username");
 
-                var name = tryGetClaim(User, "name")
-                            ?? string.Join(' ',
-                                new[] { tryGetClaim(User, "given_name"), tryGetClaim(User, "family_name") }
-                                .Where(s => !string.IsNullOrWhiteSpace(s)));
+                // Prefer display name if present, then compose from given + surname, then fallback
+                var displayName = tryGetClaim(User, "name", "displayName");
+                var given = tryGetClaim(User, "given_name");
+                var surname = tryGetClaim(User, "family_name", "surname");
+                var composed = string.Join(' ', new[] { given, surname }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                var name = !string.IsNullOrWhiteSpace(displayName) ? displayName
+                           : (!string.IsNullOrWhiteSpace(composed) ? composed
+                           : (tryGetClaim(User, "preferred_username") ?? email));
 
                 var idp = tryGetClaim(User, "idp");
-                var country = tryGetClaim(User, "country")
+                var country = tryGetClaim(User, "country", "countryOrRegion", "ctry")
                               ?? User.Claims.FirstOrDefault(c =>
                                     c.Type.StartsWith("extension_", StringComparison.OrdinalIgnoreCase) &&
                                     c.Type.EndsWith("country", StringComparison.OrdinalIgnoreCase))?.Value;
