@@ -233,12 +233,23 @@ try
     Log.Information("AzureAdB2C from Serilog configuration - exists: {Exists}, path: {Path}", 
         b2cFromSerilog.Exists(), b2cFromSerilog.Path);
     
+    // Debug: Check what's actually in each configuration
+    Log.Information("=== BUILDER CONFIGURATION DEBUG ===");
+    var builderKeys = builder.Configuration.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
+    Log.Information("Builder config has {Count} Azure AD B2C keys: {Keys}", 
+        builderKeys.Count, string.Join(", ", builderKeys.Select(k => $"{k.Key}={k.Value}")));
+    
+    Log.Information("=== SERILOG CONFIGURATION DEBUG ===");
+    var serilogKeys = configuration.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
+    Log.Information("Serilog config has {Count} Azure AD B2C keys: {Keys}", 
+        serilogKeys.Count, string.Join(", ", serilogKeys.Select(k => $"{k.Key}={k.Value}")));
+    
     // Use the configuration that actually has the values
     var b2c = b2cFromSerilog.Exists() ? b2cFromSerilog : b2cFromBuilder;
     
     // List all configuration keys from the working configuration
     var allKeys = b2c.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
-    Log.Information("Found {Count} Azure AD B2C configuration keys: {Keys}", 
+    Log.Information("Selected configuration has {Count} Azure AD B2C configuration keys: {Keys}", 
         allKeys.Count, string.Join(", ", allKeys.Select(k => $"{k.Key}={k.Value}")));
     
     // Log the Azure AD B2C configuration for debugging
@@ -261,7 +272,14 @@ try
         Log.Error("SignUpSignInPolicyId: '{PolicyId}'", b2c["SignUpSignInPolicyId"] ?? "NULL");
         Log.Error("Audience: '{Audience}'", b2c["Audience"] ?? "NULL");
         
-        throw new InvalidOperationException("Azure AD B2C configuration is incomplete. Check your appsettings.json or environment variables.");
+        // Instead of throwing, log the error and continue with default values
+        Log.Warning("Continuing with default Azure AD B2C configuration - authentication may fail");
+        
+        // Set default values to prevent null reference exceptions
+        if (string.IsNullOrWhiteSpace(b2c["Instance"])) b2c["Instance"] = "https://gainitauth.ciamlogin.com/";
+        if (string.IsNullOrWhiteSpace(b2c["Domain"])) b2c["Domain"] = "gainitauth.onmicrosoft.com";
+        if (string.IsNullOrWhiteSpace(b2c["SignUpSignInPolicyId"])) b2c["SignUpSignInPolicyId"] = "GainitauthUF1";
+        if (string.IsNullOrWhiteSpace(b2c["Audience"])) b2c["Audience"] = "api://gainitwebapp-dvhfcxbkezgyfwf6.israelcentral-01.azurewebsites.net";
     }
     
     var authority = $"{b2c["Instance"]!.TrimEnd('/')}/{b2c["Domain"]}/{b2c["SignUpSignInPolicyId"]}/v2.0";
