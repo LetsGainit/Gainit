@@ -47,8 +47,8 @@ namespace GainIt.API.Services.Users.Implementations
             var email = i_externalUserDto.Email?.Trim();
             var fullName = i_externalUserDto.FullName?.Trim();
 
-            r_logger.LogDebug("Processing user data - Email: {Email}, FullName: {FullName}, Country: {Country}", 
-                email, fullName, i_externalUserDto.Country);
+            r_logger.LogDebug("Processing user data - Email: {Email}, FullName: {FullName}", 
+                email, fullName);
 
             // Try find by ExternalId (OID)
             r_logger.LogDebug("Searching for existing user by ExternalId: {ExternalId}", i_externalUserDto.ExternalId);
@@ -79,8 +79,8 @@ namespace GainIt.API.Services.Users.Implementations
                     ExternalId = i_externalUserDto.ExternalId,
                     EmailAddress = email!,
                     FullName = fullName ?? "Unknown",
-                    Country = string.IsNullOrWhiteSpace(i_externalUserDto.Country) ? null : i_externalUserDto.Country,
-                    GitHubUsername = i_externalUserDto.GitHubUsername,  // Add GitHub username
+                    Country =  null,
+                    GitHubUsername = null,
                     CreatedAt = DateTimeOffset.UtcNow,
                     LastLoginAt = DateTimeOffset.UtcNow
                 };
@@ -119,12 +119,6 @@ namespace GainIt.API.Services.Users.Implementations
                     changes.Add("FullName");
                 }
 
-                if (!string.IsNullOrWhiteSpace(i_externalUserDto.Country))
-                {
-                    r_logger.LogDebug("Updating country from {OldCountry} to {NewCountry}", user.Country, i_externalUserDto.Country);
-                    user.Country = i_externalUserDto.Country;
-                    changes.Add("Country");
-                }
 
                 user.LastLoginAt = DateTimeOffset.UtcNow;
                 changes.Add("LastLoginAt");
@@ -358,18 +352,8 @@ namespace GainIt.API.Services.Users.Implementations
                 mentor.YearsOfExperience = i_updateDto.YearsOfExperience;
                 mentor.AreaOfExpertise = i_updateDto.AreaOfExpertise;
 
-                // Update TechExpertise
-                if (mentor.TechExpertise == null)
-                {
-                    r_logger.LogDebug("Mentor does not have TechExpertise. Creating new TechExpertise for Mentor: UserId={UserId}", userId);
-                    mentor.TechExpertise = new TechExpertise
-                    {
-                        User = mentor // Set the required 'User' property to the current mentor instance
-                    };
-                }
-                mentor.TechExpertise.ProgrammingLanguages = i_updateDto.TechExpertise.ProgrammingLanguages;
-                mentor.TechExpertise.Technologies = i_updateDto.TechExpertise.Technologies;
-                mentor.TechExpertise.Tools = i_updateDto.TechExpertise.Tools;
+                // Note: TechExpertise is now handled separately via the controller
+                // The expertise strings are processed in the controller before calling this service
 
                 await r_DbContext.SaveChangesAsync();
                 
@@ -412,23 +396,8 @@ namespace GainIt.API.Services.Users.Implementations
                 // Update Nonprofit-specific properties
                 nonprofit.WebsiteUrl = updateDto.WebsiteUrl;
 
-                // Update NonprofitExpertise
-                if (nonprofit.NonprofitExpertise == null)
-                {
-                    r_logger.LogDebug("NonprofitExpertise is null for Nonprofit: UserId={UserId}. Creating new NonprofitExpertise.", userId);
-                    nonprofit.NonprofitExpertise = new NonprofitExpertise
-                    {
-                        User = nonprofit, 
-                        FieldOfWork = updateDto.NonprofitExpertise.FieldOfWork, 
-                        MissionStatement = updateDto.NonprofitExpertise.MissionStatement 
-                    };
-                    r_logger.LogDebug("Created new NonprofitExpertise for Nonprofit: UserId={UserId}", userId);
-                }
-                else
-                {
-                    nonprofit.NonprofitExpertise.FieldOfWork = updateDto.NonprofitExpertise.FieldOfWork;
-                    nonprofit.NonprofitExpertise.MissionStatement = updateDto.NonprofitExpertise.MissionStatement;
-                }
+                // Note: NonprofitExpertise is now handled separately via the controller
+                // The expertise strings are processed in the controller before calling this service
 
                 await r_DbContext.SaveChangesAsync();
                 

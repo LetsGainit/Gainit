@@ -287,19 +287,19 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v4 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v5 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(o =>
-    {
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(o =>
+        {
         o.Authority = baseAuthority;
         o.Audience = b2c["Audience"];
-        o.TokenValidationParameters = new TokenValidationParameters
-        {
+            o.TokenValidationParameters = new TokenValidationParameters
+            {
             NameClaimType = "preferred_username",
-            ValidateIssuer = true,
+                ValidateIssuer = true,
             ValidateAudience = true,
             ValidIssuer = baseAuthority,
             ValidIssuers = policyAuthority is not null ? new[] { baseAuthority, policyAuthority } : new[] { baseAuthority },
@@ -350,8 +350,8 @@ try
                 Log.Debug("JWT Message received from: {RemoteIP}", context.HttpContext.Connection.RemoteIpAddress);
                 return Task.CompletedTask;
             }
-        };
-    });
+            };
+        });
 
     builder.Services.AddAuthorization(options =>
     {
@@ -365,7 +365,7 @@ try
                 if (!string.IsNullOrWhiteSpace(scopesCombined))
                 {
                     return scopesCombined.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                                         .Contains("access_as_user", StringComparer.Ordinal);
+                              .Contains("access_as_user", StringComparer.Ordinal);
                 }
 
                 // optional fallback for app roles (client credentials / roles tokens)

@@ -37,6 +37,8 @@ namespace GainIt.API.DTOs.Requests.Users
         [Url(ErrorMessage = "Invalid Website URL")]
         public string WebsiteUrl { get; set; } = null!;
 
-        public NonprofitExpertise NonprofitExpertise { get; set; } = null!;
+        // Optional: include expertise strings to add in the same call
+        public string? FieldOfWork { get; set; }
+        public string? MissionStatement { get; set; }
     }
 } 

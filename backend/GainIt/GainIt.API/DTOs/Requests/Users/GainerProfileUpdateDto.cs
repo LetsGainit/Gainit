@@ -46,5 +46,10 @@ namespace GainIt.API.DTOs.Requests.Users
         [Required(ErrorMessage = "Areas of Interest are required")]
         [MinLength(1, ErrorMessage = "At least one area of interest is required")]
         public List<string> AreasOfInterest { get; set; } = null!;
+
+        // Optional: include expertise strings to add in the same call
+        public List<string>? ProgrammingLanguages { get; set; }
+        public List<string>? Technologies { get; set; }
+        public List<string>? Tools { get; set; }
     }
 } 

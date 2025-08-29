@@ -40,6 +40,9 @@ namespace GainIt.API.DTOs.Requests.Users
         [StringLength(200, ErrorMessage = "Area of Expertise cannot exceed 200 characters")]
         public string AreaOfExpertise { get; set; } = null!;
 
-        public TechExpertise TechExpertise { get; set; } = null!;
+        // Optional: include expertise strings to add in the same call
+        public List<string>? ProgrammingLanguages { get; set; }
+        public List<string>? Technologies { get; set; }
+        public List<string>? Tools { get; set; }
     }
 } 

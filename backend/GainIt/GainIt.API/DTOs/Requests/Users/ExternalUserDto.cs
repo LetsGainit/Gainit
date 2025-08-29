@@ -10,13 +10,9 @@
 
         public string? IdentityProvider { get; init; }
 
-        public string? Country { get; init; }
-
-        public string? GitHubUsername { get; init; }  // Add GitHub username for registration
-
         public override string ToString()
         {
-            return $"ExternalUserDto{{ExternalId='{ExternalId}', Email='{Email}', FullName='{FullName}', IdentityProvider='{IdentityProvider}', Country='{Country}', GitHubUsername='{GitHubUsername}'}}";
+            return $"ExternalUserDto{{ExternalId='{ExternalId}', Email='{Email}', FullName='{FullName}', IdentityProvider='{IdentityProvider}'}}";
         }
     }
 }

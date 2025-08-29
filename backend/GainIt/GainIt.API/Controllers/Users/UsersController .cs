@@ -91,13 +91,9 @@ namespace GainIt.API.Controllers.Users
                            : (tryGetClaim(User, "preferred_username") ?? email));
 
                 var idp = tryGetClaim(User, "idp");
-                var country = tryGetClaim(User, "country", "countryOrRegion", "ctry")
-                              ?? User.Claims.FirstOrDefault(c =>
-                                    c.Type.StartsWith("extension_", StringComparison.OrdinalIgnoreCase) &&
-                                    c.Type.EndsWith("country", StringComparison.OrdinalIgnoreCase))?.Value;
 
-                r_logger.LogDebug("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}, Country={Country}", 
-                    correlationId, email, name, idp, country);
+                r_logger.LogDebug("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}", 
+                    correlationId, email, name, idp);
 
                 var dto = new ExternalUserDto
                 {
@@ -105,7 +101,6 @@ namespace GainIt.API.Controllers.Users
                     Email = email,
                     FullName = string.IsNullOrWhiteSpace(name) ? null : name,
                     IdentityProvider = idp,
-                    Country = country
                 };
 
                 r_logger.LogDebug("Created ExternalUserDto for provisioning. CorrelationId={CorrelationId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
@@ -617,6 +612,19 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var result = await r_userProfileService.UpdateGainerProfileAsync(id, updateDto);
+                
+                // Check if any expertise strings were provided and add expertise
+                if (updateDto.ProgrammingLanguages?.Any() == true || updateDto.Technologies?.Any() == true || updateDto.Tools?.Any() == true)
+                {
+                    r_logger.LogInformation("Adding expertise to Gainer during profile update: UserId={UserId}", id);
+                    var expertiseDto = new AddTechExpertiseDto
+                    {
+                        ProgrammingLanguages = updateDto.ProgrammingLanguages ?? new List<string>(),
+                        Technologies = updateDto.Technologies ?? new List<string>(),
+                        Tools = updateDto.Tools ?? new List<string>()
+                    };
+                    await r_userProfileService.AddExpertiseToGainerAsync(id, expertiseDto);
+                }
                 r_logger.LogInformation("Successfully updated Gainer profile: UserId={UserId}", id);
                 return Ok(result);
             }
@@ -662,6 +670,19 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var result = await r_userProfileService.UpdateMentorProfileAsync(id, updateDto);
+                
+                // Check if any expertise strings were provided and add expertise
+                if (updateDto.ProgrammingLanguages?.Any() == true || updateDto.Technologies?.Any() == true || updateDto.Tools?.Any() == true)
+                {
+                    r_logger.LogInformation("Adding expertise to Mentor during profile update: UserId={UserId}", id);
+                    var expertiseDto = new AddTechExpertiseDto
+                    {
+                        ProgrammingLanguages = updateDto.ProgrammingLanguages ?? new List<string>(),
+                        Technologies = updateDto.Technologies ?? new List<string>(),
+                        Tools = updateDto.Tools ?? new List<string>()
+                    };
+                    await r_userProfileService.AddExpertiseToMentorAsync(id, expertiseDto);
+                }
                 r_logger.LogInformation("Successfully updated Mentor profile: UserId={UserId}", id);
                 return Ok(result);
             }
@@ -707,6 +728,18 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var result = await r_userProfileService.UpdateNonprofitProfileAsync(id, updateDto);
+                
+                // Check if any expertise strings were provided and add expertise
+                if (!string.IsNullOrWhiteSpace(updateDto.FieldOfWork) || !string.IsNullOrWhiteSpace(updateDto.MissionStatement))
+                {
+                    r_logger.LogInformation("Adding expertise to Nonprofit during profile update: NonprofitId={NonprofitId}", id);
+                    var expertiseDto = new AddNonprofitExpertiseDto
+                    {
+                        FieldOfWork = updateDto.FieldOfWork ?? string.Empty,
+                        MissionStatement = updateDto.MissionStatement ?? string.Empty
+                    };
+                    await r_userProfileService.AddExpertiseToNonprofitAsync(id, expertiseDto);
+                }
                 r_logger.LogInformation("Successfully updated Nonprofit profile: NonprofitId={NonprofitId}", id);
                 return Ok(result);
             }
