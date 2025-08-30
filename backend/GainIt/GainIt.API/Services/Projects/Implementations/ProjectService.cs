@@ -4,6 +4,7 @@ using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
 using GainIt.API.Services.Projects.Interfaces;
 using GainIt.API.Services.GitHub.Interfaces;
+using GainIt.API.Services.Users.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -14,12 +15,14 @@ namespace GainIt.API.Services.Projects.Implementations
         private readonly GainItDbContext r_DbContext;
         private readonly ILogger<ProjectService> r_logger;
         private readonly IGitHubService r_gitHubService;
+        private readonly IAchievementService r_achievementService;
 
-        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService)
+        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, IAchievementService i_achievementService)
         {
             r_DbContext = i_DbContext;
             r_logger = i_logger;
             r_gitHubService = i_gitHubService;
+            r_achievementService = i_achievementService;
         }
 
         public async Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId, string i_Role)
@@ -84,6 +87,22 @@ namespace GainIt.API.Services.Projects.Implementations
                 });
 
                 await r_DbContext.SaveChangesAsync();
+                
+                // Check for team participation achievements after adding the member
+                try
+                {
+                    var achievements = await r_achievementService.CheckAndAwardTeamParticipationAchievementsAsync(i_UserId, i_ProjectId);
+                    if (achievements.Any())
+                    {
+                        r_logger.LogInformation("Awarded {Count} achievements to user {UserId} for team participation", 
+                            achievements.Count(), i_UserId);
+                    }
+                }
+                catch (Exception achievementEx)
+                {
+                    r_logger.LogError(achievementEx, "Error checking team participation achievements for user {UserId}", i_UserId);
+                    // Don't let achievement errors stop the team member addition
+                }
                 
                 r_logger.LogInformation("Successfully added team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
                     i_ProjectId, i_UserId, i_Role);
@@ -569,6 +588,22 @@ namespace GainIt.API.Services.Projects.Implementations
             await r_DbContext.Projects.AddAsync(newProject);
             await r_DbContext.SaveChangesAsync();
 
+            // Check for team participation achievements after starting the project
+            try
+            {
+                var achievements = await r_achievementService.CheckAndAwardTeamParticipationAchievementsAsync(i_UserId, newProject.ProjectId);
+                if (achievements.Any())
+                {
+                    r_logger.LogInformation("Awarded {Count} achievements to user {UserId} for starting new project", 
+                        achievements.Count(), i_UserId);
+                }
+            }
+            catch (Exception achievementEx)
+            {
+                r_logger.LogError(achievementEx, "Error checking team participation achievements for user {UserId} starting project", i_UserId);
+                // Don't let achievement errors stop the project creation
+            }
+
             r_logger.LogInformation("Successfully started project from template: ProjectId={ProjectId}, TemplateId={TemplateId}, UserId={UserId}", newProject.ProjectId, i_TemplateId, i_UserId);
             return newProject;
         }
@@ -578,6 +613,7 @@ namespace GainIt.API.Services.Projects.Implementations
             r_logger.LogInformation("Updating project status: ProjectId={ProjectId}, Status={Status}", i_ProjectId, i_Status);
 
             var project = await r_DbContext.Projects
+                .Include(p => p.ProjectMembers)
                 .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId);
 
             if (project == null)
@@ -588,6 +624,30 @@ namespace GainIt.API.Services.Projects.Implementations
 
             project.ProjectStatus = i_Status;
             await r_DbContext.SaveChangesAsync();
+
+            // Check for achievement rewards when project is completed
+            if (i_Status == eProjectStatus.Completed)
+            {
+                r_logger.LogInformation("Project completed, checking achievements for all team members: ProjectId={ProjectId}", i_ProjectId);
+                
+                foreach (var member in project.ProjectMembers)
+                {
+                    try
+                    {
+                        var achievements = await r_achievementService.CheckAndAwardProjectCompletionAchievementsAsync(member.UserId, i_ProjectId);
+                        if (achievements.Any())
+                        {
+                            r_logger.LogInformation("Awarded {Count} achievements to user {UserId} for project completion", 
+                                achievements.Count(), member.UserId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        r_logger.LogError(ex, "Error checking achievements for user {UserId} on project completion", member.UserId);
+                        // Don't let achievement errors stop the project update
+                    }
+                }
+            }
 
             r_logger.LogInformation("Successfully updated project status: ProjectId={ProjectId}, Status={Status}", i_ProjectId, i_Status);
             return project;

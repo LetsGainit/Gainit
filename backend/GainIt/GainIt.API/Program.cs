@@ -378,6 +378,7 @@ try
             // Add services to the container.
         builder.Services.AddScoped<IProjectService, ProjectService>();
         builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+        builder.Services.AddScoped<IAchievementService, AchievementService>();
         builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
         builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
         builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
