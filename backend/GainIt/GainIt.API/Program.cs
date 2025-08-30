@@ -16,6 +16,8 @@ using GainIt.API.Services.Tasks.Implementations;
 using GainIt.API.Services.Tasks.Interfaces;
 using GainIt.API.Services.Users.Implementations;
 using GainIt.API.Services.Users.Interfaces;
+using GainIt.API.Services.Forum.Implementations;
+using GainIt.API.Services.Forum.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.SignalR;
@@ -339,6 +341,10 @@ try
         builder.Services.AddScoped<IGitHubService, GitHubService>();
         builder.Services.AddScoped<IGitHubApiClient, GitHubApiClient>();
         builder.Services.AddScoped<IGitHubAnalyticsService, GitHubAnalyticsService>();
+
+        // Forum Services
+        builder.Services.AddScoped<IForumService, ForumService>();
+        builder.Services.AddScoped<IForumNotificationService, ForumNotificationService>();
 
         // Add HTTP client for GitHub API
         builder.Services.AddHttpClient<IGitHubApiClient, GitHubApiClient>();

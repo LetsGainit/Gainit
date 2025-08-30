@@ -5,6 +5,7 @@ using GainIt.API.Models.Enums.Tasks;
 using GainIt.API.Models.Tasks;
 using GainIt.API.Services.Tasks.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace GainIt.API.Services.Tasks.Implementations
 {

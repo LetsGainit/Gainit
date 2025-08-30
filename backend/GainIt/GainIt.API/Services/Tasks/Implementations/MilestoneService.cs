@@ -5,51 +5,73 @@ using GainIt.API.Models.Enums.Tasks;
 using GainIt.API.Models.Tasks;
 using GainIt.API.Services.Tasks.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace GainIt.API.Services.Tasks.Implementations
 {
     public class MilestoneService : IMilestoneService
     {   
-
         private readonly GainItDbContext r_Db;
         private readonly ITaskNotificationService r_Notifications;
+        private readonly ILogger<MilestoneService> r_Logger;
 
-        public MilestoneService(GainItDbContext i_Db, ITaskNotificationService i_Notifications)
+        public MilestoneService(
+            GainItDbContext i_Db, 
+            ITaskNotificationService i_Notifications,
+            ILogger<MilestoneService> i_Logger)
         {
             r_Db = i_Db;
             r_Notifications = i_Notifications;
+            r_Logger = i_Logger;
         }
 
-        public async Task<ProjectMilestoneViewModel> CreateAsync( Guid i_ProjectId, ProjectMilestoneCreateDto i_MilestoneCreateRequest, Guid i_ActorUserId)
+        public async Task<ProjectMilestoneViewModel> CreateAsync(Guid i_ProjectId, ProjectMilestoneCreateDto i_MilestoneCreateRequest, Guid i_ActorUserId)
         {
-            await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
-            await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
+            r_Logger.LogInformation("Creating milestone: ProjectId={ProjectId}, Title={Title}, ActorUserId={ActorUserId}", 
+                i_ProjectId, i_MilestoneCreateRequest.Title, i_ActorUserId);
 
-            var project = await r_Db.Projects
-                .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId)
-                ?? throw new KeyNotFoundException("Project not found.");
-
-            var entity = new ProjectMilestone
+            try
             {
-                ProjectId = i_ProjectId,
-                Project = project,                      
-                Title = i_MilestoneCreateRequest.Title,
-                Description = i_MilestoneCreateRequest.Description,
-                Status = i_MilestoneCreateRequest.Status
-            };
+                await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
+                await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
 
-            r_Db.ProjectMilestones.Add(entity);
-            await r_Db.SaveChangesAsync();
+                var project = await r_Db.Projects
+                    .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId)
+                    ?? throw new KeyNotFoundException("Project not found.");
 
-            return new ProjectMilestoneViewModel
+                var entity = new ProjectMilestone
+                {
+                    ProjectId = i_ProjectId,
+                    Project = project,                      
+                    Title = i_MilestoneCreateRequest.Title,
+                    Description = i_MilestoneCreateRequest.Description,
+                    Status = i_MilestoneCreateRequest.Status
+                };
+
+                r_Db.ProjectMilestones.Add(entity);
+                await r_Db.SaveChangesAsync();
+
+                var viewModel = new ProjectMilestoneViewModel
+                {
+                    MilestoneId = entity.MilestoneId,
+                    Title = entity.Title,
+                    Description = entity.Description,
+                    Status = entity.Status,
+                    TasksCount = 0,
+                    DoneTasksCount = 0
+                };
+
+                r_Logger.LogInformation("Milestone created successfully: ProjectId={ProjectId}, MilestoneId={MilestoneId}, Title={Title}", 
+                    i_ProjectId, entity.MilestoneId, entity.Title);
+
+                return viewModel;
+            }
+            catch (Exception ex)
             {
-                MilestoneId = entity.MilestoneId,
-                Title = entity.Title,
-                Description = entity.Description,
-                Status = entity.Status,
-                TasksCount = 0,
-                DoneTasksCount = 0
-            };
+                r_Logger.LogError(ex, "Error creating milestone: ProjectId={ProjectId}, Title={Title}, ActorUserId={ActorUserId}", 
+                    i_ProjectId, i_MilestoneCreateRequest.Title, i_ActorUserId);
+                throw;
+            }
         }
 
 
@@ -163,6 +185,57 @@ namespace GainIt.API.Services.Tasks.Implementations
             return milestoneViewModel;
         }
 
+        public async Task<ProjectMilestoneViewModel> ChangeStatusAsync(Guid i_ProjectId, Guid i_MilestoneId, eMilestoneStatus i_NewStatus, Guid i_ActorUserId)
+        {
+            r_Logger.LogInformation("Changing milestone status: ProjectId={ProjectId}, MilestoneId={MilestoneId}, NewStatus={NewStatus}, ActorUserId={ActorUserId}", 
+                i_ProjectId, i_MilestoneId, i_NewStatus, i_ActorUserId);
+
+            try
+            {
+                await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
+                await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
+
+                var entity = await r_Db.ProjectMilestones
+                    .FirstOrDefaultAsync(m => m.ProjectId == i_ProjectId && m.MilestoneId == i_MilestoneId)
+                    ?? throw new KeyNotFoundException("Milestone not found.");
+
+                var oldStatus = entity.Status;
+                entity.Status = i_NewStatus;
+
+                await r_Db.SaveChangesAsync();
+
+                var tasksCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == entity.MilestoneId);
+                var doneCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == entity.MilestoneId && t.Status == eTaskStatus.Done);
+
+                var milestoneViewModel = new ProjectMilestoneViewModel
+                {
+                    MilestoneId = entity.MilestoneId,
+                    Title = entity.Title,
+                    Description = entity.Description,
+                    Status = entity.Status,
+                    TasksCount = tasksCount,
+                    DoneTasksCount = doneCount
+                };
+
+                // notify on first transition to Completed
+                if (oldStatus != eMilestoneStatus.Completed && entity.Status == eMilestoneStatus.Completed)
+                {
+                    await r_Notifications.MilestoneCompletedAsync(i_ProjectId, milestoneViewModel);
+                }
+
+                r_Logger.LogInformation("Milestone status changed successfully: ProjectId={ProjectId}, MilestoneId={MilestoneId}, OldStatus={OldStatus}, NewStatus={NewStatus}", 
+                    i_ProjectId, i_MilestoneId, oldStatus, i_NewStatus);
+
+                return milestoneViewModel;
+            }
+            catch (Exception ex)
+            {
+                r_Logger.LogError(ex, "Error changing milestone status: ProjectId={ProjectId}, MilestoneId={MilestoneId}, NewStatus={NewStatus}, ActorUserId={ActorUserId}", 
+                    i_ProjectId, i_MilestoneId, i_NewStatus, i_ActorUserId);
+                throw;
+            }
+        }
+
         private async Task ensureActorInProjectAsync(Guid i_ProjectId, Guid i_ActorUserId)
         {
             var isMember = await r_Db.ProjectMembers
@@ -171,15 +244,15 @@ namespace GainIt.API.Services.Tasks.Implementations
             if (!isMember)
                 throw new UnauthorizedAccessException("User is not a member of the project.");
         }
-        private async Task ensureActorCanManagePlanningAsync(Guid projectId, Guid actorUserId)
+        private async Task ensureActorCanManagePlanningAsync(Guid i_ProjectId, Guid i_ActorUserId)
         {
-            var isMentor = await r_Db.Mentors.AnyAsync(m => m.UserId == actorUserId);
+            var isMentor = await r_Db.Mentors.AnyAsync(m => m.UserId == i_ActorUserId);
             if (isMentor) return;
 
             // allow project-level admins
             var isProjectAdmin = await r_Db.ProjectMembers
-                .AnyAsync(pm => pm.ProjectId == projectId
-                             && pm.UserId == actorUserId
+                .AnyAsync(pm => pm.ProjectId == i_ProjectId
+                             && pm.UserId == i_ActorUserId
                              && pm.IsAdmin
                              && pm.LeftAtUtc == null);
             if (isProjectAdmin) return;

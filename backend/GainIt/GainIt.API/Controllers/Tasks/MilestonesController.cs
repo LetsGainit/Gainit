@@ -2,24 +2,32 @@ using GainIt.API.DTOs.Requests.Tasks;
 using GainIt.API.DTOs.ViewModels.Tasks;
 using GainIt.API.Models.Enums.Tasks;
 using GainIt.API.Services.Tasks.Interfaces;
+using GainIt.API.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace GainIt.API.Controllers.Tasks
 {
     [ApiController]
     [Route("api/projects/{projectId}/milestones")]
+    [Authorize(Policy = "RequireAccessAsUser")]
     public class MilestonesController : ControllerBase
     {
         private readonly IMilestoneService r_MilestoneService;
         private readonly ILogger<MilestonesController> r_Logger;
+        private readonly GainItDbContext r_DbContext;
 
         public MilestonesController(
             IMilestoneService milestoneService,
-            ILogger<MilestonesController> logger)
+            ILogger<MilestonesController> logger,
+            GainItDbContext dbContext)
         {
             r_MilestoneService = milestoneService;
             r_Logger = logger;
+            r_DbContext = dbContext;
         }
 
         #region Milestone Queries
@@ -42,7 +50,8 @@ namespace GainIt.API.Controllers.Tasks
 
             try
             {
-                var milestones = await r_MilestoneService.ListAsync(projectId);
+                var userId = await GetCurrentUserIdAsync();
+                var milestones = await r_MilestoneService.GetMilestionesListAsync(projectId, userId);
 
                 r_Logger.LogInformation("Milestones retrieved successfully: ProjectId={ProjectId}, Count={Count}", projectId, milestones.Count);
                 return Ok(milestones);
@@ -73,7 +82,8 @@ namespace GainIt.API.Controllers.Tasks
 
             try
             {
-                var milestone = await r_MilestoneService.GetAsync(projectId, milestoneId);
+                var userId = await GetCurrentUserIdAsync();
+                var milestone = await r_MilestoneService.GetMilestoneAsync(projectId, milestoneId, userId);
 
                 if (milestone == null)
                 {
@@ -98,49 +108,49 @@ namespace GainIt.API.Controllers.Tasks
         /// <summary>
         /// Creates a new milestone.
         /// </summary>
-        /// <param name="projectId">The project ID.</param>
+        /// <param name="i_ProjectId">The project ID.</param>
         /// <param name="milestoneCreateDto">The milestone creation data.</param>
         /// <returns>The created milestone.</returns>
         [HttpPost]
-        public async Task<ActionResult<ProjectMilestoneViewModel>> CreateMilestone(Guid projectId, [FromBody] ProjectMilestoneCreateDto milestoneCreateDto)
+        public async Task<ActionResult<ProjectMilestoneViewModel>> CreateMilestone(Guid i_ProjectId, [FromBody] ProjectMilestoneCreateDto milestoneCreateDto)
         {
-            r_Logger.LogInformation("Creating milestone: ProjectId={ProjectId}, Title={Title}", projectId, milestoneCreateDto.Title);
+            r_Logger.LogInformation("Creating milestone: ProjectId={ProjectId}, Title={Title}", i_ProjectId, milestoneCreateDto.Title);
 
-            if (projectId == Guid.Empty)
+            if (i_ProjectId == Guid.Empty)
             {
-                r_Logger.LogWarning("Invalid project ID: ProjectId={ProjectId}", projectId);
+                r_Logger.LogWarning("Invalid project ID: ProjectId={ProjectId}", i_ProjectId);
                 return BadRequest(new { Message = "Project ID cannot be empty." });
             }
 
             if (!ModelState.IsValid)
             {
-                r_Logger.LogWarning("Invalid model state for milestone creation: ProjectId={ProjectId}", projectId);
+                r_Logger.LogWarning("Invalid model state for milestone creation: ProjectId={ProjectId}", i_ProjectId);
                 return BadRequest(ModelState);
             }
 
             try
             {
-                var userId = GetUserId();
-                var milestone = await r_MilestoneService.CreateAsync(projectId, milestoneCreateDto, userId);
+                var userId = await GetCurrentUserIdAsync();
+                var milestone = await r_MilestoneService.CreateAsync(i_ProjectId, milestoneCreateDto, userId);
 
                 r_Logger.LogInformation("Milestone created successfully: ProjectId={ProjectId}, MilestoneId={MilestoneId}, Title={Title}", 
-                    projectId, milestone.MilestoneId, milestone.Title);
+                    i_ProjectId, milestone.MilestoneId, milestone.Title);
 
-                return CreatedAtAction(nameof(GetMilestone), new { projectId, milestoneId = milestone.MilestoneId }, milestone);
+                return CreatedAtAction(nameof(GetMilestone), new { projectId = i_ProjectId, milestoneId = milestone.MilestoneId }, milestone);
             }
             catch (UnauthorizedAccessException ex)
             {
-                r_Logger.LogWarning("Unauthorized access: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
+                r_Logger.LogWarning("Unauthorized access: ProjectId={ProjectId}, Error={Error}", i_ProjectId, ex.Message);
                 return Unauthorized(new { Message = ex.Message });
             }
             catch (KeyNotFoundException ex)
             {
-                r_Logger.LogWarning("Resource not found: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
+                r_Logger.LogWarning("Resource not found: ProjectId={ProjectId}, Error={Error}", i_ProjectId, ex.Message);
                 return NotFound(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
-                r_Logger.LogError(ex, "Error creating milestone: ProjectId={ProjectId}, Title={Title}", projectId, milestoneCreateDto.Title);
+                r_Logger.LogError(ex, "Error creating milestone: ProjectId={ProjectId}, Title={Title}", i_ProjectId, milestoneCreateDto.Title);
                 return StatusCode(500, new { Message = "An unexpected error occurred while creating the milestone." });
             }
         }
@@ -171,7 +181,7 @@ namespace GainIt.API.Controllers.Tasks
 
             try
             {
-                var userId = GetUserId();
+                var userId = await GetCurrentUserIdAsync();
                 var milestone = await r_MilestoneService.UpdateAsync(projectId, milestoneId, milestoneUpdateDto, userId);
 
                 r_Logger.LogInformation("Milestone updated successfully: ProjectId={ProjectId}, MilestoneId={MilestoneId}", projectId, milestoneId);
@@ -213,7 +223,7 @@ namespace GainIt.API.Controllers.Tasks
 
             try
             {
-                var userId = GetUserId();
+                var userId = await GetCurrentUserIdAsync();
                 await r_MilestoneService.DeleteAsync(projectId, milestoneId, userId);
 
                 r_Logger.LogInformation("Milestone deleted successfully: ProjectId={ProjectId}, MilestoneId={MilestoneId}", projectId, milestoneId);
@@ -261,7 +271,7 @@ namespace GainIt.API.Controllers.Tasks
 
             try
             {
-                var userId = GetUserId();
+                var userId = await GetCurrentUserIdAsync();
                 var milestone = await r_MilestoneService.ChangeStatusAsync(projectId, milestoneId, newStatus, userId);
 
                 r_Logger.LogInformation("Milestone status changed successfully: ProjectId={ProjectId}, MilestoneId={MilestoneId}, NewStatus={NewStatus}", 
@@ -292,12 +302,28 @@ namespace GainIt.API.Controllers.Tasks
 
         #region Helper Methods
 
-        private Guid GetUserId()
+        /// <summary>
+        /// Gets the current user ID from the authentication context.
+        /// Extracts the external ID from JWT claims and maps it to the database User ID.
+        /// </summary>
+        /// <returns>The current user ID from the database.</returns>
+        private async Task<Guid> GetCurrentUserIdAsync()
         {
-            // TODO: Implement proper user authentication
-            // This should extract the user ID from the JWT token or session
-            // For now, return a placeholder - you'll need to implement this based on your auth system
-            return Guid.Parse("00000000-0000-0000-0000-000000000001"); // Placeholder
+            var externalId = User.FindFirst("oid")?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(externalId))
+                throw new UnauthorizedAccessException("User ID not found in token.");
+
+            // Find the user in the database by external ID
+            var user = await r_DbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.ExternalId == externalId);
+
+            if (user == null)
+                throw new UnauthorizedAccessException("User not found in database.");
+
+            return user.UserId;
         }
 
         #endregion

@@ -1,5 +1,6 @@
 ﻿using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
+using GainIt.API.Models.ProjectForum;
 using GainIt.API.Models.Tasks;
 using GainIt.API.Models.Users;
 using GainIt.API.Models.Users.Expertise;
@@ -96,6 +97,28 @@ namespace GainIt.API.Data
         public DbSet<ProjectMember> ProjectMembers { get; set; }
 
         public DbSet<JoinRequest> JoinRequests { get; set; }
+        #endregion
+
+        #region Forum System
+        /// <summary>
+        /// Forum posts table - contains discussion posts for projects
+        /// </summary>
+        public DbSet<ForumPost> ForumPosts { get; set; }
+
+        /// <summary>
+        /// Forum replies table - contains replies to forum posts
+        /// </summary>
+        public DbSet<ForumReply> ForumReplies { get; set; }
+
+        /// <summary>
+        /// Forum post likes table - tracks likes on forum posts
+        /// </summary>
+        public DbSet<ForumPostLike> ForumPostLikes { get; set; }
+
+        /// <summary>
+        /// Forum reply likes table - tracks likes on forum replies
+        /// </summary>
+        public DbSet<ForumReplyLike> ForumReplyLikes { get; set; }
         #endregion
 
         #region Task System
@@ -674,6 +697,142 @@ namespace GainIt.API.Data
                         .WithMany(r => r.SyncLogs)
                         .HasForeignKey(e => e.RepositoryId)
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+                #endregion
+
+                #region Forum Configuration
+                // Configure ForumPost entity
+                modelBuilder.Entity<ForumPost>(entity =>
+                {
+                    entity.HasKey(e => e.PostId);
+
+                    // FK to UserProject (one project -> many posts)
+                    entity.HasOne(e => e.Project)
+                        .WithMany()
+                        .HasForeignKey(e => e.ProjectId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // FK to User (one user -> many posts)
+                    entity.HasOne(e => e.Author)
+                        .WithMany()
+                        .HasForeignKey(e => e.AuthorId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // One post -> many replies
+                    entity.HasMany(e => e.Replies)
+                        .WithOne(r => r.Post)
+                        .HasForeignKey(r => r.PostId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // One post -> many likes
+                    entity.HasMany(e => e.Likes)
+                        .WithOne(l => l.Post)
+                        .HasForeignKey(l => l.PostId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // Properties
+                    entity.Property(e => e.Content)
+                        .IsRequired()
+                        .HasMaxLength(2000);
+
+                    entity.Property(e => e.CreatedAtUtc)
+                        .IsRequired();
+
+                    // Indexes for performance
+                    entity.HasIndex(e => e.ProjectId);
+                    entity.HasIndex(e => e.AuthorId);
+                    entity.HasIndex(e => e.CreatedAtUtc);
+                });
+
+                // Configure ForumReply entity
+                modelBuilder.Entity<ForumReply>(entity =>
+                {
+                    entity.HasKey(e => e.ReplyId);
+
+                    // FK to ForumPost (one post -> many replies)
+                    entity.HasOne(e => e.Post)
+                        .WithMany(p => p.Replies)
+                        .HasForeignKey(e => e.PostId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // FK to User (one user -> many replies)
+                    entity.HasOne(e => e.Author)
+                        .WithMany()
+                        .HasForeignKey(e => e.AuthorId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // One reply -> many likes
+                    entity.HasMany(e => e.Likes)
+                        .WithOne(l => l.Reply)
+                        .HasForeignKey(l => l.ReplyId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // Properties
+                    entity.Property(e => e.Content)
+                        .IsRequired()
+                        .HasMaxLength(1000);
+
+                    entity.Property(e => e.CreatedAtUtc)
+                        .IsRequired();
+
+                    // Indexes for performance
+                    entity.HasIndex(e => e.PostId);
+                    entity.HasIndex(e => e.AuthorId);
+                    entity.HasIndex(e => e.CreatedAtUtc);
+                });
+
+                // Configure ForumPostLike entity
+                modelBuilder.Entity<ForumPostLike>(entity =>
+                {
+                    // Composite key: PostId + UserId
+                    entity.HasKey(e => new { e.PostId, e.UserId });
+
+                    // FK to ForumPost
+                    entity.HasOne(e => e.Post)
+                        .WithMany(p => p.Likes)
+                        .HasForeignKey(e => e.PostId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // FK to User
+                    entity.HasOne(e => e.User)
+                        .WithMany()
+                        .HasForeignKey(e => e.UserId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // Properties
+                    entity.Property(e => e.LikedAtUtc)
+                        .IsRequired();
+
+                    // Index for performance
+                    entity.HasIndex(e => e.PostId);
+                    entity.HasIndex(e => e.UserId);
+                });
+
+                // Configure ForumReplyLike entity
+                modelBuilder.Entity<ForumReplyLike>(entity =>
+                {
+                    // Composite key: ReplyId + UserId
+                    entity.HasKey(e => new { e.ReplyId, e.UserId });
+
+                    // FK to ForumReply
+                    entity.HasOne(e => e.Reply)
+                        .WithMany(r => r.Likes)
+                        .HasForeignKey(e => e.ReplyId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // FK to User
+                    entity.HasOne(e => e.User)
+                        .WithMany()
+                        .HasForeignKey(e => e.UserId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    // Properties
+                    entity.Property(e => e.LikedAtUtc)
+                        .IsRequired();
+
+                    // Index for performance
+                    entity.HasIndex(e => e.ReplyId);
+                    entity.HasIndex(e => e.UserId);
                 });
                 #endregion
 
