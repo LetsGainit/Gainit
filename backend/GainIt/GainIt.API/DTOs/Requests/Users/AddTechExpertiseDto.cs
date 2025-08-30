@@ -23,4 +23,4 @@ namespace GainIt.API.DTOs.Requests.Users
         /// </summary>
         public List<string> Tools { get; set; } = new();
     }
-} 
+}

@@ -26,7 +26,7 @@ namespace GainIt.API.Services.GitHub.Implementations
         /// <returns>Computed <see cref="GitHubAnalytics"/> object ready to persist.</returns>
         public async Task<GitHubAnalytics> ProcessRepositoryAnalyticsAsync(GitHubRepository repository, int daysPeriod = 30)
         {
-            _logger.LogInformation("Processing repository analytics for {Repository} over {DaysPeriod} days", 
+            _logger.LogInformation("Processing repository analytics for {Repository} over {DaysPeriod} days",
                 repository.FullName, daysPeriod);
 
             try
@@ -169,7 +169,7 @@ namespace GainIt.API.Services.GitHub.Implementations
         /// <returns>Aggregated <see cref="GitHubContribution"/> for the user.</returns>
         public async Task<GitHubContribution> ProcessUserContributionAsync(GitHubRepository repository, Guid userId, string username, int daysPeriod = 30)
         {
-            _logger.LogInformation("Processing user contribution analytics for {Username} in {Repository} over {DaysPeriod} days", 
+            _logger.LogInformation("Processing user contribution analytics for {Username} in {Repository} over {DaysPeriod} days",
                 username, repository.FullName, daysPeriod);
 
             try
@@ -201,25 +201,25 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                 foreach (var branch in distinctBranches)
                 {
-                    _logger.LogDebug("Fetching contributions for {Username} on branch {Branch} in {Repository}", 
+                    _logger.LogDebug("Fetching contributions for {Username} on branch {Branch} in {Repository}",
                         username, branch, repository.FullName);
-                        
+
                     var branchCommits = await _gitHubApiClient.GetUserContributionsForBranchAsync(
-                        repository.OwnerName, 
-                        repository.RepositoryName, 
-                        username, 
+                        repository.OwnerName,
+                        repository.RepositoryName,
+                        username,
                         branch,           // ← Each branch individually
                         daysPeriod);
-                        
+
                     allCommits.AddRange(branchCommits);
-                    
-                    _logger.LogDebug("Found {CommitCount} commits for {Username} on branch {Branch} in {Repository}", 
+
+                    _logger.LogDebug("Found {CommitCount} commits for {Username} on branch {Branch} in {Repository}",
                         branchCommits.Count, username, branch, repository.FullName);
                 }
 
                 if (allCommits.Any())
                 {
-                    _logger.LogInformation("Found {TotalCommitCount} total GitHub contributions for {Username} across {BranchCount} branches in {Repository}", 
+                    _logger.LogInformation("Found {TotalCommitCount} total GitHub contributions for {Username} across {BranchCount} branches in {Repository}",
                         allCommits.Count, username, distinctBranches.Count, repository.FullName);
 
                     // Log commits per branch for debugging
@@ -382,7 +382,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 else
                 {
                     _logger.LogInformation("No GitHub contributions found for {Username} in {Repository}", username, repository.FullName);
-                    
+
                     // Initialize with zero values
                     contribution.TotalCommits = 0;
                     contribution.TotalAdditions = 0;
@@ -396,19 +396,19 @@ namespace GainIt.API.Services.GitHub.Implementations
                     contribution.CollaboratorsInteractedWith = 0;
 
                     // Initialize empty activity patterns
-                contribution.CommitsByDayOfWeek = InitializeDayOfWeekTracking();
-                contribution.CommitsByHour = InitializeHourTracking();
-                contribution.ActivityByMonth = InitializeMonthlyTracking();
-                contribution.LanguagesContributed = new List<string>();
+                    contribution.CommitsByDayOfWeek = InitializeDayOfWeekTracking();
+                    contribution.CommitsByHour = InitializeHourTracking();
+                    contribution.ActivityByMonth = InitializeMonthlyTracking();
+                    contribution.LanguagesContributed = new List<string>();
                 }
 
-                _logger.LogInformation("User contribution analytics processed successfully for {Username} in {Repository}: {Commits} commits across {BranchCount} branches, {LinesChanged} lines changed", 
+                _logger.LogInformation("User contribution analytics processed successfully for {Username} in {Repository}: {Commits} commits across {BranchCount} branches, {LinesChanged} lines changed",
                     username, repository.FullName, contribution.TotalCommits, distinctBranches.Count, contribution.TotalLinesChanged);
                 return contribution;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing user contribution analytics for {Username} in {Repository}", 
+                _logger.LogError(ex, "Error processing user contribution analytics for {Username} in {Repository}",
                     username, repository.FullName);
                 throw;
             }
@@ -423,7 +423,7 @@ namespace GainIt.API.Services.GitHub.Implementations
         /// <returns>Empty list until implemented.</returns>
         public async Task<List<GitHubAnalytics>> GetAggregatedAnalyticsAsync(Guid repositoryId, List<int> periods)
         {
-            _logger.LogInformation("Getting aggregated analytics for repository {RepositoryId} with periods: {Periods}", 
+            _logger.LogInformation("Getting aggregated analytics for repository {RepositoryId} with periods: {Periods}",
                 repositoryId, string.Join(", ", periods));
 
             // This would typically query the database for existing analytics
@@ -440,7 +440,7 @@ namespace GainIt.API.Services.GitHub.Implementations
         /// <returns>Placeholder trends payload.</returns>
         public async Task<object> GetAnalyticsTrendsAsync(Guid repositoryId, int daysPeriod = 365)
         {
-            _logger.LogInformation("Getting analytics trends for repository {RepositoryId} over {DaysPeriod} days", 
+            _logger.LogInformation("Getting analytics trends for repository {RepositoryId} over {DaysPeriod} days",
                 repositoryId, daysPeriod);
 
             // This would analyze trends over time
@@ -738,7 +738,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     dayOfWeekCounts[dayOfWeek]++;
                 }
             }
-            
+
             return dayOfWeekCounts;
         }
 
@@ -756,7 +756,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     hourCounts[hour]++;
                 }
             }
-            
+
             return hourCounts;
         }
 
@@ -791,19 +791,19 @@ namespace GainIt.API.Services.GitHub.Implementations
                     monthCounts[month]++;
                 }
             }
-            
+
             return monthCounts;
         }
 
         private List<string> ExtractLanguagesFromCommits(List<GitHubAnalyticsCommitNode> commits)
         {
             var languages = new HashSet<string>();
-            
+
             // Basic language detection from commit messages
             foreach (var commit in commits)
             {
                 var message = commit.Message.ToLower();
-                
+
                 // Common programming language keywords
                 if (message.Contains("javascript") || message.Contains("js")) languages.Add("JavaScript");
                 if (message.Contains("typescript") || message.Contains("ts")) languages.Add("TypeScript");
@@ -822,7 +822,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (message.Contains("html")) languages.Add("HTML");
                 if (message.Contains("css")) languages.Add("CSS");
             }
-            
+
             return languages.ToList();
         }
 

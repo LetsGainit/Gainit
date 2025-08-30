@@ -15,7 +15,7 @@ namespace GainIt.API.DTOs.ViewModels.Expertise
                 MissionStatement = string.Empty;
                 return;
             }
-            
+
             FieldOfWork = i_NonprofitExpertise.FieldOfWork;
             MissionStatement = i_NonprofitExpertise.MissionStatement;
         }

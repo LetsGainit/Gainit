@@ -11,7 +11,7 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
         /// The unique identifier of the user
         /// </summary>
         public Guid UserId { get; set; }
-        
+
         /// <summary>
         /// The contribution data
         /// </summary>

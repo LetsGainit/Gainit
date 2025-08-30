@@ -13,7 +13,7 @@ namespace GainIt.API.DTOs.ViewModels.Users
         public string AreaOfExpertise { get; set; }
         public TechExpertiseViewModel TechExpertise { get; set; }
         public List<ConciseUserProjectViewModel> MentoredProjects { get; set; } = new List<ConciseUserProjectViewModel>();
-        public List<AchievementViewModel> Achievements { get; set; } = new List<AchievementViewModel>();    
+        public List<AchievementViewModel> Achievements { get; set; } = new List<AchievementViewModel>();
 
         public FullMentorViewModel(Mentor mentor, List<UserProject>? projects, List<UserAchievement>? achievements, bool includeProjects = true, bool includeAchievements = true) : base(mentor)
         {

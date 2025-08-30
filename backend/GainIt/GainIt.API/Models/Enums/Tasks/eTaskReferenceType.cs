@@ -2,7 +2,7 @@
 {
     public enum eTaskReferenceType
     {
-        Doc,        
+        Doc,
         Design,
         ExternalForum
     }

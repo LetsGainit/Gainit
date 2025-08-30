@@ -42,7 +42,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             CreatedAtUtc = entity.CreatedAtUtc;
             DecisionAtUtc = entity.DecisionAtUtc;
 
-            RequestedRole = entity.RequestedRole; 
+            RequestedRole = entity.RequestedRole;
 
             ProjectName = entity.Project?.ProjectName;
             DeciderUserId = entity.DeciderUserId;

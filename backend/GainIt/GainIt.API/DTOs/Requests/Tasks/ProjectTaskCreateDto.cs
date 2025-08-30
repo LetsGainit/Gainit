@@ -15,8 +15,8 @@ namespace GainIt.API.DTOs.Requests.Tasks
         public Guid? MilestoneId { get; set; }
 
         [StringLength(100)]
-        public string? AssignedRole { get; set; }   
-        public Guid? AssignedUserId { get; set; }  
+        public string? AssignedRole { get; set; }
+        public Guid? AssignedUserId { get; set; }
 
         public int? OrderIndex { get; set; }        // optional initial order
     }

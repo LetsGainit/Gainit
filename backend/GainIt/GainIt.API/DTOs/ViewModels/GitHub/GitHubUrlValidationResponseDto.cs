@@ -9,12 +9,12 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
         /// The validated repository URL
         /// </summary>
         public string RepositoryUrl { get; set; } = string.Empty;
-        
+
         /// <summary>
         /// Whether the URL is valid and accessible
         /// </summary>
         public bool IsValid { get; set; }
-        
+
         /// <summary>
         /// Human-readable validation message
         /// </summary>

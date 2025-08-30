@@ -16,7 +16,7 @@ namespace GainIt.API.Services.Users.Interfaces
         Task<Gainer> GetGainerByIdAsync(Guid userId);
         Task<Mentor> GetMentorByIdAsync(Guid userId);
         Task<NonprofitOrganization> GetNonprofitByIdAsync(Guid userId);
-        
+
         // Update user profiles with type-specific data
         Task<Gainer> UpdateGainerProfileAsync(Guid userId, GainerProfileUpdateDTO updateDto);
         Task<Mentor> UpdateMentorProfileAsync(Guid userId, MentorProfileUpdateDTO updateDto);
@@ -27,22 +27,22 @@ namespace GainIt.API.Services.Users.Interfaces
         Task<IEnumerable<TechExpertise>> GetGainerExpertiseAsync(Guid userId);
         Task<IEnumerable<TechExpertise>> GetMentorExpertiseAsync(Guid userId);
         Task<IEnumerable<NonprofitExpertise>> GetNonprofitExpertiseAsync(Guid userId);
-        
+
         // Add expertise with type-specific handling
         Task<TechExpertise> AddExpertiseToGainerAsync(Guid userId, AddTechExpertiseDto expertiseDto);
         Task<TechExpertise> AddExpertiseToMentorAsync(Guid userId, AddTechExpertiseDto expertiseDto);
         Task<NonprofitExpertise> AddExpertiseToNonprofitAsync(Guid userId, AddNonprofitExpertiseDto expertiseDto);
-        
+
         // Get achievements with type-specific context
         Task<IEnumerable<UserAchievement>> GetGainerAchievementsAsync(Guid userId);
         Task<IEnumerable<UserAchievement>> GetMentorAchievementsAsync(Guid userId);
         Task<IEnumerable<UserAchievement>> GetNonprofitAchievementsAsync(Guid userId);
-        
+
         // Add achievements with type-specific handling
         Task<UserAchievement> AddAchievementToGainerAsync(Guid userId, Guid achievementTemplateId);
         Task<UserAchievement> AddAchievementToMentorAsync(Guid userId, Guid achievementTemplateId);
         Task<UserAchievement> AddAchievementToNonprofitAsync(Guid userId, Guid achievementTemplateId);
-        
+
         // Get project history with type-specific context
         Task<IEnumerable<UserProject>> GetGainerProjectHistoryAsync(Guid userId);
         Task<IEnumerable<UserProject>> GetMentorProjectHistoryAsync(Guid userId);
@@ -50,12 +50,12 @@ namespace GainIt.API.Services.Users.Interfaces
         Task<List<UserProject>> GetUserProjectsAsync(Guid userId);
         Task<List<UserAchievement>> GetUserAchievementsAsync(Guid userId);
         Task<List<UserProject>> GetNonprofitOwnedProjectsAsync(Guid nonprofitUserId);
-        
+
         // Search users with type-specific filtering
         Task<IEnumerable<Gainer>> SearchGainersAsync(string searchTerm);
         Task<IEnumerable<Mentor>> SearchMentorsAsync(string searchTerm);
         Task<IEnumerable<NonprofitOrganization>> SearchNonprofitsAsync(string searchTerm);
-        
+
         // Get user statistics with type-specific metrics
 
 

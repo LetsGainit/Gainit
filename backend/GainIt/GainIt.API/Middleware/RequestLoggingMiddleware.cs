@@ -19,10 +19,10 @@ namespace GainIt.API.Middleware
         {
             var stopwatch = Stopwatch.StartNew();
             var requestId = Guid.NewGuid().ToString();
-            
+
             // Add request ID to the context for correlation
             context.Items["RequestId"] = requestId;
-            
+
             // Log request start
             r_logger.LogInformation(
                 "Request started: {RequestId} {Method} {Path} from {IP}",
@@ -49,7 +49,7 @@ namespace GainIt.API.Middleware
             finally
             {
                 stopwatch.Stop();
-                
+
                 // Log request completion
                 r_logger.LogInformation(
                     "Request completed: {RequestId} {Method} {Path} - Status: {StatusCode} - Duration: {Duration}ms",
@@ -61,4 +61,4 @@ namespace GainIt.API.Middleware
             }
         }
     }
-} 
+}

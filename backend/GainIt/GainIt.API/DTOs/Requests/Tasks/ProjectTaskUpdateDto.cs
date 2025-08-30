@@ -14,7 +14,7 @@ namespace GainIt.API.DTOs.Requests.Tasks
         public DateTime? DueAtUtc { get; set; }
         public Guid? MilestoneId { get; set; }
         [StringLength(30)]
-        public string? AssignedRole { get; set; }  
-        public Guid? AssignedUserId { get; set; }  
+        public string? AssignedRole { get; set; }
+        public Guid? AssignedUserId { get; set; }
     }
 }

@@ -7,4 +7,4 @@ namespace GainIt.API.DTOs.ViewModels.Users.Stats
         public int TotalAchievements { get; set; }
         public int ExpertiseCount { get; set; }
     }
-} 
+}

@@ -243,14 +243,14 @@ namespace GainIt.API.Services.Projects.Implementations
         /// <returns>Enhanced analytics explanation with AI insights</returns>
         public async Task<string> GetGitHubAnalyticsExplanationAsync(string analyticsSummary, string? userQuery = null, GitHubInsightsMode mode = GitHubInsightsMode.QA)
         {
-            r_logger.LogInformation("Generating GitHub analytics explanation: SummaryLength={SummaryLength}, HasUserQuery={HasUserQuery}", 
+            r_logger.LogInformation("Generating GitHub analytics explanation: SummaryLength={SummaryLength}, HasUserQuery={HasUserQuery}",
                 analyticsSummary.Length, !string.IsNullOrEmpty(userQuery));
 
             try
             {
                 // Truncate overly long summaries to reduce latency and token usage
-                var safeSummary = analyticsSummary.Length > 2000 
-                    ? analyticsSummary.Substring(0, 2000) + "..." 
+                var safeSummary = analyticsSummary.Length > 2000
+                    ? analyticsSummary.Substring(0, 2000) + "..."
                     : analyticsSummary;
 
                 // Light sanitization to avoid triggering content filter and keep questions scoped

@@ -16,7 +16,7 @@ namespace GainIt.API.Models.Users.Gainers
         [Required(ErrorMessage = "Education Status is required")]
         [StringLength(100, ErrorMessage = "Education Status cannot exceed 100 characters")]
         public string EducationStatus { get; set; }
-        
+
         [JsonIgnore]
         public List<string> AreasOfInterest { get; set; }
 

@@ -32,10 +32,10 @@ namespace GainIt.API.Middleware
         public async Task InvokeAsync(HttpContext i_context)
         {
             var correlationId = GetOrCreateCorrelationId(i_context);
-            
+
             // Add correlation ID to the response headers
             i_context.Response.Headers[CorrelationIdHeader] = correlationId;
-            
+
             // Add correlation ID to the log context
             using (r_logger.BeginScope(new Dictionary<string, object>
             {
@@ -43,7 +43,7 @@ namespace GainIt.API.Middleware
             }))
             {
                 r_logger.LogDebug("Request started with correlation ID: {CorrelationId}", correlationId);
-                
+
                 try
                 {
                     await r_next(i_context);
@@ -55,7 +55,7 @@ namespace GainIt.API.Middleware
                 }
                 finally
                 {
-                    r_logger.LogDebug("Request completed with correlation ID: {CorrelationId}, StatusCode: {StatusCode}", 
+                    r_logger.LogDebug("Request completed with correlation ID: {CorrelationId}, StatusCode: {StatusCode}",
                         correlationId, i_context.Response.StatusCode);
                 }
             }
@@ -94,4 +94,4 @@ namespace GainIt.API.Middleware
             return i_builder.UseMiddleware<CorrelationIdMiddleware>();
         }
     }
-} 
+}

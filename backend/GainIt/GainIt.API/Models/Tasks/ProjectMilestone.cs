@@ -9,10 +9,10 @@ namespace GainIt.API.Models.Tasks
     {
         [Key] public Guid MilestoneId { get; set; } = Guid.NewGuid();
 
-        [Required] 
+        [Required]
         public Guid ProjectId { get; set; }
 
-        [JsonIgnore] 
+        [JsonIgnore]
         public required UserProject Project { get; set; }
 
         [Required, StringLength(120)]

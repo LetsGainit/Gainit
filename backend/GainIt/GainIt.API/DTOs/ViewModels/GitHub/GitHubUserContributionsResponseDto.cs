@@ -11,7 +11,7 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
         /// Number of contributors
         /// </summary>
         public int Contributors { get; set; }
-        
+
         /// <summary>
         /// List of user contributions
         /// </summary>

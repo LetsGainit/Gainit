@@ -52,4 +52,4 @@ namespace GainIt.API.DTOs.Requests.Users
         public List<string>? Technologies { get; set; }
         public List<string>? Tools { get; set; }
     }
-} 
+}

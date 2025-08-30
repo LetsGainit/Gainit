@@ -10,8 +10,8 @@ namespace GainIt.API.DTOs.Requests.Tasks
 
         public string? Goal { get; set; }
         public string? Constraints { get; set; }
-        public string? PreferredTechnologies { get; set; } 
-        public DateTime? StartDateUtc { get; set; } 
+        public string? PreferredTechnologies { get; set; }
+        public DateTime? StartDateUtc { get; set; }
         public DateTime? TargetDueDateUtc { get; set; }
 
         public List<string> TeamRoles { get; set; } = new();

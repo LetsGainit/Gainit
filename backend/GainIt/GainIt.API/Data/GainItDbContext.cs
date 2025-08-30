@@ -133,14 +133,14 @@ namespace GainIt.API.Data
         {
             var startTime = DateTime.UtcNow;
             var changeCount = ChangeTracker.Entries().Count(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted);
-            
+
             r_logger.LogInformation("Starting database save operation: ChangeCount={ChangeCount}", changeCount);
 
             try
             {
                 var result = await base.SaveChangesAsync(cancellationToken);
                 var duration = DateTime.UtcNow - startTime;
-                
+
                 r_logger.LogInformation("Database save completed successfully: ChangeCount={ChangeCount}, Duration={Duration}ms", changeCount, duration.TotalMilliseconds);
                 return result;
             }
@@ -156,14 +156,14 @@ namespace GainIt.API.Data
         {
             var startTime = DateTime.UtcNow;
             var changeCount = ChangeTracker.Entries().Count(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted);
-            
+
             r_logger.LogInformation("Starting database save operation (sync): ChangeCount={ChangeCount}", changeCount);
 
             try
             {
                 var result = base.SaveChanges();
                 var duration = DateTime.UtcNow - startTime;
-                
+
                 r_logger.LogInformation("Database save completed successfully (sync): ChangeCount={ChangeCount}, Duration={Duration}ms", changeCount, duration.TotalMilliseconds);
                 return result;
             }
@@ -181,7 +181,7 @@ namespace GainIt.API.Data
             {
                 r_logger.LogWarning("DbContext not configured, using default configuration");
             }
-            
+
             base.OnConfiguring(optionsBuilder);
         }
 
@@ -200,7 +200,7 @@ namespace GainIt.API.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             r_logger.LogDebug("Configuring database model");
-            
+
             try
             {
                 #region Inheritance Configuration
@@ -232,8 +232,8 @@ namespace GainIt.API.Data
                 // Configure UserProject
                 modelBuilder.Entity<UserProject>(entity =>
                 {
-                  
-                    
+
+
 
                     // One nonprofit → many projects
                     entity.HasOne<NonprofitOrganization>(p => p.OwningOrganization)
@@ -640,13 +640,13 @@ namespace GainIt.API.Data
         }
         #endregion
     }
-    
+
     public static class GainItDbContextSeeder
     {
         public static void SeedData(GainItDbContext context, ILogger? logger = null)
         {
             logger?.LogInformation("Starting database seeding process");
-            
+
             // Only seed if database is empty
             if (!context.Users.Any())
             {
@@ -1430,7 +1430,8 @@ namespace GainIt.API.Data
                 context.SaveChanges();
                 #endregion
             }
-            else{
+            else
+            {
                 logger?.LogInformation("Database already seeded");
             }
         }

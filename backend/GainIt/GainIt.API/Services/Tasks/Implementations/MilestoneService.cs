@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GainIt.API.Services.Tasks.Implementations
 {
     public class MilestoneService : IMilestoneService
-    {   
+    {
 
         private readonly GainItDbContext r_Db;
         private readonly ITaskNotificationService r_Notifications;
@@ -20,7 +20,7 @@ namespace GainIt.API.Services.Tasks.Implementations
             r_Notifications = i_Notifications;
         }
 
-        public async Task<ProjectMilestoneViewModel> CreateAsync( Guid i_ProjectId, ProjectMilestoneCreateDto i_MilestoneCreateRequest, Guid i_ActorUserId)
+        public async Task<ProjectMilestoneViewModel> CreateAsync(Guid i_ProjectId, ProjectMilestoneCreateDto i_MilestoneCreateRequest, Guid i_ActorUserId)
         {
             await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
             await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
@@ -32,7 +32,7 @@ namespace GainIt.API.Services.Tasks.Implementations
             var entity = new ProjectMilestone
             {
                 ProjectId = i_ProjectId,
-                Project = project,                      
+                Project = project,
                 Title = i_MilestoneCreateRequest.Title,
                 Description = i_MilestoneCreateRequest.Description,
                 Status = i_MilestoneCreateRequest.Status
@@ -144,7 +144,7 @@ namespace GainIt.API.Services.Tasks.Implementations
             var tasksCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == entity.MilestoneId);
             var doneCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == entity.MilestoneId && t.Status == eTaskStatus.Done);
 
-            var milestoneViewModel =  new ProjectMilestoneViewModel
+            var milestoneViewModel = new ProjectMilestoneViewModel
             {
                 MilestoneId = entity.MilestoneId,
                 Title = entity.Title,

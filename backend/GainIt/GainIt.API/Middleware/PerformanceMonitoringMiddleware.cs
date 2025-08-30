@@ -74,4 +74,4 @@ namespace GainIt.API.Middleware
             return i_builder.UseMiddleware<PerformanceMonitoringMiddleware>();
         }
     }
-} 
+}

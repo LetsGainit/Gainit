@@ -24,7 +24,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
         public async Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId, string i_Role)
         {
-            r_logger.LogInformation("Adding team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
+            r_logger.LogInformation("Adding team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}",
                 i_ProjectId, i_UserId, i_Role);
 
             try
@@ -84,26 +84,26 @@ namespace GainIt.API.Services.Projects.Implementations
                 });
 
                 await r_DbContext.SaveChangesAsync();
-                
-                r_logger.LogInformation("Successfully added team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
+
+                r_logger.LogInformation("Successfully added team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}",
                     i_ProjectId, i_UserId, i_Role);
                 return project;
             }
             catch (KeyNotFoundException ex)
             {
-                r_logger.LogWarning("Key not found while adding team member: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", 
+                r_logger.LogWarning("Key not found while adding team member: ProjectId={ProjectId}, UserId={UserId}, Error={Error}",
                     i_ProjectId, i_UserId, ex.Message);
                 throw;
             }
             catch (InvalidOperationException ex)
             {
-                r_logger.LogWarning("Invalid operation while adding team member: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", 
+                r_logger.LogWarning("Invalid operation while adding team member: ProjectId={ProjectId}, UserId={UserId}, Error={Error}",
                     i_ProjectId, i_UserId, ex.Message);
                 throw;
             }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error adding team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
+                r_logger.LogError(ex, "Error adding team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}",
                     i_ProjectId, i_UserId, i_Role);
                 throw;
             }
@@ -111,7 +111,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
         public async Task<UserProject> AssignMentorAsync(Guid i_ProjectId, Guid i_MentorId)
         {
-            r_logger.LogInformation("Assigning mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", 
+            r_logger.LogInformation("Assigning mentor to project: ProjectId={ProjectId}, MentorId={MentorId}",
                 i_ProjectId, i_MentorId);
 
             try
@@ -139,7 +139,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     member.UserId == i_MentorId &&
                     member.LeftAtUtc == null))
                 {
-                    r_logger.LogWarning("Mentor already a project member: ProjectId={ProjectId}, MentorId={MentorId}", 
+                    r_logger.LogWarning("Mentor already a project member: ProjectId={ProjectId}, MentorId={MentorId}",
                         i_ProjectId, i_MentorId);
                     throw new InvalidOperationException($"Mentor {i_MentorId} is already a member of project {i_ProjectId}");
                 }
@@ -157,26 +157,26 @@ namespace GainIt.API.Services.Projects.Implementations
                 });
 
                 await r_DbContext.SaveChangesAsync();
-                
-                r_logger.LogInformation("Successfully assigned mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", 
+
+                r_logger.LogInformation("Successfully assigned mentor to project: ProjectId={ProjectId}, MentorId={MentorId}",
                     i_ProjectId, i_MentorId);
                 return project;
             }
             catch (KeyNotFoundException ex)
             {
-                r_logger.LogWarning("Key not found while assigning mentor: ProjectId={ProjectId}, MentorId={MentorId}, Error={Error}", 
+                r_logger.LogWarning("Key not found while assigning mentor: ProjectId={ProjectId}, MentorId={MentorId}, Error={Error}",
                     i_ProjectId, i_MentorId, ex.Message);
                 throw;
             }
             catch (InvalidOperationException ex)
             {
-                r_logger.LogWarning("Invalid operation while assigning mentor: ProjectId={ProjectId}, MentorId={MentorId}, Error={Error}", 
+                r_logger.LogWarning("Invalid operation while assigning mentor: ProjectId={ProjectId}, MentorId={MentorId}, Error={Error}",
                     i_ProjectId, i_MentorId, ex.Message);
                 throw;
             }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error assigning mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", 
+                r_logger.LogError(ex, "Error assigning mentor to project: ProjectId={ProjectId}, MentorId={MentorId}",
                     i_ProjectId, i_MentorId);
                 throw;
             }
@@ -295,7 +295,7 @@ namespace GainIt.API.Services.Projects.Implementations
         public async Task<IEnumerable<UserProject>> GetAllActiveProjectsAsync()
         {
             r_logger.LogInformation("Getting all active projects");
-            
+
             var projects = await r_DbContext.Projects
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(projectMember => projectMember.User)

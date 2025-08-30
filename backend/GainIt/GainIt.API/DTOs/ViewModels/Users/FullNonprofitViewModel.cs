@@ -9,7 +9,7 @@ namespace GainIt.API.DTOs.ViewModels.Users
     {
         public string WebsiteUrl { get; set; }
         public NonprofitExpertiseViewModel NonprofitExpertise { get; set; }
-        public List<ConciseUserProjectViewModel> OwnedProjects { get; set; } = new List<ConciseUserProjectViewModel>(); 
+        public List<ConciseUserProjectViewModel> OwnedProjects { get; set; } = new List<ConciseUserProjectViewModel>();
 
         public FullNonprofitViewModel(NonprofitOrganization nonprofit, List<UserProject>? projects, bool includeProjects = true) : base(nonprofit)
         {

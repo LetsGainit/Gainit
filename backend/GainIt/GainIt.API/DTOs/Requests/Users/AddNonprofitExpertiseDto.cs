@@ -21,4 +21,4 @@ namespace GainIt.API.DTOs.Requests.Users
         [StringLength(1000, ErrorMessage = "Mission statement cannot exceed 1000 characters")]
         public string MissionStatement { get; set; } = string.Empty;
     }
-} 
+}

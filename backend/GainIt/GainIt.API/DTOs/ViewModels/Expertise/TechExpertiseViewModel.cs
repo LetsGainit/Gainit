@@ -4,7 +4,7 @@ namespace GainIt.API.DTOs.ViewModels.Expertise
 {
     public class TechExpertiseViewModel
     {
-        public List<string> ProgrammingLanguages { get; set; } = new List<string>();    
+        public List<string> ProgrammingLanguages { get; set; } = new List<string>();
         public List<string> Technologies { get; set; } = new List<string>();
         public List<string> Tools { get; set; } = new List<string>();
 
@@ -17,7 +17,7 @@ namespace GainIt.API.DTOs.ViewModels.Expertise
                 Tools = new List<string>();
                 return;
             }
-            
+
             ProgrammingLanguages = i_TechExpertise.ProgrammingLanguages;
             Technologies = i_TechExpertise.Technologies;
             Tools = i_TechExpertise.Tools;

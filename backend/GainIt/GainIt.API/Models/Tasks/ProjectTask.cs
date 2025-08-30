@@ -41,6 +41,6 @@ namespace GainIt.API.Models.Tasks
 
         [JsonIgnore] public List<TaskDependency> Dependencies { get; set; } = new();
         public string? AssignedRole { get; set; } // Role name from ProjectMember.UserRole (e.g., "Backend Developer")
-        public Guid? AssignedUserId { get; set; } 
+        public Guid? AssignedUserId { get; set; }
     }
 }

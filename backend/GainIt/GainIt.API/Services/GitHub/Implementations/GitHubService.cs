@@ -34,8 +34,8 @@ namespace GainIt.API.Services.GitHub.Implementations
         public async Task<GitHubRepositoryLinkResponseDto> LinkRepositoryAsync(Guid projectId, string repositoryUrl)
         {
             try
-        {
-            _logger.LogInformation("Linking GitHub repository {RepositoryUrl} to project {ProjectId}", repositoryUrl, projectId);
+            {
+                _logger.LogInformation("Linking GitHub repository {RepositoryUrl} to project {ProjectId}", repositoryUrl, projectId);
 
                 // Extract owner and name from URL
                 var (owner, name) = ParseGitHubUrl(repositoryUrl);
@@ -50,7 +50,7 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                 // Validate repository exists and is public
                 var (isValid, repositoryData, isPrivate) = await _apiClient.ValidateRepositoryAsync(owner, name);
-                
+
                 if (!isValid || repositoryData == null)
                 {
                     return new GitHubRepositoryLinkResponseDto
@@ -114,7 +114,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     projectRepository.License = repositoryData.License?.Name;
                     projectRepository.IsArchived = repositoryData.Archived;
                     projectRepository.IsFork = repositoryData.Fork;
-                    
+
                     // Store all branches
                     projectRepository.Branches = branches ?? new List<string>();
 
@@ -124,17 +124,17 @@ namespace GainIt.API.Services.GitHub.Implementations
                 {
                     // Create new repository for this project
                     repository = new GitHubRepository
-                {
-                    ProjectId = projectId,
-                    RepositoryName = name,
-                    OwnerName = owner,
+                    {
+                        ProjectId = projectId,
+                        RepositoryName = name,
+                        OwnerName = owner,
                         FullName = repositoryData.FullName,
                         RepositoryUrl = repositoryData.HtmlUrl,
-                    Description = repositoryData.Description,
+                        Description = repositoryData.Description,
                         IsPublic = !repositoryData.Private,
-                    CreatedAtUtc = repositoryData.CreatedAt,
+                        CreatedAtUtc = repositoryData.CreatedAt,
                         LastSyncedAtUtc = DateTime.UtcNow,
-                    LastActivityAtUtc = repositoryData.PushedAt ?? repositoryData.UpdatedAt,
+                        LastActivityAtUtc = repositoryData.PushedAt ?? repositoryData.UpdatedAt,
                         StarsCount = repositoryData.StargazersCount,
                         ForksCount = repositoryData.ForksCount,
                         OpenIssuesCount = repositoryData.OpenIssuesCount,
@@ -324,7 +324,7 @@ namespace GainIt.API.Services.GitHub.Implementations
             try
             {
                 _logger.LogDebug("GetProjectAnalyticsAsync called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
-                
+
                 var repository = await GetRepositoryAsync(projectId);
                 if (repository == null)
                 {
@@ -333,7 +333,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 }
 
                 _logger.LogDebug("Repository found for project {ProjectId}: {RepositoryName}", projectId, repository.RepositoryName);
-                
+
                 // Check if analytics exist and are fresh
                 var analytics = await _context.Set<GitHubAnalytics>()
                     .FirstOrDefaultAsync(a => a.RepositoryId == repository.RepositoryId);
@@ -341,7 +341,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 if (analytics == null)
                 {
                     _logger.LogInformation("No analytics record found for repository {RepositoryId} in project {ProjectId}, creating analytics automatically", repository.RepositoryId, projectId);
-                    
+
                     // Create sync log entry for analytics creation
                     var syncLog = new GitHubSyncLog
                     {
@@ -361,14 +361,14 @@ namespace GainIt.API.Services.GitHub.Implementations
                         {
                             _context.Set<GitHubAnalytics>().Add(analytics);
                             await _context.SaveChangesAsync();
-                            
+
                             // Update sync log
                             syncLog.Status = "Completed";
                             syncLog.CompletedAtUtc = DateTime.UtcNow;
                             syncLog.ItemsProcessed = 1;
                             syncLog.TotalItems = 1;
                             await _context.SaveChangesAsync();
-                            
+
                             _logger.LogInformation("Created analytics record for repository {RepositoryId} in project {ProjectId}", repository.RepositoryId, projectId);
                         }
                         else
@@ -394,14 +394,14 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                     // Check if analytics are fresh (less than 1 day old)
                     var isFresh = analytics.CalculatedAtUtc >= DateTime.UtcNow.AddDays(-1);
-                    _logger.LogDebug("Analytics freshness check: IsFresh={IsFresh}, CalculatedAt={CalculatedAt}, Now={Now}", 
+                    _logger.LogDebug("Analytics freshness check: IsFresh={IsFresh}, CalculatedAt={CalculatedAt}, Now={Now}",
                         isFresh, analytics.CalculatedAtUtc, DateTime.UtcNow);
 
                     if (!isFresh)
                     {
-                        _logger.LogInformation("Analytics for project {ProjectId} are stale (last calculated: {CalculatedAt}), refreshing automatically", 
+                        _logger.LogInformation("Analytics for project {ProjectId} are stale (last calculated: {CalculatedAt}), refreshing automatically",
                             projectId, analytics.CalculatedAtUtc);
-                        
+
                         // Create sync log entry for analytics refresh
                         var refreshSyncLog = new GitHubSyncLog
                         {
@@ -428,16 +428,16 @@ namespace GainIt.API.Services.GitHub.Implementations
                                 analytics.MonthlyIssues = refreshedAnalytics.MonthlyIssues;
                                 analytics.MonthlyPullRequests = refreshedAnalytics.MonthlyPullRequests;
                                 analytics.CalculatedAtUtc = DateTime.UtcNow;
-                                
+
                                 await _context.SaveChangesAsync();
-                                
+
                                 // Update sync log
                                 refreshSyncLog.Status = "Completed";
                                 refreshSyncLog.CompletedAtUtc = DateTime.UtcNow;
                                 refreshSyncLog.ItemsProcessed = 1;
                                 refreshSyncLog.TotalItems = 1;
                                 await _context.SaveChangesAsync();
-                                
+
                                 _logger.LogInformation("Refreshed analytics for repository {RepositoryId} in project {ProjectId}", repository.RepositoryId, projectId);
                             }
                             else
@@ -541,7 +541,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                         {
                             username = ExtractGitHubUsername(member.User.GitHubURL);
                         }
-                        
+
                         if (!string.IsNullOrEmpty(username))
                         {
                             _logger.LogDebug("Processing contribution for user {UserId} with GitHub username {GitHubUsername}", member.UserId, username);
@@ -623,14 +623,14 @@ namespace GainIt.API.Services.GitHub.Implementations
                     }
 
                     await _context.SaveChangesAsync();
-                    
+
                     // Update sync log
                     contributionsSyncLog.Status = "Completed";
                     contributionsSyncLog.CompletedAtUtc = DateTime.UtcNow;
                     contributionsSyncLog.ItemsProcessed = contributions.Count;
                     contributionsSyncLog.TotalItems = projectMembers.Count;
                     await _context.SaveChangesAsync();
-                    
+
                     _logger.LogDebug("Updated {ContributionCount} contributions for project {ProjectId}", contributions.Count, projectId);
                 }
                 catch (Exception ex)
@@ -640,7 +640,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     contributionsSyncLog.ErrorMessage = ex.Message;
                     contributionsSyncLog.CompletedAtUtc = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
-                    
+
                     _logger.LogError(ex, "Error ensuring contributions are up to date for project {ProjectId}", projectId);
                     // Don't throw - this is a background operation
                 }
@@ -710,7 +710,7 @@ namespace GainIt.API.Services.GitHub.Implementations
             try
             {
                 _logger.LogDebug("SyncAnalyticsAsync called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
-                
+
                 var repository = await GetRepositoryAsync(projectId);
                 if (repository == null)
                 {
@@ -732,7 +732,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 _context.Set<GitHubSyncLog>().Add(syncLog);
                 await _context.SaveChangesAsync();
 
-                                    _logger.LogDebug("Created sync log for analytics sync: {SyncLogId}", syncLog.SyncLogId);
+                _logger.LogDebug("Created sync log for analytics sync: {SyncLogId}", syncLog.SyncLogId);
 
                 try
                 {
@@ -754,7 +754,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                         {
                             username = ExtractGitHubUsername(member.User.GitHubURL);
                         }
-                        
+
                         if (!string.IsNullOrEmpty(username))
                         {
                             _logger.LogDebug("Processing contribution for user {UserId} with GitHub username {GitHubUsername}", member.UserId, username);
@@ -776,7 +776,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                         _logger.LogDebug("Removing {OldContributionCount} old contributions for project {ProjectId}", repository.Contributions.Count, projectId);
                         _context.Set<GitHubContribution>().RemoveRange(repository.Contributions);
                     }
-                    
+
                     repository.Contributions = contributions;
                     _context.Set<GitHubContribution>().AddRange(contributions);
 
@@ -876,13 +876,13 @@ namespace GainIt.API.Services.GitHub.Implementations
                 var analytics = await GetProjectAnalyticsAsync(projectId);
                 var contributions = await GetUserContributionsAsync(projectId);
 
-                _logger.LogDebug("Repository stats for project {ProjectId}: Found {ContributionCount} contributions", 
+                _logger.LogDebug("Repository stats for project {ProjectId}: Found {ContributionCount} contributions",
                     projectId, contributions.Count);
 
                 // Log contribution details for debugging
                 foreach (var contribution in contributions)
                 {
-                    _logger.LogDebug("Contribution for user {UserId}: Commits={Commits}, LinesChanged={LinesChanged}, Username={Username}", 
+                    _logger.LogDebug("Contribution for user {UserId}: Commits={Commits}, LinesChanged={LinesChanged}, Username={Username}",
                         contribution.UserId, contribution.TotalCommits, contribution.TotalLinesChanged, contribution.GitHubUsername);
                 }
 
@@ -1000,7 +1000,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                         null,
                         Services.Projects.Interfaces.GitHubInsightsMode.UserSummary
                     );
-                    
+
                     _logger.LogInformation("Successfully generated AI-enhanced user activity summary for user {UserId} in project {ProjectId}", userId, projectId);
                     return enhancedSummary;
                 }
@@ -1031,7 +1031,7 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                 // Generate the raw analytics summary
                 var rawSummary = await _analyticsService.GenerateActivitySummaryAsync(analytics, contributions);
-                
+
                 // Use GPT service to enhance the summary with AI insights
                 try
                 {
@@ -1040,7 +1040,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                         null,
                         Services.Projects.Interfaces.GitHubInsightsMode.ProjectSummary
                     );
-                    
+
                     _logger.LogInformation("Successfully generated AI-enhanced project activity summary for project {ProjectId}", projectId);
                     return enhancedSummary;
                 }
@@ -1089,15 +1089,15 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                 // Generate the raw analytics summary
                 var rawSummary = await _analyticsService.GenerateActivitySummaryAsync(analytics, contributions);
-                
+
                 // Use GPT service to provide personalized insights based on the user's query
                 try
                 {
                     var personalizedInsights = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
-                        rawSummary, 
+                        rawSummary,
                         userQuery
                     );
-                    
+
                     _logger.LogInformation("Successfully generated personalized analytics insights for project {ProjectId} with query: {UserQuery}", projectId, userQuery);
                     return personalizedInsights;
                 }
@@ -1126,7 +1126,7 @@ namespace GainIt.API.Services.GitHub.Implementations
             {
                 var existingRepository = await _context.Set<GitHubRepository>()
                     .FirstOrDefaultAsync(r => r.OwnerName == owner && r.RepositoryName == name);
-                
+
                 return existingRepository != null;
             }
             catch (Exception ex)
@@ -1148,7 +1148,7 @@ namespace GainIt.API.Services.GitHub.Implementations
             {
                 var repository = await _context.Set<GitHubRepository>()
                     .FirstOrDefaultAsync(r => r.OwnerName == owner && r.RepositoryName == name);
-                
+
                 return repository?.ProjectId;
             }
             catch (Exception ex)

@@ -2,9 +2,9 @@
 {
     public enum eTaskPriority
     {
-        Low, 
-        Medium, 
-        High, 
+        Low,
+        Medium,
+        High,
         Critical
     }
 }

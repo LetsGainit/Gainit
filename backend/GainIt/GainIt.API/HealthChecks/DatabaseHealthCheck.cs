@@ -43,10 +43,10 @@ namespace GainIt.API.HealthChecks
             try
             {
                 var startTime = DateTime.UtcNow;
-                
+
                 // Test database connectivity
                 await r_dbContext.Database.CanConnectAsync(cancellationToken);
-                
+
                 var duration = DateTime.UtcNow - startTime;
                 r_logger.LogInformation("Database health check completed successfully: Duration={Duration}ms", duration.TotalMilliseconds);
 
@@ -63,4 +63,4 @@ namespace GainIt.API.HealthChecks
             }
         }
     }
-} 
+}

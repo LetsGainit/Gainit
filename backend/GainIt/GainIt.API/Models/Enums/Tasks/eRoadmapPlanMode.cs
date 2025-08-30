@@ -2,7 +2,7 @@
 {
     public enum eRoadmapPlanMode
     {
-        TemplateCopy, 
+        TemplateCopy,
         AiPlan
     }
 }

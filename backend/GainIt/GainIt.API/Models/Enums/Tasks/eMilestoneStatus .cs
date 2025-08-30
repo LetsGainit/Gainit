@@ -2,8 +2,8 @@
 {
     public enum eMilestoneStatus
     {
-        Planned, 
-        Active, 
+        Planned,
+        Active,
         Completed
     }
 }

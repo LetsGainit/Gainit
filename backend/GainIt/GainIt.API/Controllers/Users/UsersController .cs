@@ -53,18 +53,18 @@ namespace GainIt.API.Controllers.Users
         {
             var correlationId = HttpContext.TraceIdentifier;
             var startTime = DateTimeOffset.UtcNow;
-            
-            r_logger.LogInformation("Starting user provisioning process. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}", 
+
+            r_logger.LogInformation("Starting user provisioning process. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}",
                 correlationId, Request.Headers.UserAgent.ToString(), HttpContext.Connection.RemoteIpAddress, User.Identity?.Name);
-            
+
             // Log all available claims for security monitoring
             var allClaims = User.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
-            r_logger.LogDebug("All available claims for user provisioning: CorrelationId={CorrelationId}, Claims={Claims}", 
+            r_logger.LogDebug("All available claims for user provisioning: CorrelationId={CorrelationId}, Claims={Claims}",
                 correlationId, string.Join(", ", allClaims));
-            
+
             try
             {
-                
+
                 var externalId =
                     tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
                  ?? tryGetClaim(User, "sub")
@@ -92,7 +92,7 @@ namespace GainIt.API.Controllers.Users
 
                 var idp = tryGetClaim(User, "idp");
 
-                r_logger.LogDebug("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}", 
+                r_logger.LogDebug("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}",
                     correlationId, email, name, idp);
 
                 var dto = new ExternalUserDto
@@ -103,21 +103,21 @@ namespace GainIt.API.Controllers.Users
                     IdentityProvider = idp,
                 };
 
-                r_logger.LogDebug("Created ExternalUserDto for provisioning. CorrelationId={CorrelationId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
+                r_logger.LogDebug("Created ExternalUserDto for provisioning. CorrelationId={CorrelationId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}",
                     correlationId, dto.ExternalId, dto.Email, dto.FullName);
 
                 var profile = await r_userProfileService.GetOrCreateFromExternalAsync(dto);
-                
+
                 var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
-                r_logger.LogInformation("Successfully provisioned user. CorrelationId={CorrelationId}, UserId={UserId}, ExternalId={ExternalId}, Email={Email}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
+                r_logger.LogInformation("Successfully provisioned user. CorrelationId={CorrelationId}, UserId={UserId}, ExternalId={ExternalId}, Email={Email}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}",
                     correlationId, profile.UserId, profile.ExternalId, profile.EmailAddress, processingTime, HttpContext.Connection.RemoteIpAddress);
-                
+
                 return Ok(profile);
             }
             catch (Exception ex)
             {
                 var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
-                r_logger.LogError(ex, "Error during user provisioning process. CorrelationId={CorrelationId}, ProcessingTime={ProcessingTime}ms, OID: {OID}, Available claims: {ClaimTypes}, RemoteIP={RemoteIP}", 
+                r_logger.LogError(ex, "Error during user provisioning process. CorrelationId={CorrelationId}, ProcessingTime={ProcessingTime}ms, OID: {OID}, Available claims: {ClaimTypes}, RemoteIP={RemoteIP}",
                     correlationId, processingTime, tryGetClaim(User, "oid", ClaimTypes.NameIdentifier),
                     string.Join(", ", allClaims), HttpContext.Connection.RemoteIpAddress);
                 return StatusCode(500, new { Message = "An error occurred during user provisioning" });
@@ -142,7 +142,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> GetGainerProfile(Guid id)
         {
             r_logger.LogInformation("Getting Gainer profile: UserId={UserId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Gainer ID provided: {UserId}", id);
@@ -161,8 +161,8 @@ namespace GainIt.API.Controllers.Users
                 var projects = await r_userProfileService.GetUserProjectsAsync(id);
                 var achievements = (await r_userProfileService.GetUserAchievementsAsync(id)).ToList();
                 FullGainerViewModel gainerViewModel = new FullGainerViewModel(gainer, projects, achievements);
-                
-                r_logger.LogInformation("Successfully retrieved Gainer profile: UserId={UserId}, ProjectsCount={ProjectsCount}, AchievementsCount={AchievementsCount}", 
+
+                r_logger.LogInformation("Successfully retrieved Gainer profile: UserId={UserId}, ProjectsCount={ProjectsCount}, AchievementsCount={AchievementsCount}",
                     id, projects.Count(), achievements.Count);
                 return Ok(gainerViewModel);
             }
@@ -186,7 +186,7 @@ namespace GainIt.API.Controllers.Users
         /// The complete Mentor profile including personal information, projects, and achievements.
         /// Returns 200 OK if found, 400 Bad Request if ID is invalid, or 404 Not Found if Mentor doesn't exist.
         /// </returns>
-        
+
         [HttpGet("mentor/{id}/profile")]
         [ProducesResponseType(typeof(FullMentorViewModel), 200)]
         [ProducesResponseType(typeof(object), 400)]
@@ -195,7 +195,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> GetMentorProfile(Guid id)
         {
             r_logger.LogInformation("Getting Mentor profile: UserId={UserId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Mentor ID provided: {UserId}", id);
@@ -214,8 +214,8 @@ namespace GainIt.API.Controllers.Users
                 var projects = await r_userProfileService.GetUserProjectsAsync(id);
                 var achievements = (await r_userProfileService.GetUserAchievementsAsync(id)).ToList();
                 FullMentorViewModel mentorViewModel = new FullMentorViewModel(mentor, projects, achievements, true, true);
-                
-                r_logger.LogInformation("Successfully retrieved Mentor profile: UserId={UserId}, ProjectsCount={ProjectsCount}, AchievementsCount={AchievementsCount}", 
+
+                r_logger.LogInformation("Successfully retrieved Mentor profile: UserId={UserId}, ProjectsCount={ProjectsCount}, AchievementsCount={AchievementsCount}",
                     id, projects.Count(), achievements.Count);
                 return Ok(mentorViewModel);
             }
@@ -239,7 +239,7 @@ namespace GainIt.API.Controllers.Users
         /// The complete Nonprofit profile including organization information and owned projects.
         /// Returns 200 OK if found, 400 Bad Request if ID is invalid, or 404 Not Found if Nonprofit doesn't exist.
         /// </returns>
-    
+
         [HttpGet("nonprofit/{id}/profile")]
         [ProducesResponseType(typeof(FullNonprofitViewModel), 200)]
         [ProducesResponseType(typeof(object), 400)]
@@ -248,7 +248,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> GetNonprofitProfile(Guid id)
         {
             r_logger.LogInformation("Getting Nonprofit profile: NonprofitId={NonprofitId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Nonprofit ID provided: {NonprofitId}", id);
@@ -263,11 +263,11 @@ namespace GainIt.API.Controllers.Users
                     r_logger.LogWarning("Nonprofit not found: {NonprofitId}", id);
                     return NotFound(new { Message = $"Nonprofit with ID {id} not found" });
                 }
-                
+
                 var projects = await r_userProfileService.GetNonprofitOwnedProjectsAsync(id);
                 FullNonprofitViewModel nonprofitViewModel = new FullNonprofitViewModel(nonprofit, projects);
-                
-                r_logger.LogInformation("Successfully retrieved Nonprofit profile: NonprofitId={NonprofitId}, ProjectsCount={ProjectsCount}", 
+
+                r_logger.LogInformation("Successfully retrieved Nonprofit profile: NonprofitId={NonprofitId}, ProjectsCount={ProjectsCount}",
                     id, projects.Count());
                 return Ok(nonprofitViewModel);
             }
@@ -299,7 +299,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> AddExpertiseToGainer(Guid id, [FromBody] AddTechExpertiseDto expertiseDto)
         {
             r_logger.LogInformation("Adding expertise to Gainer: UserId={UserId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Gainer ID provided: {UserId}", id);
@@ -350,7 +350,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> AddExpertiseToMentor(Guid id, [FromBody] AddTechExpertiseDto expertiseDto)
         {
             r_logger.LogInformation("Adding expertise to Mentor: UserId={UserId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Mentor ID provided: {UserId}", id);
@@ -401,7 +401,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> AddExpertiseToNonprofit(Guid id, [FromBody] AddNonprofitExpertiseDto expertiseDto)
         {
             r_logger.LogInformation("Adding expertise to Nonprofit: NonprofitId={NonprofitId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Nonprofit ID provided: {NonprofitId}", id);
@@ -456,7 +456,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> AddAchievementToGainer(Guid id, [FromBody] Guid achievementTemplateId)
         {
             r_logger.LogInformation("Adding achievement to Gainer: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", id, achievementTemplateId);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Gainer ID provided: {UserId}", id);
@@ -477,7 +477,7 @@ namespace GainIt.API.Controllers.Users
             }
             catch (KeyNotFoundException ex)
             {
-                
+
                 r_logger.LogWarning("Gainer or Achievement Template not found: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}, Error={Error}", id, achievementTemplateId, ex.Message);
                 return NotFound(new { Message = ex.Message });
             }
@@ -502,7 +502,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> AddAchievementToMentor(Guid id, [FromBody] Guid achievementTemplateId)
         {
             r_logger.LogInformation("Adding achievement to Mentor: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", id, achievementTemplateId);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Mentor ID provided: {UserId}", id);
@@ -547,7 +547,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> AddAchievementToNonprofit(Guid id, [FromBody] Guid achievementTemplateId)
         {
             r_logger.LogInformation("Adding achievement to Nonprofit: NonprofitId={NonprofitId}, AchievementTemplateId={AchievementTemplateId}", id, achievementTemplateId);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Nonprofit ID provided: {NonprofitId}", id);
@@ -596,7 +596,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> UpdateGainerProfile(Guid id, [FromBody] GainerProfileUpdateDTO updateDto)
         {
             r_logger.LogInformation("Updating Gainer profile: UserId={UserId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Gainer ID provided: {UserId}", id);
@@ -612,7 +612,7 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var result = await r_userProfileService.UpdateGainerProfileAsync(id, updateDto);
-                
+
                 // Check if any expertise strings were provided and add expertise
                 if (updateDto.ProgrammingLanguages?.Any() == true || updateDto.Technologies?.Any() == true || updateDto.Tools?.Any() == true)
                 {
@@ -654,7 +654,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> UpdateMentorProfile(Guid id, [FromBody] MentorProfileUpdateDTO updateDto)
         {
             r_logger.LogInformation("Updating Mentor profile: UserId={UserId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Mentor ID provided: {UserId}", id);
@@ -670,7 +670,7 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var result = await r_userProfileService.UpdateMentorProfileAsync(id, updateDto);
-                
+
                 // Check if any expertise strings were provided and add expertise
                 if (updateDto.ProgrammingLanguages?.Any() == true || updateDto.Technologies?.Any() == true || updateDto.Tools?.Any() == true)
                 {
@@ -712,7 +712,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> UpdateNonprofitProfile(Guid id, [FromBody] NonprofitProfileUpdateDTO updateDto)
         {
             r_logger.LogInformation("Updating Nonprofit profile: NonprofitId={NonprofitId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Nonprofit ID provided: {NonprofitId}", id);
@@ -728,7 +728,7 @@ namespace GainIt.API.Controllers.Users
             try
             {
                 var result = await r_userProfileService.UpdateNonprofitProfileAsync(id, updateDto);
-                
+
                 // Check if any expertise strings were provided and add expertise
                 if (!string.IsNullOrWhiteSpace(updateDto.FieldOfWork) || !string.IsNullOrWhiteSpace(updateDto.MissionStatement))
                 {
@@ -772,7 +772,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetGainerProjectHistory(Guid id)
         {
             r_logger.LogInformation("Getting Gainer project history: UserId={UserId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Gainer ID provided: {UserId}", id);
@@ -811,7 +811,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetMentorProjectHistory(Guid id)
         {
             r_logger.LogInformation("Getting Mentor project history: UserId={UserId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Mentor ID provided: {UserId}", id);
@@ -850,7 +850,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetNonprofitProjectHistory(Guid id)
         {
             r_logger.LogInformation("Getting Nonprofit project history: NonprofitId={NonprofitId}", id);
-            
+
             if (id == Guid.Empty)
             {
                 r_logger.LogWarning("Invalid Nonprofit ID provided: {NonprofitId}", id);
@@ -892,7 +892,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> SearchGainers([FromQuery] string searchTerm)
         {
             r_logger.LogInformation("Searching Gainers: SearchTerm={SearchTerm}", searchTerm);
-            
+
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
                 r_logger.LogWarning("Empty search term provided for Gainer search");
@@ -929,7 +929,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> SearchMentors([FromQuery] string searchTerm)
         {
             r_logger.LogInformation("Searching Mentors: SearchTerm={SearchTerm}", searchTerm);
-            
+
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
                 r_logger.LogWarning("Empty search term provided for Mentor search");
@@ -966,7 +966,7 @@ namespace GainIt.API.Controllers.Users
         public async Task<IActionResult> SearchNonprofits([FromQuery] string searchTerm)
         {
             r_logger.LogInformation("Searching Nonprofits: SearchTerm={SearchTerm}", searchTerm);
-            
+
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
                 r_logger.LogWarning("Empty search term provided for Nonprofit search");

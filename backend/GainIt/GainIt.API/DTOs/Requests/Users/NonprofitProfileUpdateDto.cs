@@ -11,7 +11,7 @@ namespace GainIt.API.DTOs.Requests.Users
 
         [Required(ErrorMessage = "Biography is required")]
         [StringLength(1000, ErrorMessage = "Biography cannot exceed 1000 characters")]
-        public string Biography { get; set; }  = null!;  
+        public string Biography { get; set; } = null!;
 
         [Url(ErrorMessage = "Invalid Facebook URL")]
         [StringLength(200, ErrorMessage = "Facebook URL cannot exceed 200 characters")]
@@ -41,4 +41,4 @@ namespace GainIt.API.DTOs.Requests.Users
         public string? FieldOfWork { get; set; }
         public string? MissionStatement { get; set; }
     }
-} 
+}

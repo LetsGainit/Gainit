@@ -16,7 +16,7 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
         /// Success or error message
         /// </summary>
         public string Message { get; set; } = string.Empty;
-        
+
         /// <summary>
         /// Repository ID if successfully linked
         /// </summary>

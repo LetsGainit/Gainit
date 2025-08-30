@@ -2,9 +2,9 @@
 {
     public enum eTaskStatus
     {
-        Todo, 
-        InProgress, 
-        Done, 
+        Todo,
+        InProgress,
+        Done,
         Blocked
     }
 }

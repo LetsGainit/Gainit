@@ -9,12 +9,12 @@ namespace GainIt.API.DTOs.ViewModels.GitHub.Base
         /// The unique identifier of the project
         /// </summary>
         public Guid ProjectId { get; set; }
-        
+
         /// <summary>
         /// Number of days analyzed (if applicable)
         /// </summary>
         public int? DaysPeriod { get; set; }
-        
+
         /// <summary>
         /// Timestamp when the response was generated
         /// </summary>

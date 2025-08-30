@@ -47,7 +47,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
 
             ProjectPictureUrl = i_Project.ProjectPictureUrl;
             Duration = i_Project.Duration;
-            
+
             // Extract collection data before JsonIgnore takes effect
             OpenRoles = i_Project.RequiredRoles.ToList();
             ProgrammingLanguages = i_Project.ProgrammingLanguages.ToList();

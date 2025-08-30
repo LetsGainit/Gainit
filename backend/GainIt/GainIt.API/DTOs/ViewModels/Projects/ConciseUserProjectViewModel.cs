@@ -9,7 +9,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         public string ProjectDescription { get; set; }
         public List<string> Technologies { get; set; } = new List<string>();
         public string ProjectStatus { get; set; }
-        public string MyRoleInProject { get; set; } 
+        public string MyRoleInProject { get; set; }
         public List<string> TeamMembersPictureUrls { get; set; } = new List<string>();
         public string ProjectPictureUrl { get; set; }
 
@@ -19,7 +19,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             ProjectName = i_Project.ProjectName;
             ProjectDescription = i_Project.ProjectDescription;
             ProjectPictureUrl = i_Project.ProjectPictureUrl;
-            
+
             // Extract data before JsonIgnore takes effect
             Technologies = i_Project.Technologies.ToList();
             ProjectStatus = i_Project.ProjectStatus.ToString();

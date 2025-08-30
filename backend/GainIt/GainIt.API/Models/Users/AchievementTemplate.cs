@@ -32,6 +32,6 @@ namespace GainIt.API.Models.Users
     }
 }
 
- 
+
 
 

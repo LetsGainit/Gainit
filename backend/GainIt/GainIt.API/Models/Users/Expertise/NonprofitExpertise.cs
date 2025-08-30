@@ -13,4 +13,3 @@ namespace GainIt.API.Models.Users.Expertise
         public required string MissionStatement { get; set; }
     }
 }
- 

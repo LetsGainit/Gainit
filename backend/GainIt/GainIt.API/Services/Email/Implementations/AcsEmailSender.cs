@@ -31,7 +31,7 @@ namespace GainIt.API.Services.Email.Implementations
             if (!string.IsNullOrWhiteSpace(i_Html))
                 content.Html = i_Html;
 
-            var recipients = new EmailRecipients(new[] { new EmailAddress(i_To)});
+            var recipients = new EmailRecipients(new[] { new EmailAddress(i_To) });
             var message = new EmailMessage(sender, recipients, content);
 
             await r_emailClient.SendAsync(WaitUntil.Completed, message);

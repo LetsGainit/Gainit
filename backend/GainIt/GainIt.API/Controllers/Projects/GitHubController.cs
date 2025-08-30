@@ -48,7 +48,7 @@ namespace GainIt.API.Controllers.Projects
         public async Task<IActionResult> LinkRepository(Guid projectId, [FromBody] GitHubRepositoryLinkDto request)
         {
             _logger.LogDebug("LinkRepository called for project {ProjectId} with URL: {RepositoryUrl}", projectId, request?.RepositoryUrl);
-            
+
             try
             {
                 if (string.IsNullOrWhiteSpace(request?.RepositoryUrl))
@@ -59,11 +59,11 @@ namespace GainIt.API.Controllers.Projects
 
                 _logger.LogDebug("Calling _gitHubService.LinkRepositoryAsync for project {ProjectId} with URL: {RepositoryUrl}", projectId, request.RepositoryUrl);
                 var result = await _gitHubService.LinkRepositoryAsync(projectId, request.RepositoryUrl);
-                
+
                 _logger.LogInformation("GitHub repository linked successfully to project {ProjectId}: {RepositoryUrl}", projectId, request.RepositoryUrl);
-                _logger.LogDebug("Link result: Success={Success}, Message={Message}, RepositoryId={RepositoryId}", 
+                _logger.LogDebug("Link result: Success={Success}, Message={Message}, RepositoryId={RepositoryId}",
                     result.Success, result.Message, result.RepositoryId);
-                
+
                 return Ok(result);
             }
             catch (ArgumentException ex)
@@ -92,12 +92,12 @@ namespace GainIt.API.Controllers.Projects
         public async Task<IActionResult> GetLinkedRepository(Guid projectId)
         {
             _logger.LogDebug("GetLinkedRepository called for project {ProjectId}", projectId);
-            
+
             try
             {
                 _logger.LogDebug("Calling _gitHubService.GetRepositoryAsync for project {ProjectId}", projectId);
                 var repository = await _gitHubService.GetRepositoryAsync(projectId);
-                
+
                 if (repository == null)
                 {
                     _logger.LogWarning("No repository found for project {ProjectId}", projectId);
@@ -105,7 +105,7 @@ namespace GainIt.API.Controllers.Projects
                 }
 
                 _logger.LogDebug("Repository found for project {ProjectId}: {RepositoryName}", projectId, repository.RepositoryName);
-                
+
                 var dto = new GitHubRepositoryInfoDto
                 {
                     RepositoryId = repository.RepositoryId.ToString(),
@@ -139,12 +139,12 @@ namespace GainIt.API.Controllers.Projects
         public async Task<IActionResult> GetRepositoryStats(Guid projectId)
         {
             _logger.LogDebug("GetRepositoryStats called for project {ProjectId}", projectId);
-            
+
             try
             {
                 _logger.LogDebug("Calling _gitHubService.GetRepositoryStatsAsync for project {ProjectId}", projectId);
                 var stats = await _gitHubService.GetRepositoryStatsAsync(projectId);
-                
+
                 if (stats == null)
                 {
                     _logger.LogWarning("Repository stats not found for project {ProjectId}", projectId);
@@ -171,7 +171,7 @@ namespace GainIt.API.Controllers.Projects
         public async Task<IActionResult> GetProjectAnalytics(Guid projectId, [FromQuery] int daysPeriod = 30, [FromQuery] bool force = false)
         {
             _logger.LogDebug("GetProjectAnalytics called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
-            
+
             try
             {
                 if (daysPeriod <= 0 || daysPeriod > 365)
@@ -182,7 +182,7 @@ namespace GainIt.API.Controllers.Projects
 
                 _logger.LogDebug("Calling _gitHubService.GetProjectAnalyticsAsync for project {ProjectId} with daysPeriod {DaysPeriod}, force={Force}", projectId, daysPeriod, force);
                 var analytics = await _gitHubService.GetProjectAnalyticsAsync(projectId, daysPeriod, force);
-                
+
                 if (analytics == null)
                 {
                     _logger.LogWarning("Failed to retrieve or create analytics for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
@@ -190,7 +190,7 @@ namespace GainIt.API.Controllers.Projects
                 }
 
                 _logger.LogDebug("Analytics data retrieved/created for project {ProjectId}: CalculatedAt={CalculatedAt}", projectId, analytics.CalculatedAtUtc);
-                
+
                 var response = new GitHubProjectAnalyticsResponseDto
                 {
                     ProjectId = projectId,
@@ -218,7 +218,7 @@ namespace GainIt.API.Controllers.Projects
         public async Task<IActionResult> GetUserContributions(Guid projectId, [FromQuery] int daysPeriod = 30, [FromQuery] bool force = false)
         {
             _logger.LogDebug("GetUserContributions called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
-            
+
             try
             {
                 if (daysPeriod <= 0 || daysPeriod > 365)
@@ -229,9 +229,9 @@ namespace GainIt.API.Controllers.Projects
 
                 _logger.LogDebug("Calling _gitHubService.GetUserContributionsAsync for project {ProjectId} with daysPeriod {DaysPeriod}, force={Force}", projectId, daysPeriod, force);
                 var contributions = await _gitHubService.GetUserContributionsAsync(projectId, daysPeriod, force);
-                
+
                 _logger.LogDebug("Retrieved {ContributionsCount} contributions for project {ProjectId}", contributions.Count, projectId);
-                
+
                 var response = new GitHubUserContributionsResponseDto
                 {
                     ProjectId = projectId,
@@ -277,7 +277,7 @@ namespace GainIt.API.Controllers.Projects
                 }
 
                 var contribution = await _gitHubService.GetUserContributionAsync(projectId, userId, daysPeriod, force);
-                
+
                 if (contribution == null)
                 {
                     return NotFound(new ErrorResponseDto { Error = "No contribution data available for this user" });
@@ -341,7 +341,7 @@ namespace GainIt.API.Controllers.Projects
                 }
 
                 var summary = await _gitHubService.GetUserActivitySummaryAsync(projectId, userId, daysPeriod);
-                
+
                 var response = new GitHubUserActivitySummaryResponseDto
                 {
                     ProjectId = projectId,
@@ -375,7 +375,7 @@ namespace GainIt.API.Controllers.Projects
                 }
 
                 var summary = await _gitHubService.GetProjectActivitySummaryAsync(projectId, daysPeriod);
-                
+
                 var response = new GitHubActivitySummaryBaseDto
                 {
                     ProjectId = projectId,
@@ -414,7 +414,7 @@ namespace GainIt.API.Controllers.Projects
                 }
 
                 var insights = await _gitHubService.GetPersonalizedAnalyticsInsightsAsync(projectId, userQuery, daysPeriod);
-                
+
                 var response = new GitHubActivitySummaryBaseDto
                 {
                     ProjectId = projectId,
@@ -449,7 +449,7 @@ namespace GainIt.API.Controllers.Projects
                 }
 
                 bool success;
-                
+
                 switch (syncType.ToLower())
                 {
                     case "repository":
@@ -495,7 +495,7 @@ namespace GainIt.API.Controllers.Projects
             try
             {
                 var syncStatus = await _gitHubService.GetLastSyncStatusAsync(projectId);
-                
+
                 if (syncStatus == null)
                 {
                     return NotFound(new ErrorResponseDto { Error = "No sync history found for this project" });
@@ -542,7 +542,7 @@ namespace GainIt.API.Controllers.Projects
                 }
 
                 var isValid = await _gitHubService.ValidateRepositoryUrlAsync(request.RepositoryUrl);
-                
+
                 var response = new UrlValidationResponseDto
                 {
                     RepositoryUrl = request.RepositoryUrl,

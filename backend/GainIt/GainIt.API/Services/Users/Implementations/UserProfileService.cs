@@ -23,21 +23,21 @@ namespace GainIt.API.Services.Users.Implementations
             r_DbContext = i_dbContext;
             r_logger = i_logger;
         }
-        
+
         public async Task<UserProfileDto> GetOrCreateFromExternalAsync(ExternalUserDto i_externalUserDto)
         {
             var startTime = DateTimeOffset.UtcNow;
-            r_logger.LogInformation("Starting external user provisioning: ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
+            r_logger.LogInformation("Starting external user provisioning: ExternalId={ExternalId}, Email={Email}, FullName={FullName}",
                 i_externalUserDto.ExternalId, i_externalUserDto.Email, i_externalUserDto.FullName);
 
             bool isNewUser = false;
 
-            if (i_externalUserDto is null) 
+            if (i_externalUserDto is null)
             {
                 r_logger.LogError("ExternalUserDto is null");
                 throw new ArgumentNullException(nameof(i_externalUserDto));
             }
-            
+
             if (string.IsNullOrWhiteSpace(i_externalUserDto.ExternalId))
             {
                 r_logger.LogError("ExternalId (OID) is required but was empty or null");
@@ -47,7 +47,7 @@ namespace GainIt.API.Services.Users.Implementations
             var email = i_externalUserDto.Email?.Trim();
             var fullName = i_externalUserDto.FullName?.Trim();
 
-            r_logger.LogDebug("Processing user data - Email: {Email}, FullName: {FullName}", 
+            r_logger.LogDebug("Processing user data - Email: {Email}, FullName: {FullName}",
                 email, fullName);
 
             // Try find by ExternalId (OID)
@@ -55,13 +55,13 @@ namespace GainIt.API.Services.Users.Implementations
             var dbSearchStartTime = DateTimeOffset.UtcNow;
             var user = await r_DbContext.Users.SingleOrDefaultAsync(u => u.ExternalId == i_externalUserDto.ExternalId);
             var dbSearchTime = DateTimeOffset.UtcNow.Subtract(dbSearchStartTime).TotalMilliseconds;
-            r_logger.LogDebug("Database search completed: ExternalId={ExternalId}, UserFound={UserFound}, SearchTime={SearchTime}ms", 
+            r_logger.LogDebug("Database search completed: ExternalId={ExternalId}, UserFound={UserFound}, SearchTime={SearchTime}ms",
                 i_externalUserDto.ExternalId, user != null, dbSearchTime);
 
             if (user is null)
             {
                 r_logger.LogInformation("User not found, creating new user: ExternalId={ExternalId}", i_externalUserDto.ExternalId);
-                
+
                 // For first-time provisioning your User requires EmailAddress:
                 if (string.IsNullOrWhiteSpace(email))
                 {
@@ -70,7 +70,7 @@ namespace GainIt.API.Services.Users.Implementations
                 }
 
                 var newUserId = Guid.NewGuid();
-                r_logger.LogDebug("Creating new user with ID: {UserId}, ExternalId={ExternalId}, Email={Email}", 
+                r_logger.LogDebug("Creating new user with ID: {UserId}, ExternalId={ExternalId}, Email={Email}",
                     newUserId, i_externalUserDto.ExternalId, email);
 
                 user = new User
@@ -79,7 +79,7 @@ namespace GainIt.API.Services.Users.Implementations
                     ExternalId = i_externalUserDto.ExternalId,
                     EmailAddress = email!,
                     FullName = fullName ?? "Unknown",
-                    Country =  null,
+                    Country = null,
                     GitHubUsername = null,
                     CreatedAt = DateTimeOffset.UtcNow,
                     LastLoginAt = DateTimeOffset.UtcNow
@@ -91,17 +91,17 @@ namespace GainIt.API.Services.Users.Implementations
                 var dbCreateStartTime = DateTimeOffset.UtcNow;
                 await r_DbContext.SaveChangesAsync();
                 var dbCreateTime = DateTimeOffset.UtcNow.Subtract(dbCreateStartTime).TotalMilliseconds;
-                
-                r_logger.LogInformation("Successfully created new user: UserId={UserId}, ExternalId={ExternalId}, Email={Email}, CreatedAt={CreatedAt}, DbCreateTime={DbCreateTime}ms", 
+
+                r_logger.LogInformation("Successfully created new user: UserId={UserId}, ExternalId={ExternalId}, Email={Email}, CreatedAt={CreatedAt}, DbCreateTime={DbCreateTime}ms",
                     user.UserId, user.ExternalId, user.EmailAddress, user.CreatedAt, dbCreateTime);
             }
             else
             {
-                r_logger.LogInformation("Found existing user, updating profile: UserId={UserId}, ExternalId={ExternalId}, CurrentEmail={CurrentEmail}", 
+                r_logger.LogInformation("Found existing user, updating profile: UserId={UserId}, ExternalId={ExternalId}, CurrentEmail={CurrentEmail}",
                     user.UserId, user.ExternalId, user.EmailAddress);
-                
+
                 var changes = new List<string>();
-                
+
                 // Update basic fields if provided/changed
                 if (!string.IsNullOrWhiteSpace(email) &&
                     !string.Equals(user.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
@@ -122,19 +122,19 @@ namespace GainIt.API.Services.Users.Implementations
 
                 user.LastLoginAt = DateTimeOffset.UtcNow;
                 changes.Add("LastLoginAt");
-                
+
                 if (changes.Any())
                 {
                     var dbUpdateStartTime = DateTimeOffset.UtcNow;
                     await r_DbContext.SaveChangesAsync();
                     var dbUpdateTime = DateTimeOffset.UtcNow.Subtract(dbUpdateStartTime).TotalMilliseconds;
-                    
-                    r_logger.LogInformation("Successfully updated existing user: UserId={UserId}, Changes={Changes}, LastLoginAt={LastLoginAt}, DbUpdateTime={DbUpdateTime}ms", 
+
+                    r_logger.LogInformation("Successfully updated existing user: UserId={UserId}, Changes={Changes}, LastLoginAt={LastLoginAt}, DbUpdateTime={DbUpdateTime}ms",
                         user.UserId, string.Join(", ", changes), user.LastLoginAt, dbUpdateTime);
                 }
                 else
                 {
-                    r_logger.LogDebug("No changes detected for existing user: UserId={UserId}, ExternalId={ExternalId}", 
+                    r_logger.LogDebug("No changes detected for existing user: UserId={UserId}, ExternalId={ExternalId}",
                         user.UserId, user.ExternalId);
                 }
             }
@@ -152,7 +152,7 @@ namespace GainIt.API.Services.Users.Implementations
             };
 
             var totalTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
-            r_logger.LogDebug("Returning user profile DTO: UserId={UserId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}, TotalProcessingTime={TotalTime}ms", 
+            r_logger.LogDebug("Returning user profile DTO: UserId={UserId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}, TotalProcessingTime={TotalTime}ms",
                 profileDto.UserId, profileDto.ExternalId, profileDto.EmailAddress, profileDto.FullName, totalTime);
 
             return profileDto;
@@ -311,7 +311,7 @@ namespace GainIt.API.Services.Users.Implementations
                 gainer.AreasOfInterest = i_updateDto.AreasOfInterest;   // we get it as List<string> so we need to think how to take it
 
                 await r_DbContext.SaveChangesAsync();
-                
+
                 r_logger.LogInformation("Successfully updated Gainer profile: UserId={UserId}", i_userId);
                 return gainer;
             }
@@ -356,7 +356,7 @@ namespace GainIt.API.Services.Users.Implementations
                 // The expertise strings are processed in the controller before calling this service
 
                 await r_DbContext.SaveChangesAsync();
-                
+
                 r_logger.LogInformation("Successfully updated Mentor profile: UserId={UserId}", userId);
                 return mentor;
             }
@@ -400,7 +400,7 @@ namespace GainIt.API.Services.Users.Implementations
                 // The expertise strings are processed in the controller before calling this service
 
                 await r_DbContext.SaveChangesAsync();
-                
+
                 r_logger.LogInformation("Successfully updated Nonprofit profile: UserId={UserId}", userId);
                 return nonprofit;
             }
@@ -504,10 +504,10 @@ namespace GainIt.API.Services.Users.Implementations
                 // Clear existing and add new expertise (replaces instead of appending)
                 gainer.TechExpertise.ProgrammingLanguages.Clear();
                 gainer.TechExpertise.ProgrammingLanguages.AddRange(expertiseDto.ProgrammingLanguages ?? new List<string>());
-                
+
                 gainer.TechExpertise.Technologies.Clear();
                 gainer.TechExpertise.Technologies.AddRange(expertiseDto.Technologies ?? new List<string>());
-                
+
                 gainer.TechExpertise.Tools.Clear();
                 gainer.TechExpertise.Tools.AddRange(expertiseDto.Tools ?? new List<string>());
 
@@ -558,10 +558,10 @@ namespace GainIt.API.Services.Users.Implementations
                 // Clear existing and add new expertise (replaces instead of appending)
                 mentor.TechExpertise.ProgrammingLanguages.Clear();
                 mentor.TechExpertise.ProgrammingLanguages.AddRange(expertiseDto.ProgrammingLanguages ?? new List<string>());
-                
+
                 mentor.TechExpertise.Technologies.Clear();
                 mentor.TechExpertise.Technologies.AddRange(expertiseDto.Technologies ?? new List<string>());
-                
+
                 mentor.TechExpertise.Tools.Clear();
                 mentor.TechExpertise.Tools.AddRange(expertiseDto.Tools ?? new List<string>());
 
@@ -943,10 +943,10 @@ namespace GainIt.API.Services.Users.Implementations
                 var results = await r_DbContext.Gainers
                     .Include(g => g.TechExpertise)
                     .Include(g => g.Achievements)
-                    .Where(g => (g.FullName != null && g.FullName.Contains(searchTerm)) || 
+                    .Where(g => (g.FullName != null && g.FullName.Contains(searchTerm)) ||
                                (g.Biography != null && g.Biography.Contains(searchTerm)) ||
                                (g.AreasOfInterest != null && g.AreasOfInterest.Any(area => area.Contains(searchTerm))) ||
-                               (g.TechExpertise != null && 
+                               (g.TechExpertise != null &&
                                 (g.TechExpertise.ProgrammingLanguages != null && g.TechExpertise.ProgrammingLanguages.Any(lang => lang.Contains(searchTerm)) ||
                                  g.TechExpertise.Technologies != null && g.TechExpertise.Technologies.Any(tech => tech.Contains(searchTerm)) ||
                                  g.TechExpertise.Tools != null && g.TechExpertise.Tools.Any(tool => tool.Contains(searchTerm)))))
@@ -971,10 +971,10 @@ namespace GainIt.API.Services.Users.Implementations
                 var results = await r_DbContext.Mentors
                     .Include(m => m.TechExpertise)
                     .Include(m => m.Achievements)
-                    .Where(m => (m.FullName != null && m.FullName.Contains(searchTerm)) || 
+                    .Where(m => (m.FullName != null && m.FullName.Contains(searchTerm)) ||
                                (m.Biography != null && m.Biography.Contains(searchTerm)) ||
                                (m.AreaOfExpertise != null && m.AreaOfExpertise.Contains(searchTerm)) ||
-                               (m.TechExpertise != null && 
+                               (m.TechExpertise != null &&
                                 (m.TechExpertise.ProgrammingLanguages != null && m.TechExpertise.ProgrammingLanguages.Any(lang => lang.Contains(searchTerm)) ||
                                  m.TechExpertise.Technologies != null && m.TechExpertise.Technologies.Any(tech => tech.Contains(searchTerm)) ||
                                  m.TechExpertise.Tools != null && m.TechExpertise.Tools.Any(tool => tool.Contains(searchTerm)))))
@@ -999,10 +999,10 @@ namespace GainIt.API.Services.Users.Implementations
                 var results = await r_DbContext.Nonprofits
                     .Include(n => n.NonprofitExpertise)
                     .Include(n => n.Achievements)
-                    .Where(n => (n.FullName != null && n.FullName.Contains(searchTerm)) || 
+                    .Where(n => (n.FullName != null && n.FullName.Contains(searchTerm)) ||
                                (n.Biography != null && n.Biography.Contains(searchTerm)) ||
                                (n.WebsiteUrl != null && n.WebsiteUrl.Contains(searchTerm)) ||
-                               (n.NonprofitExpertise != null && 
+                               (n.NonprofitExpertise != null &&
                                 (n.NonprofitExpertise.FieldOfWork != null && n.NonprofitExpertise.FieldOfWork.Contains(searchTerm) ||
                                  n.NonprofitExpertise.MissionStatement != null && n.NonprofitExpertise.MissionStatement.Contains(searchTerm))))
                     .ToListAsync();
@@ -1017,6 +1017,6 @@ namespace GainIt.API.Services.Users.Implementations
             }
         }
 
-        
+
     }
 }

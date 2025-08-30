@@ -50,11 +50,11 @@ if (!string.IsNullOrWhiteSpace(connectionString))
 {
     // Use the full connection string if available
     var cleanConnectionString = connectionString.Trim().Replace("\"", "").Replace("'", "");
-    
+
     loggerConfig.WriteTo.ApplicationInsights(
         cleanConnectionString,
         new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
-    
+
     Log.Information("Application Insights sink added using full connection string");
     Log.Information($"Connection String: {cleanConnectionString.Substring(0, Math.Min(50, cleanConnectionString.Length))}...");
 }
@@ -63,11 +63,11 @@ else if (!string.IsNullOrWhiteSpace(instrumentationKey))
     // Fallback to instrumentation key only
     var cleanInstrumentationKey = instrumentationKey.Trim().Replace("\"", "").Replace("'", "");
     var appInsightsConnectionString = $"InstrumentationKey={cleanInstrumentationKey}";
-    
+
     loggerConfig.WriteTo.ApplicationInsights(
         appInsightsConnectionString,
         new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
-    
+
     Log.Information("Application Insights sink added using instrumentation key only");
     Log.Information($"Instrumentation Key: {cleanInstrumentationKey.Substring(0, Math.Min(10, cleanInstrumentationKey.Length))}...");
 }
@@ -87,7 +87,7 @@ if (!string.IsNullOrWhiteSpace(connectionString) || !string.IsNullOrWhiteSpace(i
     Log.Information("=== IMMEDIATE TEST: Application Insights sink test ===");
     Log.Warning("=== IMMEDIATE TEST: This warning should appear in Application Insights ===");
     Log.Error("=== IMMEDIATE TEST: This error should appear in Application Insights ===");
-    
+
 }
 
 try
@@ -120,7 +120,7 @@ try
         Log.Warning("No Application Insights environment variables found - logging will be limited to console/file");
     }
 
-    
+
 
     // Check for other possible environment variable names
     try
@@ -131,7 +131,7 @@ try
             var appInsightsVars = allEnvVars.Keys.Cast<string>()
                 .Where(k => k != null && (k.Contains("APPINSIGHTS") || k.Contains("INSTRUMENTATION") || k.Contains("APPLICATIONINSIGHTS")))
                 .ToList();
-            
+
             Log.Information($"Found {appInsightsVars.Count} Application Insights related environment variables: {string.Join(", ", appInsightsVars)}");
         }
         else
@@ -148,14 +148,14 @@ try
     Log.Information("=== SERILOG CONFIGURATION DEBUG ===");
     var serilogSection = configuration.GetSection("Serilog");
     Log.Information($"Serilog section exists: {serilogSection.Exists()}");
-    
+
     if (serilogSection.Exists())
     {
         var writeToSection = serilogSection.GetSection("WriteTo");
         if (writeToSection.Exists())
         {
             Log.Information($"Serilog WriteTo count: {writeToSection.GetChildren().Count()}");
-            
+
             foreach (var sink in writeToSection.GetChildren())
             {
                 var sinkName = sink["Name"] ?? "Unknown";
@@ -200,7 +200,7 @@ try
             opts.IndexName,
             new Azure.AzureKeyCredential(opts.ApiKey)
         );
-        
+
     });
 
     builder.Services.AddSingleton(sp =>
@@ -223,45 +223,45 @@ try
     Log.Information("=== CONFIGURATION DEBUG ===");
     Log.Information("Environment: {Environment}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
     Log.Information("Current Directory: {CurrentDirectory}", Directory.GetCurrentDirectory());
-    
+
     // Check both configuration sources
     var b2cFromBuilder = builder.Configuration.GetSection("AzureAdB2C");
     var b2cFromSerilog = configuration.GetSection("AzureAdB2C");
-    
-    Log.Information("AzureAdB2C from builder.Configuration - exists: {Exists}, path: {Path}", 
+
+    Log.Information("AzureAdB2C from builder.Configuration - exists: {Exists}, path: {Path}",
         b2cFromBuilder.Exists(), b2cFromBuilder.Path);
-    Log.Information("AzureAdB2C from Serilog configuration - exists: {Exists}, path: {Path}", 
+    Log.Information("AzureAdB2C from Serilog configuration - exists: {Exists}, path: {Path}",
         b2cFromSerilog.Exists(), b2cFromSerilog.Path);
-    
+
     // Debug: Check what's actually in each configuration
     Log.Information("=== BUILDER CONFIGURATION DEBUG ===");
     var builderKeys = builder.Configuration.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
-    Log.Information("Builder config has {Count} Azure AD B2C keys: {Keys}", 
+    Log.Information("Builder config has {Count} Azure AD B2C keys: {Keys}",
         builderKeys.Count, string.Join(", ", builderKeys.Select(k => $"{k.Key}={k.Value}")));
-    
+
     Log.Information("=== SERILOG CONFIGURATION DEBUG ===");
     var serilogKeys = configuration.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
-    Log.Information("Serilog config has {Count} Azure AD B2C keys: {Keys}", 
+    Log.Information("Serilog config has {Count} Azure AD B2C keys: {Keys}",
         serilogKeys.Count, string.Join(", ", serilogKeys.Select(k => $"{k.Key}={k.Value}")));
-    
+
     // Use the configuration that actually has the values
     var b2c = b2cFromSerilog.Exists() ? b2cFromSerilog : b2cFromBuilder;
-    
+
     // List all configuration keys from the working configuration
     var allKeys = b2c.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
-    Log.Information("Selected configuration has {Count} Azure AD B2C configuration keys: {Keys}", 
+    Log.Information("Selected configuration has {Count} Azure AD B2C configuration keys: {Keys}",
         allKeys.Count, string.Join(", ", allKeys.Select(k => $"{k.Key}={k.Value}")));
-    
+
     // Log the Azure AD B2C configuration for debugging
     Log.Information("=== AZURE AD B2C CONFIGURATION ===");
     Log.Information("Instance: {Instance}", b2c["Instance"]);
     Log.Information("Domain: {Domain}", b2c["Domain"]);
     Log.Information("SignUpSignInPolicyId: {PolicyId}", b2c["SignUpSignInPolicyId"]);
     Log.Information("Audience: {Audience}", b2c["Audience"]);
-    
+
     // Check if any values are null or empty
-    if (string.IsNullOrWhiteSpace(b2c["Instance"]) || 
-        string.IsNullOrWhiteSpace(b2c["Domain"]) || 
+    if (string.IsNullOrWhiteSpace(b2c["Instance"]) ||
+        string.IsNullOrWhiteSpace(b2c["Domain"]) ||
         string.IsNullOrWhiteSpace(b2c["Audience"]))
     {
         Log.Error("=== AZURE AD B2C CONFIGURATION ERROR ===");
@@ -270,16 +270,16 @@ try
         Log.Error("Domain: '{Domain}'", b2c["Domain"] ?? "NULL");
         Log.Error("SignUpSignInPolicyId: '{PolicyId}'", b2c["SignUpSignInPolicyId"] ?? "NULL");
         Log.Error("Audience: '{Audience}'", b2c["Audience"] ?? "NULL");
-        
+
         // Instead of throwing, log the error and continue with default values
         Log.Warning("Continuing with default Azure AD B2C configuration - authentication may fail");
-        
+
         // Set default values to prevent null reference exceptions
         if (string.IsNullOrWhiteSpace(b2c["Instance"])) b2c["Instance"] = "https://559c1923-19d9-428c-a51a-36c92e884239.ciamlogin.com/";
         if (string.IsNullOrWhiteSpace(b2c["Domain"])) b2c["Domain"] = "559c1923-19d9-428c-a51a-36c92e884239";
         if (string.IsNullOrWhiteSpace(b2c["Audience"])) b2c["Audience"] = "api://gainitwebapp-dvhfcxbkezgyfwf6.israelcentral-01.azurewebsites.net";
     }
-    
+
     // Build authority without policy to match tokens like .../{tenantId}/v2.0
     var tenantId = b2c["Domain"];
     var baseAuthority = $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/v2.0";
@@ -294,62 +294,62 @@ try
         .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(o =>
         {
-        o.Authority = baseAuthority;
-        o.Audience = b2c["Audience"];
+            o.Authority = baseAuthority;
+            o.Audience = b2c["Audience"];
             o.TokenValidationParameters = new TokenValidationParameters
             {
-            NameClaimType = "preferred_username",
+                NameClaimType = "preferred_username",
                 ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidIssuer = baseAuthority,
-            ValidIssuers = policyAuthority is not null ? new[] { baseAuthority, policyAuthority } : new[] { baseAuthority },
-            ValidAudiences = new[] { b2c["Audience"]!, "ee13203e-e81d-48cb-8402-422cace331dc" }
-        };
-        
-        // Log the actual values being used for JWT validation
-        Log.Information("=== JWT VALIDATION PARAMETERS ===");
-        Log.Information("ValidIssuer: {ValidIssuer}", baseAuthority);
-        Log.Information("ValidAudiences: {ValidAudiences}", string.Join(", ", new[] { b2c["Audience"], "ee13203e-e81d-48cb-8402-422cace331dc" }.Where(x => !string.IsNullOrWhiteSpace(x))));
-        Log.Information("Authority: {Authority}", baseAuthority);
-        
-        // Add this to see what's happening during JWT validation
-        o.Events = new JwtBearerEvents
-        {
-            OnAuthenticationFailed = context =>
+                ValidateAudience = true,
+                ValidIssuer = baseAuthority,
+                ValidIssuers = policyAuthority is not null ? new[] { baseAuthority, policyAuthority } : new[] { baseAuthority },
+                ValidAudiences = new[] { b2c["Audience"]!, "ee13203e-e81d-48cb-8402-422cace331dc" }
+            };
+
+            // Log the actual values being used for JWT validation
+            Log.Information("=== JWT VALIDATION PARAMETERS ===");
+            Log.Information("ValidIssuer: {ValidIssuer}", baseAuthority);
+            Log.Information("ValidAudiences: {ValidAudiences}", string.Join(", ", new[] { b2c["Audience"], "ee13203e-e81d-48cb-8402-422cace331dc" }.Where(x => !string.IsNullOrWhiteSpace(x))));
+            Log.Information("Authority: {Authority}", baseAuthority);
+
+            // Add this to see what's happening during JWT validation
+            o.Events = new JwtBearerEvents
             {
-                Log.Error("JWT Authentication failed: {Error}", context.Exception.Message);
-                Log.Error("JWT Authentication failed details: {Details}", context.Exception);
-                
-                // Log additional context information
-                if (context.HttpContext.Request.Headers.ContainsKey("Authorization"))
+                OnAuthenticationFailed = context =>
                 {
-                    var authHeader = context.HttpContext.Request.Headers["Authorization"].ToString();
-                    Log.Error("Authorization header: {AuthHeader}", authHeader.Substring(0, Math.Min(50, authHeader.Length)) + "...");
+                    Log.Error("JWT Authentication failed: {Error}", context.Exception.Message);
+                    Log.Error("JWT Authentication failed details: {Details}", context.Exception);
+
+                    // Log additional context information
+                    if (context.HttpContext.Request.Headers.ContainsKey("Authorization"))
+                    {
+                        var authHeader = context.HttpContext.Request.Headers["Authorization"].ToString();
+                        Log.Error("Authorization header: {AuthHeader}", authHeader.Substring(0, Math.Min(50, authHeader.Length)) + "...");
+                    }
+
+                    return Task.CompletedTask;
+                },
+                OnTokenValidated = context =>
+                {
+                    Log.Information("JWT Token validated successfully for user: {User}", context.Principal?.Identity?.Name);
+
+                    // Log token claims for debugging
+                    var claims = context.Principal?.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
+                    Log.Information("Token claims: {Claims}", string.Join(", ", claims ?? new List<string>()));
+
+                    return Task.CompletedTask;
+                },
+                OnChallenge = context =>
+                {
+                    Log.Warning("JWT Challenge issued: {Error}", context.Error);
+                    Log.Warning("JWT Challenge description: {Description}", context.ErrorDescription);
+                    return Task.CompletedTask;
+                },
+                OnMessageReceived = context =>
+                {
+                    Log.Debug("JWT Message received from: {RemoteIP}", context.HttpContext.Connection.RemoteIpAddress);
+                    return Task.CompletedTask;
                 }
-                
-                return Task.CompletedTask;
-            },
-            OnTokenValidated = context =>
-            {
-                Log.Information("JWT Token validated successfully for user: {User}", context.Principal?.Identity?.Name);
-                
-                // Log token claims for debugging
-                var claims = context.Principal?.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
-                Log.Information("Token claims: {Claims}", string.Join(", ", claims ?? new List<string>()));
-                
-                return Task.CompletedTask;
-            },
-            OnChallenge = context =>
-            {
-                Log.Warning("JWT Challenge issued: {Error}", context.Error);
-                Log.Warning("JWT Challenge description: {Description}", context.ErrorDescription);
-                return Task.CompletedTask;
-            },
-            OnMessageReceived = context =>
-            {
-                Log.Debug("JWT Message received from: {RemoteIP}", context.HttpContext.Connection.RemoteIpAddress);
-                return Task.CompletedTask;
-            }
             };
         });
 
@@ -375,23 +375,23 @@ try
         );
     });
 
-            // Add services to the container.
-        builder.Services.AddScoped<IProjectService, ProjectService>();
-        builder.Services.AddScoped<IUserProfileService, UserProfileService>();
-        builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
-        builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
-        builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
-        builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
-        builder.Services.AddScoped<IMilestoneService, MilestoneService>();
-        builder.Services.AddScoped<ITaskNotificationService, TaskNotificationService>();
-    
-        // GitHub Services
-        builder.Services.AddScoped<IGitHubService, GitHubService>();
-        builder.Services.AddScoped<IGitHubApiClient, GitHubApiClient>();
-        builder.Services.AddScoped<IGitHubAnalyticsService, GitHubAnalyticsService>();
+    // Add services to the container.
+    builder.Services.AddScoped<IProjectService, ProjectService>();
+    builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+    builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
+    builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
+    builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
+    builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
+    builder.Services.AddScoped<IMilestoneService, MilestoneService>();
+    builder.Services.AddScoped<ITaskNotificationService, TaskNotificationService>();
 
-        // Add HTTP client for GitHub API
-        builder.Services.AddHttpClient<IGitHubApiClient, GitHubApiClient>();
+    // GitHub Services
+    builder.Services.AddScoped<IGitHubService, GitHubService>();
+    builder.Services.AddScoped<IGitHubApiClient, GitHubApiClient>();
+    builder.Services.AddScoped<IGitHubAnalyticsService, GitHubAnalyticsService>();
+
+    // Add HTTP client for GitHub API
+    builder.Services.AddHttpClient<IGitHubApiClient, GitHubApiClient>();
 
 
     // Add health checks
@@ -406,7 +406,7 @@ try
         options.JsonSerializerOptions.WriteIndented = true;
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-        
+
         // Log the actual JSON settings being used
         Log.Information("=== JSON Settings Applied ===");
         Log.Information($"ReferenceHandler: {options.JsonSerializerOptions.ReferenceHandler}");
@@ -512,7 +512,7 @@ try
             });
             await context.Response.WriteAsync(result);
         }
-    }); 
+    });
 
     // Add a simple test endpoint to verify logging
     app.MapGet("/test-logging", () =>
@@ -521,7 +521,7 @@ try
         Log.Information("Test INFORMATION log from minimal API endpoint");
         Log.Warning("Test WARNING log from minimal API endpoint");
         Log.Error("Test ERROR log from minimal API endpoint");
-        
+
         return "Logging test completed - check Application Insights for log messages";
     });
 

@@ -11,7 +11,7 @@ namespace GainIt.API.DTOs.ViewModels.GitHub
         /// The analytics data
         /// </summary>
         public object Analytics { get; set; } = new();
-        
+
         /// <summary>
         /// When the analytics were calculated
         /// </summary>
