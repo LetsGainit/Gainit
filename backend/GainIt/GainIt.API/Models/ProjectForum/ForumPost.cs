@@ -1,3 +1,4 @@
+using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -24,6 +25,10 @@ namespace GainIt.API.Models.ProjectForum
 
         public DateTime? UpdatedAtUtc { get; set; }
 
+        public List<ForumReply> Replies { get; set; } = new();
+
+        public List<ForumPostLike> Likes { get; set; } = new();
+
         public int LikeCount { get; set; } = 0;
 
         public int ReplyCount { get; set; } = 0;
@@ -35,8 +40,6 @@ namespace GainIt.API.Models.ProjectForum
         [ForeignKey(nameof(AuthorId))]
         public User Author { get; set; } = null!;
 
-        public List<ForumReply> Replies { get; set; } = new();
-
-        public List<ForumPostLike> Likes { get; set; } = new();
+        
     }
 }
