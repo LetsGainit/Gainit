@@ -89,8 +89,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                             TaskId = task.TaskId,
                             ProjectId = task.ProjectId,
                             Title = task.Title,
-                            Type = task.Type,
-                            Priority = task.Priority,
+                            Type = task.Type.ToString(),
+                            Priority = task.Priority.ToString(),
                             AssignedRole = task.AssignedRole,
                             AssignedUserId = task.AssignedUserId,
                             ProjectName = project.ProjectName,
@@ -155,7 +155,7 @@ namespace GainIt.API.Services.Tasks.Implementations
                             TaskId = task.TaskId,
                             ProjectId = task.ProjectId,
                             Title = task.Title,
-                            Type = task.Type,
+                            Type = task.Type.ToString(),
                             AssignedRole = task.AssignedRole,
                             AssignedUserId = task.AssignedUserId,
                             ProjectName = project.ProjectName,
@@ -318,11 +318,11 @@ namespace GainIt.API.Services.Tasks.Implementations
                 foreach (var member in allMembers)
                 {
                     await r_Hub.Clients.User(member.UserId.ToString())
-                        .SendAsync(RealtimeEvents.Tasks.MilestoneCompleted, new
+                        .SendAsync(RealtimeEvents.Tasks.MilestoneCompleted, new MilestoneCompletedNotificationDto
                         {
-                            milestone.MilestoneId,
-                            milestone.ProjectId,
-                            milestone.Title,
+                            MilestoneId = milestone.MilestoneId,
+                            ProjectId = milestone.ProjectId,
+                            Title = milestone.Title,
                             ProjectName = project.ProjectName,
                             TasksCount = i_ProjectMilestoneViewModel.TasksCount,
                             DoneTasksCount = i_ProjectMilestoneViewModel.DoneTasksCount,
