@@ -19,5 +19,7 @@ namespace GainIt.API.Models.Tasks
         public int OrderIndex { get; set; }
 
         public DateTime? CompletedAtUtc { get; set; }
+        
+        public Guid CreatedByUserId { get; set; }
     }
 }

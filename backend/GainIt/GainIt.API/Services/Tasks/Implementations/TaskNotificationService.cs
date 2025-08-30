@@ -1,11 +1,13 @@
 ﻿using GainIt.API.Data;
 using GainIt.API.DTOs.ViewModels.Tasks;
 using GainIt.API.Models.Tasks;
+using GainIt.API.Models.Projects;
 using GainIt.API.Realtime;
 using GainIt.API.Services.Email.Interfaces;
 using GainIt.API.Services.Tasks.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace GainIt.API.Services.Tasks.Implementations
 {
