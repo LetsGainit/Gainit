@@ -1,0 +1,50 @@
+### Achievement System API Tests
+
+# Note: Replace {userId}, {achievementTemplateId}, and {projectId} with actual GUIDs from your database
+
+### Check if user qualifies for "First Project Complete" achievement
+GET {{baseUrl}}/api/users/{{userId}}/achievements/{{firstProjectCompleteTemplateId}}/check
+
+### Check if user qualifies for "Team Player" achievement  
+GET {{baseUrl}}/api/users/{{userId}}/achievements/{{teamPlayerTemplateId}}/check
+
+### Check if user qualifies for "Mentor's Choice" achievement
+GET {{baseUrl}}/api/users/{{userId}}/achievements/{{mentorsChoiceTemplateId}}/check
+
+### Manually trigger project completion achievement check
+POST {{baseUrl}}/api/users/{{userId}}/achievements/project-completion/{{projectId}}
+
+### Manually trigger team participation achievement check
+POST {{baseUrl}}/api/users/{{userId}}/achievements/team-participation/{{projectId}}
+
+### Test Variables (replace with actual values from your database)
+# @baseUrl = https://localhost:5001
+# @userId = 12345678-1234-1234-1234-123456789012
+# @firstProjectCompleteTemplateId = 87654321-4321-4321-4321-210987654321
+# @teamPlayerTemplateId = 11111111-2222-3333-4444-555555555555
+# @mentorsChoiceTemplateId = 66666666-7777-8888-9999-000000000000
+# @projectId = aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+
+### Example Usage with Real Data (update IDs as needed)
+
+#### Step 1: Get Achievement Template IDs
+# First, get the achievement templates to find their IDs
+GET {{baseUrl}}/api/achievementtemplates
+
+#### Step 2: Get User IDs 
+# Get some user IDs to test with
+GET {{baseUrl}}/api/users
+
+#### Step 3: Get Project IDs
+# Get some project IDs to test with  
+GET {{baseUrl}}/api/projects
+
+#### Step 4: Test Achievement Checking
+# Use the IDs from steps 1-3 to test the achievement endpoints
+
+### Example Test Flow:
+# 1. Check if a user currently qualifies for "First Project Complete"
+# 2. Update a project status to "Completed" (via normal project API)
+# 3. Check if the user now qualifies for "First Project Complete"
+# 4. Manually trigger the achievement check to see if it gets awarded
+# 5. Check the user's achievements to see if it was awarded

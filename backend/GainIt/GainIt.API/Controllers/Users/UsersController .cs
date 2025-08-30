@@ -23,11 +23,13 @@ namespace GainIt.API.Controllers.Users
     public class UsersController : ControllerBase
     {
         private readonly IUserProfileService r_userProfileService;
+        private readonly IAchievementService r_achievementService;
         private readonly ILogger<UsersController> r_logger;
 
-        public UsersController(IUserProfileService i_userProfileService, ILogger<UsersController> i_logger)
+        public UsersController(IUserProfileService i_userProfileService, IAchievementService i_achievementService, ILogger<UsersController> i_logger)
         {
             r_userProfileService = i_userProfileService;
+            r_achievementService = i_achievementService;
             r_logger = i_logger;
         }
         private static string? tryGetClaim(ClaimsPrincipal user, params string[] types)
@@ -988,6 +990,110 @@ namespace GainIt.API.Controllers.Users
             {
                 r_logger.LogError(ex, "Error searching Nonprofits: SearchTerm={SearchTerm}", searchTerm);
                 return StatusCode(500, new { Message = "An error occurred while searching Nonprofits" });
+            }
+        }
+
+        #endregion
+
+        #region Achievement Testing
+
+        /// <summary>
+        /// Tests achievement criteria checking for a user and achievement template.
+        /// </summary>
+        /// <param name="userId">The user ID to check</param>
+        /// <param name="achievementTemplateId">The achievement template ID to check</param>
+        /// <returns>True if the user meets the criteria</returns>
+        [HttpGet("{userId}/achievements/{achievementTemplateId}/check")]
+        [ProducesResponseType(typeof(bool), 200)]
+        [ProducesResponseType(typeof(object), 404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> CheckAchievementCriteria(Guid userId, Guid achievementTemplateId)
+        {
+            r_logger.LogInformation("Checking achievement criteria: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", 
+                userId, achievementTemplateId);
+
+            try
+            {
+                var qualifies = await r_achievementService.CheckAchievementCriteriaAsync(userId, achievementTemplateId);
+                
+                r_logger.LogInformation("Achievement criteria check result: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}, Qualifies={Qualifies}", 
+                    userId, achievementTemplateId, qualifies);
+
+                return Ok(new { 
+                    UserId = userId, 
+                    AchievementTemplateId = achievementTemplateId, 
+                    Qualifies = qualifies 
+                });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error checking achievement criteria: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", 
+                    userId, achievementTemplateId);
+                return StatusCode(500, new { Message = "An error occurred while checking achievement criteria" });
+            }
+        }
+
+        /// <summary>
+        /// Manually triggers project completion achievement checks for a user.
+        /// </summary>
+        /// <param name="userId">The user ID</param>
+        /// <param name="projectId">The project ID that was completed</param>
+        /// <returns>List of newly awarded achievements</returns>
+        [HttpPost("{userId}/achievements/project-completion/{projectId}")]
+        [ProducesResponseType(typeof(IEnumerable<UserAchievement>), 200)]
+        [ProducesResponseType(typeof(object), 404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> TriggerProjectCompletionAchievements(Guid userId, Guid projectId)
+        {
+            r_logger.LogInformation("Manually triggering project completion achievements: UserId={UserId}, ProjectId={ProjectId}", 
+                userId, projectId);
+
+            try
+            {
+                var achievements = await r_achievementService.CheckAndAwardProjectCompletionAchievementsAsync(userId, projectId);
+                
+                r_logger.LogInformation("Project completion achievements triggered: UserId={UserId}, ProjectId={ProjectId}, AwardedCount={Count}", 
+                    userId, projectId, achievements.Count());
+
+                return Ok(achievements);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error triggering project completion achievements: UserId={UserId}, ProjectId={ProjectId}", 
+                    userId, projectId);
+                return StatusCode(500, new { Message = "An error occurred while triggering project completion achievements" });
+            }
+        }
+
+        /// <summary>
+        /// Manually triggers team participation achievement checks for a user.
+        /// </summary>
+        /// <param name="userId">The user ID</param>
+        /// <param name="projectId">The project ID they joined</param>
+        /// <returns>List of newly awarded achievements</returns>
+        [HttpPost("{userId}/achievements/team-participation/{projectId}")]
+        [ProducesResponseType(typeof(IEnumerable<UserAchievement>), 200)]
+        [ProducesResponseType(typeof(object), 404)]
+        [ProducesResponseType(500)]
+        public async Task<IActionResult> TriggerTeamParticipationAchievements(Guid userId, Guid projectId)
+        {
+            r_logger.LogInformation("Manually triggering team participation achievements: UserId={UserId}, ProjectId={ProjectId}", 
+                userId, projectId);
+
+            try
+            {
+                var achievements = await r_achievementService.CheckAndAwardTeamParticipationAchievementsAsync(userId, projectId);
+                
+                r_logger.LogInformation("Team participation achievements triggered: UserId={UserId}, ProjectId={ProjectId}, AwardedCount={Count}", 
+                    userId, projectId, achievements.Count());
+
+                return Ok(achievements);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error triggering team participation achievements: UserId={UserId}, ProjectId={ProjectId}", 
+                    userId, projectId);
+                return StatusCode(500, new { Message = "An error occurred while triggering team participation achievements" });
             }
         }
 
