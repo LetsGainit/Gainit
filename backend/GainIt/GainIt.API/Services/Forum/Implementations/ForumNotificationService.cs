@@ -68,12 +68,12 @@ namespace GainIt.API.Services.Forum.Implementations
                 await r_Hub.Clients.User(post.AuthorId.ToString())
                     .SendAsync(RealtimeEvents.Forum.PostReplied, new
                     {
-                        post.PostId,
-                        post.ProjectId,
-                        ProjectName = post.Project.ProjectName,
+                        PostId = post.PostId,
+                        ProjectId = post.ProjectId,
+                        ProjectName = post.Project.ProjectName ?? "Unknown Project",
                         ReplyId = i_Reply.ReplyId,
-                        ReplyContent = i_Reply.Content,
-                        ReplyAuthorName = i_Reply.AuthorName,
+                        ReplyContent = i_Reply.Content ?? "",
+                        ReplyAuthorName = i_Reply.AuthorName ?? "Unknown User",
                         ReplyAuthorId = i_Reply.AuthorId,
                         RepliedAtUtc = i_Reply.CreatedAtUtc
                     });
@@ -111,9 +111,9 @@ namespace GainIt.API.Services.Forum.Implementations
                     .AsNoTracking()
                     .FirstOrDefaultAsync(p => p.PostId == i_PostId);
 
-                if (post == null)
+                if (post?.Project == null)
                 {
-                    r_Log.LogWarning("Post not found for like notification: PostId={PostId}", i_PostId);
+                    r_Log.LogWarning("Post or project not found for like notification: PostId={PostId}", i_PostId);
                     return;
                 }
 
@@ -140,10 +140,10 @@ namespace GainIt.API.Services.Forum.Implementations
                 await r_Hub.Clients.User(post.AuthorId.ToString())
                     .SendAsync(RealtimeEvents.Forum.PostLiked, new
                     {
-                        post.PostId,
-                        post.ProjectId,
-                        ProjectName = post.Project.ProjectName,
-                        LikedByUserName = likedByUser.FullName,
+                        PostId = post.PostId,
+                        ProjectId = post.ProjectId,
+                        ProjectName = post.Project.ProjectName ?? "Unknown Project",
+                        LikedByUserName = likedByUser.FullName ?? "Unknown User",
                         LikedByUserId = i_LikedByUserId,
                         LikedAtUtc = DateTime.UtcNow
                     });
@@ -170,9 +170,9 @@ namespace GainIt.API.Services.Forum.Implementations
                     .AsNoTracking()
                     .FirstOrDefaultAsync(r => r.ReplyId == i_ReplyId);
 
-                if (reply == null)
+                if (reply?.Post?.Project == null)
                 {
-                    r_Log.LogWarning("Reply not found for like notification: ReplyId={ReplyId}", i_ReplyId);
+                    r_Log.LogWarning("Reply, post, or project not found for like notification: ReplyId={ReplyId}", i_ReplyId);
                     return;
                 }
 
@@ -199,10 +199,10 @@ namespace GainIt.API.Services.Forum.Implementations
                 await r_Hub.Clients.User(reply.AuthorId.ToString())
                     .SendAsync(RealtimeEvents.Forum.ReplyLiked, new
                     {
-                        reply.ReplyId,
-                        reply.PostId,
-                        ProjectName = reply.Post.Project.ProjectName,
-                        LikedByUserName = likedByUser.FullName,
+                        ReplyId = reply.ReplyId,
+                        PostId = reply.PostId,
+                        ProjectName = reply.Post.Project.ProjectName ?? "Unknown Project",
+                        LikedByUserName = likedByUser.FullName ?? "Unknown User",
                         LikedByUserId = i_LikedByUserId,
                         LikedAtUtc = DateTime.UtcNow
                     });

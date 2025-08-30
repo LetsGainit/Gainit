@@ -75,9 +75,11 @@ namespace GainIt.API.Services.Forum.Implementations
             {
                 var post = await r_DbContext.ForumPosts
                     .Include(p => p.Author)
+                    .Include(p => p.Likes)
                     .Include(p => p.Replies.OrderBy(r => r.CreatedAtUtc))
                         .ThenInclude(r => r.Author)
-                    .Include(p => p.Likes)
+                    .Include(p => p.Replies)
+                        .ThenInclude(r => r.Likes)
                     .FirstOrDefaultAsync(p => p.PostId == i_PostId);
 
                 if (post == null)
@@ -99,8 +101,18 @@ namespace GainIt.API.Services.Forum.Implementations
                 // Check if current user liked the post
                 var isLikedByCurrentUser = post.Likes.Any(l => l.UserId == i_CurrentUserId);
 
+                // Create a custom ForumPostViewModel with complete reply data
+                var postViewModel = new ForumPostViewModel(post, isLikedByCurrentUser, authorProjectRole);
+                
+                // Update replies with proper like information
+                postViewModel.Replies = post.Replies.Select(reply =>
+                {
+                    var replyIsLikedByCurrentUser = reply.Likes.Any(l => l.UserId == i_CurrentUserId);
+                    return new ForumReplyViewModel(reply, replyIsLikedByCurrentUser, authorProjectRole);
+                }).ToList();
+
                 r_Logger.LogInformation("Successfully retrieved forum post: PostId={PostId}", i_PostId);
-                return new ForumPostViewModel(post, isLikedByCurrentUser, authorProjectRole);
+                return postViewModel;
             }
             catch (Exception ex)
             {
@@ -124,8 +136,11 @@ namespace GainIt.API.Services.Forum.Implementations
 
                 var posts = await r_DbContext.ForumPosts
                     .Include(p => p.Author)
-                    .Include(p => p.Replies)
                     .Include(p => p.Likes)
+                    .Include(p => p.Replies)
+                        .ThenInclude(r => r.Author)
+                    .Include(p => p.Replies)
+                        .ThenInclude(r => r.Likes)
                     .Where(p => p.ProjectId == i_ProjectId)
                     .OrderByDescending(p => p.CreatedAtUtc)
                     .Skip((i_Page - 1) * i_PageSize)
@@ -137,7 +152,18 @@ namespace GainIt.API.Services.Forum.Implementations
                 {
                     var isLikedByCurrentUser = post.Likes.Any(l => l.UserId == i_CurrentUserId);
                     var authorProjectRole = await getUserProjectRoleAsync(i_ProjectId, post.AuthorId);
-                    postViewModels.Add(new ForumPostViewModel(post, isLikedByCurrentUser, authorProjectRole));
+                    
+                    // Create a custom ForumPostViewModel with complete reply data
+                    var postViewModel = new ForumPostViewModel(post, isLikedByCurrentUser, authorProjectRole);
+                    
+                    // Update replies with proper like information
+                    postViewModel.Replies = post.Replies.Select(reply =>
+                    {
+                        var replyIsLikedByCurrentUser = reply.Likes.Any(l => l.UserId == i_CurrentUserId);
+                        return new ForumReplyViewModel(reply, replyIsLikedByCurrentUser, authorProjectRole);
+                    }).ToList();
+                    
+                    postViewModels.Add(postViewModel);
                 }
 
                 r_Logger.LogInformation("Successfully retrieved project forum posts: ProjectId={ProjectId}, Count={Count}", i_ProjectId, postViewModels.Count);
@@ -158,6 +184,11 @@ namespace GainIt.API.Services.Forum.Implementations
             {
                 var post = await r_DbContext.ForumPosts
                     .Include(p => p.Author)
+                    .Include(p => p.Likes)
+                    .Include(p => p.Replies.OrderBy(r => r.CreatedAtUtc))
+                        .ThenInclude(r => r.Author)
+                    .Include(p => p.Replies)
+                        .ThenInclude(r => r.Likes)
                     .FirstOrDefaultAsync(p => p.PostId == i_PostId);
 
                 if (post == null)
@@ -180,8 +211,17 @@ namespace GainIt.API.Services.Forum.Implementations
                 // Get project role for the post author
                 var authorProjectRole = await getUserProjectRoleAsync(post.ProjectId, post.AuthorId);
 
+                // Create a custom ForumPostViewModel with complete reply data
+                var postViewModel = new ForumPostViewModel(post, false, authorProjectRole);
+                
+                // Update replies with proper like information (no current user context for updates)
+                postViewModel.Replies = post.Replies.Select(reply =>
+                {
+                    return new ForumReplyViewModel(reply, false, authorProjectRole);
+                }).ToList();
+
                 r_Logger.LogInformation("Successfully updated forum post: PostId={PostId}", i_PostId);
-                return new ForumPostViewModel(post, false, authorProjectRole);
+                return postViewModel;
             }
             catch (Exception ex)
             {
