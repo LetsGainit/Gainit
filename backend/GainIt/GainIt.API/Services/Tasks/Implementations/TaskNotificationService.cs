@@ -84,15 +84,15 @@ namespace GainIt.API.Services.Tasks.Implementations
                 foreach (var member in membersToNotify)
                 {
                     await r_Hub.Clients.User(member.UserId.ToString())
-                        .SendAsync(RealtimeEvents.Tasks.TaskCreated, new
+                        .SendAsync(RealtimeEvents.Tasks.TaskCreated, new TaskCreatedNotificationDto
                         {
-                            task.TaskId,
-                            task.ProjectId,
-                            task.Title,
-                            task.Type,
-                            task.Priority,
-                            task.AssignedRole,
-                            task.AssignedUserId,
+                            TaskId = task.TaskId,
+                            ProjectId = task.ProjectId,
+                            Title = task.Title,
+                            Type = task.Type,
+                            Priority = task.Priority,
+                            AssignedRole = task.AssignedRole,
+                            AssignedUserId = task.AssignedUserId,
                             ProjectName = project.ProjectName,
                             CreatedAtUtc = task.CreatedAtUtc
                         });
@@ -150,14 +150,14 @@ namespace GainIt.API.Services.Tasks.Implementations
                 foreach (var member in allMembers)
                 {
                     await r_Hub.Clients.User(member.UserId.ToString())
-                        .SendAsync(RealtimeEvents.Tasks.TaskCompleted, new
+                        .SendAsync(RealtimeEvents.Tasks.TaskCompleted, new TaskCompletedNotificationDto
                         {
-                            task.TaskId,
-                            task.ProjectId,
-                            task.Title,
-                            task.Type,
-                            task.AssignedRole,
-                            task.AssignedUserId,
+                            TaskId = task.TaskId,
+                            ProjectId = task.ProjectId,
+                            Title = task.Title,
+                            Type = task.Type,
+                            AssignedRole = task.AssignedRole,
+                            AssignedUserId = task.AssignedUserId,
                             ProjectName = project.ProjectName,
                             OldStatus = i_OldStatus,
                             NewStatus = i_NewStatus,
@@ -228,11 +228,11 @@ namespace GainIt.API.Services.Tasks.Implementations
                 {
                     // Send to specific assigned user
                     await r_Hub.Clients.User(task.AssignedUserId.Value.ToString())
-                        .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new
+                        .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new TaskUnblockedNotificationDto
                         {
-                            task.TaskId,
-                            task.ProjectId,
-                            task.Title,
+                            TaskId = task.TaskId,
+                            ProjectId = task.ProjectId,
+                            Title = task.Title,
                             ProjectName = project.ProjectName,
                             UnblockedAtUtc = DateTime.UtcNow
                         });
@@ -264,12 +264,12 @@ namespace GainIt.API.Services.Tasks.Implementations
                     foreach (var member in roleMembers)
                     {
                         await r_Hub.Clients.User(member.UserId.ToString())
-                            .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new
+                            .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new TaskUnblockedNotificationDto
                             {
-                                task.TaskId,
-                                task.ProjectId,
-                                task.Title,
-                                task.AssignedRole,
+                                TaskId = task.TaskId,
+                                ProjectId = task.ProjectId,
+                                Title = task.Title,
+                                AssignedRole = task.AssignedRole,
                                 ProjectName = project.ProjectName,
                                 UnblockedAtUtc = DateTime.UtcNow
                             });
