@@ -56,6 +56,9 @@ namespace GainIt.API.Services.Users.Interfaces
         Task<IEnumerable<Mentor>> SearchMentorsAsync(string searchTerm);
         Task<IEnumerable<NonprofitOrganization>> SearchNonprofitsAsync(string searchTerm);
         
+        // Profile completion status
+        Task<bool> CheckIfUserHasCompletedProfileAsync(Guid userId);
+        
         // Get user statistics with type-specific metrics
 
 
