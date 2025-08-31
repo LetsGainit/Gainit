@@ -1348,7 +1348,7 @@ namespace GainIt.API.Data
                     // Convert JSON projects to TemplateProject entities
                     var templateProjectEntities = templateProjects.Select(tp => new TemplateProject
                     {
-                        ProjectId = tp.ProjectId,
+                        ProjectId = Guid.NewGuid(), // Generate new GUID for each template project
                         ProjectName = tp.ProjectName,
                         ProjectDescription = tp.ProjectDescription,
                         DifficultyLevel = ParseDifficultyLevel(tp.DifficultyLevel),
@@ -1699,7 +1699,7 @@ namespace GainIt.API.Data
                 {
                     var nonprofitProjects = nonprofitSuggestions.Select(nps => new UserProject
                     {
-                        ProjectId = nps.ProjectId,
+                        ProjectId = Guid.NewGuid(), // Generate new GUID for nonprofit projects
                         ProjectName = nps.ProjectName,
                         ProjectDescription = nps.ProjectDescription,
                         ProjectStatus = eProjectStatus.Pending,

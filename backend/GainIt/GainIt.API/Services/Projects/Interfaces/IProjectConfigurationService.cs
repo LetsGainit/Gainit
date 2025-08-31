@@ -35,7 +35,7 @@ namespace GainIt.API.Services.Projects.Interfaces
     /// </summary>
     public class TemplateProjectDto
     {
-        public Guid ProjectId { get; set; }
+        public string ProjectId { get; set; } = string.Empty;
         public string ProjectName { get; set; } = string.Empty;
         public string ProjectDescription { get; set; } = string.Empty;
         public string DifficultyLevel { get; set; } = string.Empty;
@@ -52,7 +52,7 @@ namespace GainIt.API.Services.Projects.Interfaces
     /// </summary>
     public class NonprofitProjectSuggestion
     {
-        public Guid ProjectId { get; set; }
+        public string ProjectId { get; set; } = string.Empty;
         public string ProjectName { get; set; } = string.Empty;
         public string ProjectDescription { get; set; } = string.Empty;
         public string DifficultyLevel { get; set; } = string.Empty;
