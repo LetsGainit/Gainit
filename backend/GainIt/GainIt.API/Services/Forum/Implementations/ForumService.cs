@@ -143,8 +143,6 @@ namespace GainIt.API.Services.Forum.Implementations
                         .ThenInclude(r => r.Likes)
                     .Where(p => p.ProjectId == i_ProjectId)
                     .OrderByDescending(p => p.CreatedAtUtc)
-                    .Skip((i_Page - 1) * i_PageSize)
-                    .Take(i_PageSize)
                     .ToListAsync();
 
                 var postViewModels = new List<ForumPostViewModel>();
@@ -530,20 +528,6 @@ namespace GainIt.API.Services.Forum.Implementations
         {
             return await r_DbContext.ForumReplies
                 .AnyAsync(r => r.ReplyId == i_ReplyId && r.AuthorId == i_UserId);
-        }
-
-        private async Task<bool> canEditPostAsync(Guid i_PostId, Guid i_UserId)
-        {
-            // For now, only the author can edit posts
-            // You can extend this to allow project admins or mentors to edit posts
-            return await isPostAuthorAsync(i_PostId, i_UserId);
-        }
-
-        private async Task<bool> canEditReplyAsync(Guid i_ReplyId, Guid i_UserId)
-        {
-            // For now, only the author can edit replies
-            // You can extend this to allow project admins or mentors to edit replies
-            return await isReplyAuthorAsync(i_ReplyId, i_UserId);
         }
 
         private async Task<string?> getUserProjectRoleAsync(Guid i_ProjectId, Guid i_UserId)

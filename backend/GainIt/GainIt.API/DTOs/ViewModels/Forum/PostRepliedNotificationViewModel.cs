@@ -1,6 +1,6 @@
 namespace GainIt.API.DTOs.ViewModels.Forum
 {
-    public class PostRepliedNotificationDto
+    public class PostRepliedNotificationViewModel
     {
         public Guid PostId { get; set; }
         public Guid ProjectId { get; set; }
