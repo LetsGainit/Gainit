@@ -56,8 +56,6 @@ var githubClientSecret = Environment.GetEnvironmentVariable("GITHUB__CLIENTSECRE
 var githubPrivateKey = Environment.GetEnvironmentVariable("GITHUB__PRIVATEKEYCONTENT");
 var githubInstallationId = Environment.GetEnvironmentVariable("GITHUB__INSTALLATIONID");
 
-
-
 if (!string.IsNullOrWhiteSpace(connectionString))
 {
     // Use the full connection string if available
@@ -90,8 +88,6 @@ else
 
 // Create the logger only once after all configuration is complete
 Log.Logger = loggerConfig.CreateLogger();
-
-
 
 // Test the Application Insights sink immediately if it was configured
 if (!string.IsNullOrWhiteSpace(connectionString) || !string.IsNullOrWhiteSpace(instrumentationKey))
@@ -325,30 +321,30 @@ try
         );
     });
 
-            // Add services to the container.
-        builder.Services.AddScoped<IProjectService, ProjectService>();
-        builder.Services.AddScoped<IUserProfileService, UserProfileService>();
-        builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
-        builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
-        builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
-        builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
-        builder.Services.AddScoped<IMilestoneService, MilestoneService>();
-        builder.Services.AddScoped<ITaskService, TaskService>();
-        builder.Services.AddScoped<ITaskNotificationService, TaskNotificationService>();
-        builder.Services.AddScoped<IPlanningService, PlanningService>();
-    
-        // GitHub Services
-        builder.Services.AddScoped<IGitHubService, GitHubService>();
-        builder.Services.AddScoped<IGitHubApiClient, GitHubApiClient>();
-        builder.Services.AddScoped<IGitHubAnalyticsService, GitHubAnalyticsService>();
+    // Add services to the container.
+    builder.Services.AddScoped<IProjectService, ProjectService>();
+    builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+    builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
+    builder.Services.AddScoped<IProjectConfigurationService, ProjectConfigurationService>();
+    builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
+    builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
+    builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
+    builder.Services.AddScoped<IMilestoneService, MilestoneService>();
+    builder.Services.AddScoped<ITaskService, TaskService>();
+    builder.Services.AddScoped<ITaskNotificationService, TaskNotificationService>();
+    builder.Services.AddScoped<IPlanningService, PlanningService>();
 
-        // Forum Services
-        builder.Services.AddScoped<IForumService, ForumService>();
-        builder.Services.AddScoped<IForumNotificationService, ForumNotificationService>();
+    // GitHub Services
+    builder.Services.AddScoped<IGitHubService, GitHubService>();
+    builder.Services.AddScoped<IGitHubApiClient, GitHubApiClient>();
+    builder.Services.AddScoped<IGitHubAnalyticsService, GitHubAnalyticsService>();
 
-        // Add HTTP client for GitHub API
-        builder.Services.AddHttpClient<IGitHubApiClient, GitHubApiClient>();
+    // Forum Services
+    builder.Services.AddScoped<IForumService, ForumService>();
+    builder.Services.AddScoped<IForumNotificationService, ForumNotificationService>();
 
+    // Add HTTP client for GitHub API
+    builder.Services.AddHttpClient<IGitHubApiClient, GitHubApiClient>();
 
     // Add health checks
     builder.Services.AddHealthChecks()
@@ -481,14 +477,15 @@ try
         return "Logging test completed - check Application Insights for log messages";
     });
 
-
-
     // Seed the database with initial data
     using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<GainItDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<GainItDbContext>>();
-        GainItDbContextSeeder.SeedData(context, logger);
+        var projectConfigService = scope.ServiceProvider.GetRequiredService<IProjectConfigurationService>();
+        
+        // Simple synchronous seeding
+        GainItDbContextSeeder.SeedData(context, projectConfigService, logger);
     }
 
     Log.Information("GainIt.API application started successfully");

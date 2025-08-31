@@ -7,6 +7,7 @@ using GainIt.API.Models.Users.Expertise;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
+using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -849,7 +850,7 @@ namespace GainIt.API.Data
     
     public static class GainItDbContextSeeder
     {
-        public static void SeedData(GainItDbContext context, ILogger? logger = null)
+        public static void SeedData(GainItDbContext context, IProjectConfigurationService projectConfigService, ILogger? logger = null)
         {
             logger?.LogInformation("Starting database seeding process");
             
@@ -898,7 +899,47 @@ namespace GainIt.API.Data
                     Achievements = new List<UserAchievement>()
                 };
 
-                // Create a nonprofit organization
+                var mentor3 = new Mentor
+                {
+                    UserId = Guid.NewGuid(),
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Sarah Chen",
+                    EmailAddress = "sarah.chen@techmentor.dev",
+                    YearsOfExperience = 12,
+                    AreaOfExpertise = "Mobile Development & UI/UX",
+                    Biography = "Senior mobile developer and UI/UX expert with experience in React Native, Flutter, and native iOS/Android development.",
+                    GitHubURL = "https://github.com/sarahchen",
+                    GitHubUsername = "sarahchen",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/women/67.jpg",
+                    LinkedInURL = "https://linkedin.com/in/sarahchen",
+                    FacebookPageURL = "https://facebook.com/sarah.chen.tech",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
+                    Achievements = new List<UserAchievement>()
+                };
+
+                var mentor4 = new Mentor
+                {
+                    UserId = Guid.NewGuid(),
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Michael Rodriguez",
+                    EmailAddress = "michael.rodriguez@mentorspace.io",
+                    YearsOfExperience = 18,
+                    AreaOfExpertise = "DevOps & Cloud Architecture",
+                    Biography = "DevOps architect and cloud expert with extensive experience in AWS, Azure, Docker, and Kubernetes. Passionate about automation and infrastructure as code.",
+                    GitHubURL = "https://github.com/michaelrodriguez",
+                    GitHubUsername = "michaelrodriguez",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/men/68.jpg",
+                    LinkedInURL = "https://linkedin.com/in/michaelrodriguez",
+                    FacebookPageURL = "https://facebook.com/michael.rodriguez.tech",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
+                    Achievements = new List<UserAchievement>()
+                };
+
+                // Create nonprofit organizations
                 var nonprofit = new NonprofitOrganization
                 {
                     UserId = Guid.NewGuid(),
@@ -918,6 +959,44 @@ namespace GainIt.API.Data
                     Achievements = new List<UserAchievement>()
                 };
 
+                var nonprofit2 = new NonprofitOrganization
+                {
+                    UserId = Guid.NewGuid(),
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "TechForSeniors Foundation",
+                    EmailAddress = "contact@techforseniors.org",
+                    WebsiteUrl = "https://techforseniors.org",
+                    Biography = "Empowering senior citizens with digital skills and technology access to improve their quality of life and social connections.",
+                    GitHubURL = "https://github.com/techforseniors",
+                    GitHubUsername = "techforseniors",
+                    ProfilePictureURL = "https://images.unsplash.com/photo-1515378960530-7c0da6231fb1?q=80&w=400",
+                    LinkedInURL = "https://linkedin.com/company/techforseniors",
+                    FacebookPageURL = "https://facebook.com/TechForSeniors",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
+                    Achievements = new List<UserAchievement>()
+                };
+
+                var nonprofit3 = new NonprofitOrganization
+                {
+                    UserId = Guid.NewGuid(),
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Community Safety Network",
+                    EmailAddress = "contact@communitysafetynet.org",
+                    WebsiteUrl = "https://communitysafetynet.org",
+                    Biography = "Building safer communities through technology-enabled emergency response systems and volunteer coordination.",
+                    GitHubURL = "https://github.com/communitysafetynet",
+                    GitHubUsername = "communitysafetynet",
+                    ProfilePictureURL = "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?q=80&w=400",
+                    LinkedInURL = "https://linkedin.com/company/communitysafetynet",
+                    FacebookPageURL = "https://facebook.com/CommunitySafetyNet",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
+                    Achievements = new List<UserAchievement>()
+                };
+
                 // Create NonprofitExpertise for the nonprofit
                 var nonprofitExpertise = new NonprofitExpertise
                 {
@@ -930,6 +1009,28 @@ namespace GainIt.API.Data
 
                 nonprofit.NonprofitExpertise = nonprofitExpertise;
                 context.NonprofitExpertises.Add(nonprofitExpertise);
+
+                var nonprofit2Expertise = new NonprofitExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = nonprofit2.UserId,
+                    User = nonprofit2,
+                    FieldOfWork = "Digital Literacy & Senior Technology",
+                    MissionStatement = "To bridge the digital divide for senior citizens through education, support, and accessible technology solutions."
+                };
+
+                var nonprofit3Expertise = new NonprofitExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = nonprofit3.UserId,
+                    User = nonprofit3,
+                    FieldOfWork = "Community Safety & Emergency Response",
+                    MissionStatement = "Building safer communities through technology-enabled emergency response systems and volunteer coordination."
+                };
+
+                nonprofit2.NonprofitExpertise = nonprofit2Expertise;
+                nonprofit3.NonprofitExpertise = nonprofit3Expertise;
+                context.NonprofitExpertises.AddRange(nonprofit2Expertise, nonprofit3Expertise);
 
                 // Create TechExpertise for mentors
                 var mentorTechExpertise = new TechExpertise
@@ -952,9 +1053,31 @@ namespace GainIt.API.Data
                     Tools = new List<string> { "Jupyter", "Docker", "Kubernetes", "AWS SageMaker" }
                 };
 
+                var mentor3TechExpertise = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = mentor3.UserId,
+                    User = mentor3,
+                    ProgrammingLanguages = new List<string> { "JavaScript", "TypeScript", "Dart", "Swift", "Kotlin" },
+                    Technologies = new List<string> { "React Native", "Flutter", "iOS SDK", "Android SDK", "Firebase" },
+                    Tools = new List<string> { "Xcode", "Android Studio", "VS Code", "Git", "Figma" }
+                };
+
+                var mentor4TechExpertise = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = mentor4.UserId,
+                    User = mentor4,
+                    ProgrammingLanguages = new List<string> { "Python", "Bash", "YAML", "Terraform", "Go" },
+                    Technologies = new List<string> { "Docker", "Kubernetes", "AWS", "Azure", "Jenkins" },
+                    Tools = new List<string> { "Terraform", "Ansible", "Prometheus", "Grafana", "ELK Stack" }
+                };
+
                 mentor.TechExpertise = mentorTechExpertise;
                 mentor2.TechExpertise = mentor2TechExpertise;
-                context.TechExpertises.AddRange(mentorTechExpertise, mentor2TechExpertise);
+                mentor3.TechExpertise = mentor3TechExpertise;
+                mentor4.TechExpertise = mentor4TechExpertise;
+                context.TechExpertises.AddRange(mentorTechExpertise, mentor2TechExpertise, mentor3TechExpertise, mentor4TechExpertise);
 
                 // Create some gainers
                 var gainer1 = new Gainer
@@ -1077,6 +1200,46 @@ namespace GainIt.API.Data
                     Achievements = new List<UserAchievement>()
                 };
 
+                var gainer7 = new Gainer
+                {
+                    UserId = Guid.NewGuid(),
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Daniel Cohen",
+                    EmailAddress = "daniel.cohen@webdev.net",
+                    EducationStatus = "Undergraduate",
+                    AreasOfInterest = new List<string> { "Web Development", "React", "Node.js" },
+                    GitHubURL = "https://github.com/danielcohen",
+                    GitHubUsername = "danielcohen",
+                    LinkedInURL = "https://linkedin.com/in/danielcohen",
+                    FacebookPageURL = "https://facebook.com/daniel.cohen",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/men/88.jpg",
+                    Biography = "Passionate web developer focused on modern JavaScript frameworks and full-stack development.",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
+                    Achievements = new List<UserAchievement>()
+                };
+
+                var gainer8 = new Gainer
+                {
+                    UserId = Guid.NewGuid(),
+                    ExternalId = Guid.NewGuid().ToString(),
+                    FullName = "Rachel Green",
+                    EmailAddress = "rachel.green@datascience.dev",
+                    EducationStatus = "Graduate",
+                    AreasOfInterest = new List<string> { "Data Science", "Machine Learning", "Python" },
+                    GitHubURL = "https://github.com/rachelgreen",
+                    GitHubUsername = "rachelgreen",
+                    LinkedInURL = "https://linkedin.com/in/rachelgreen",
+                    FacebookPageURL = "https://facebook.com/rachel.green",
+                    ProfilePictureURL = "https://randomuser.me/api/portraits/women/99.jpg",
+                    Biography = "Data science enthusiast with expertise in machine learning algorithms and data visualization.",
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    Country = "Israel",
+                    Achievements = new List<UserAchievement>()
+                };
+
                 // Create TechExpertise entries for each gainer
                 var techExpertise1 = new TechExpertise
                 {
@@ -1138,8 +1301,28 @@ namespace GainIt.API.Data
                     Tools = new List<string> { "Jupyter", "Git", "Docker" }
                 };
 
+                var techExpertise7 = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = gainer7.UserId,
+                    User = gainer7,
+                    ProgrammingLanguages = new List<string> { "JavaScript", "TypeScript", "HTML", "CSS" },
+                    Technologies = new List<string> { "React", "Node.js", "Express", "Next.js" },
+                    Tools = new List<string> { "VS Code", "Git", "npm", "Webpack" }
+                };
+
+                var techExpertise8 = new TechExpertise
+                {
+                    ExpertiseId = Guid.NewGuid(),
+                    UserId = gainer8.UserId,
+                    User = gainer8,
+                    ProgrammingLanguages = new List<string> { "Python", "R", "SQL", "Julia" },
+                    Technologies = new List<string> { "Pandas", "NumPy", "Scikit-learn", "Matplotlib" },
+                    Tools = new List<string> { "Jupyter", "RStudio", "Git", "Docker" }
+                };
+
                 // Add TechExpertise entries to context
-                context.TechExpertises.AddRange(techExpertise1, techExpertise2, techExpertise3, techExpertise4, techExpertise5, techExpertise6);
+                context.TechExpertises.AddRange(techExpertise1, techExpertise2, techExpertise3, techExpertise4, techExpertise5, techExpertise6, techExpertise7, techExpertise8);
 
                 // Link TechExpertise to Gainers
                 gainer1.TechExpertise = techExpertise1;
@@ -1148,72 +1331,72 @@ namespace GainIt.API.Data
                 gainer4.TechExpertise = techExpertise4;
                 gainer5.TechExpertise = techExpertise5;
                 gainer6.TechExpertise = techExpertise6;
+                gainer7.TechExpertise = techExpertise7;
+                gainer8.TechExpertise = techExpertise8;
 
                 // Add all users to context
-                context.Users.AddRange(mentor, mentor2, nonprofit, gainer1, gainer2, gainer3, gainer4, gainer5, gainer6);
+                context.Users.AddRange(mentor, mentor2, mentor3, mentor4, nonprofit, nonprofit2, nonprofit3, gainer1, gainer2, gainer3, gainer4, gainer5, gainer6, gainer7, gainer8);
                 context.SaveChanges();
                 #endregion
 
                 #region Seed Template Projects
-                var templateProjects = new List<TemplateProject>
+                logger?.LogInformation("Loading template projects from configuration...");
+                var templateProjects = projectConfigService.LoadTemplateProjects();
+                
+                if (templateProjects.Any())
                 {
-                    new TemplateProject
+                    // Convert JSON projects to TemplateProject entities
+                    var templateProjectEntities = templateProjects.Select(tp => new TemplateProject
                     {
-                        ProjectId = Guid.NewGuid(),
-                        ProjectName = "Community Food Bank Management System",
-                        ProjectDescription = "A web application to help food banks manage inventory, track donations, and coordinate volunteers. Features include donation tracking, volunteer scheduling, and inventory management.",
-                        DifficultyLevel = eDifficultyLevel.Intermediate,
-                        ProjectPictureUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000",
-                        Duration = TimeSpan.FromDays(90),
-                        Goals = new List<string>
-                        {
-                            "Create an efficient system for managing food bank operations",
-                            "Improve volunteer coordination",
-                            "Enhance donation tracking capabilities"
-                        },
-                        Technologies = new List<string> { "React", "Node.js", "MongoDB", "Express" },
-                        RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" }
-                    },
-                    new TemplateProject
-                    {
-                        ProjectId = Guid.NewGuid(),
-                        ProjectName = "Local Business Directory",
-                        ProjectDescription = "A platform for small businesses to create profiles, manage their information, and connect with local customers. Includes features for business owners to update their information and for customers to leave reviews.",
-                        DifficultyLevel = eDifficultyLevel.Beginner,
-                        ProjectPictureUrl = "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1000",
-                        Duration = TimeSpan.FromDays(60),
-                        Goals = new List<string>
-                        {
-                            "Help local businesses establish an online presence and connect with their community through a user-friendly platform.",
-                            "Enable customers to easily discover and review local businesses.",
-                            "Provide business owners with tools to manage their profiles and engage with customers.",
-                            "Foster a supportive local business ecosystem."
-                        },
-                        Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
-                        RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" }
-                    },
-                    new TemplateProject
-                    {
-                        ProjectId = Guid.NewGuid(),
-                        ProjectName = "Environmental Data Tracker",
-                        ProjectDescription = "An application to track and visualize environmental data such as air quality, water quality, and waste management metrics. Includes data visualization and reporting features.",
-                        DifficultyLevel = eDifficultyLevel.Advanced,
-                        ProjectPictureUrl = "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?q=80&w=1000",
-                        Duration = TimeSpan.FromDays(120),
-                        Goals = new List<string>
-                        {
-                            "Create a comprehensive environmental monitoring system that helps communities track and improve their environmental impact.",
-                            "Enable real-time tracking and visualization of air and water quality metrics.",
-                            "Provide actionable insights and reports for community leaders and organizations.",
-                            "Promote environmental awareness and data-driven decision making."
-                        },
-                        Technologies = new List<string> { "Python", "Django", "PostgreSQL", "D3.js" },
-                        RequiredRoles = new List<string> { "Full Stack Developer", "Data Scientist", "UI/UX Designer", "DevOps Engineer" }
-                    }
-                };
+                        ProjectId = tp.ProjectId,
+                        ProjectName = tp.ProjectName,
+                        ProjectDescription = tp.ProjectDescription,
+                        DifficultyLevel = ParseDifficultyLevel(tp.DifficultyLevel),
+                        ProjectPictureUrl = tp.ProjectPictureUrl,
+                        Duration = TimeSpan.FromDays(tp.DurationDays),
+                        Goals = tp.Goals,
+                        Technologies = tp.Technologies,
+                        RequiredRoles = tp.RequiredRoles
+                    }).ToList();
 
-                context.TemplateProjects.AddRange(templateProjects);
-                context.SaveChanges();
+                    context.TemplateProjects.AddRange(templateProjectEntities);
+                    context.SaveChanges();
+                    logger?.LogInformation("Successfully seeded {Count} template projects", templateProjectEntities.Count);
+                }
+                else
+                {
+                    logger?.LogWarning("No template projects found in configuration, using fallback projects");
+                    
+                    // Fallback template projects if JSON loading fails
+                    var fallbackTemplateProjects = new List<TemplateProject>
+                    {
+                        new TemplateProject
+                        {
+                            ProjectId = Guid.NewGuid(),
+                            ProjectName = "Community Food Bank Management System",
+                            ProjectDescription = "A web application to help food banks manage inventory, track donations, and coordinate volunteers. Features include donation tracking, volunteer scheduling, and inventory management.",
+                            DifficultyLevel = eDifficultyLevel.Intermediate,
+                            ProjectPictureUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000",
+                            Duration = TimeSpan.FromDays(90),
+                            Goals = new List<string>
+                            {
+                                "Create an efficient system for managing food bank operations",
+                                "Improve volunteer coordination",
+                                "Enhance donation tracking capabilities"
+                            },
+                            Technologies = new List<string> { "React", "Node.js", "MongoDB", "Express" },
+                            RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" }
+                        }
+                    };
+
+                    context.TemplateProjects.AddRange(fallbackTemplateProjects);
+                    context.SaveChanges();
+                }
+
+
+
+                // Load nonprofit project suggestions for later use
+                var nonprofitSuggestions = projectConfigService.LoadNonprofitProjectSuggestions();
 
                 // Create individual projects
                 var project1 = new UserProject
@@ -1510,6 +1693,37 @@ namespace GainIt.API.Data
 
                 // Add all projects to the list
                 var seededProjects = new List<UserProject> { project1, project2, project3, project4, project5 };
+                
+                // Add nonprofit projects if they exist
+                if (nonprofitSuggestions.Any())
+                {
+                    var nonprofitProjects = nonprofitSuggestions.Select(nps => new UserProject
+                    {
+                        ProjectId = nps.ProjectId,
+                        ProjectName = nps.ProjectName,
+                        ProjectDescription = nps.ProjectDescription,
+                        ProjectStatus = eProjectStatus.Pending,
+                        ProjectSource = eProjectSource.NonprofitOrganization,
+                        CreatedAtUtc = DateTime.UtcNow.AddDays(-Random.Shared.Next(1, 30)),
+                        RepositoryLink = nps.RepositoryLink,
+                        ProjectPictureUrl = nps.ProjectPictureUrl,
+                        Duration = TimeSpan.FromDays(nps.DurationDays),
+                        Goals = nps.Goals,
+                        Technologies = nps.Technologies,
+                        RequiredRoles = nps.RequiredRoles,
+                        ProgrammingLanguages = nps.ProgrammingLanguages
+                    }).ToList();
+
+                    // Assign nonprofit organizations to projects
+                    for (int i = 0; i < nonprofitProjects.Count; i++)
+                    {
+                        var nonprofitOrg = i == 0 ? nonprofit2 : nonprofit3;
+                        nonprofitProjects[i].OwningOrganization = nonprofitOrg;
+                    }
+
+                    seededProjects.AddRange(nonprofitProjects);
+                }
+                
                 context.Projects.AddRange(seededProjects);
                 context.SaveChanges();
                 #endregion
@@ -1543,6 +1757,51 @@ namespace GainIt.API.Data
                         IconUrl = "/achievements/mentor-choice.png",
                         UnlockCriteria = "Receive positive feedback from a project mentor",
                         Category = "Recognition"
+                    },
+                    new AchievementTemplate
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Expert Mentor",
+                        Description = "Successfully mentored 3 different projects",
+                        IconUrl = "/achievements/expert-mentor.png",
+                        UnlockCriteria = "Mentor 3 different projects to completion",
+                        Category = "Leadership"
+                    },
+                    new AchievementTemplate
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Innovation Leader",
+                        Description = "Led a project that introduced new technologies or approaches",
+                        IconUrl = "/achievements/innovation-leader.png",
+                        UnlockCriteria = "Lead a project that successfully implements innovative solutions",
+                        Category = "Innovation"
+                    },
+                    new AchievementTemplate
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Community Builder",
+                        Description = "Successfully organized and led community-focused projects",
+                        IconUrl = "/achievements/community-builder.png",
+                        UnlockCriteria = "Lead 2 community-focused projects",
+                        Category = "Community"
+                    },
+                    new AchievementTemplate
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Tech Pioneer",
+                        Description = "Mastered cutting-edge technologies in project development",
+                        IconUrl = "/achievements/tech-pioneer.png",
+                        UnlockCriteria = "Use advanced technologies in 3 different projects",
+                        Category = "Technology"
+                    },
+                    new AchievementTemplate
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Social Impact Champion",
+                        Description = "Contributed to projects with significant social impact",
+                        IconUrl = "/achievements/social-impact.png",
+                        UnlockCriteria = "Participate in 3 nonprofit or social impact projects",
+                        Category = "Social Impact"
                     }
                 };
 
@@ -1616,6 +1875,164 @@ namespace GainIt.API.Data
                         AchievementTemplate = achievementTemplates[1],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-8),
                         EarnedDetails = "Actively participated in 5 different projects as a team member"
+                    },
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer4.UserId,
+                        User = gainer4,
+                        AchievementTemplateId = achievementTemplates[6].Id,
+                        AchievementTemplate = achievementTemplates[6],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-1),
+                        EarnedDetails = "Used advanced React and Node.js technologies in 3 different projects"
+                    },
+                    // Gainer5 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer5.UserId,
+                        User = gainer5,
+                        AchievementTemplateId = achievementTemplates[0].Id,
+                        AchievementTemplate = achievementTemplates[0],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-6),
+                        EarnedDetails = "Successfully completed the Mobile App Development project with all features implemented"
+                    },
+                    // Gainer6 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer6.UserId,
+                        User = gainer6,
+                        AchievementTemplateId = achievementTemplates[0].Id,
+                        AchievementTemplate = achievementTemplates[0],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-4),
+                        EarnedDetails = "Successfully completed the Data Visualization Dashboard project with all features implemented"
+                    },
+                    // Mentor3 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = mentor3.UserId,
+                        User = mentor3,
+                        AchievementTemplateId = achievementTemplates[2].Id,
+                        AchievementTemplate = achievementTemplates[2],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-12),
+                        EarnedDetails = "Received positive feedback from 2 different project teams for excellent mentorship"
+                    },
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = mentor3.UserId,
+                        User = mentor3,
+                        AchievementTemplateId = achievementTemplates[3].Id,
+                        AchievementTemplate = achievementTemplates[3],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-5),
+                        EarnedDetails = "Successfully mentored 3 different projects to completion"
+                    },
+                    // Mentor4 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = mentor4.UserId,
+                        User = mentor4,
+                        AchievementTemplateId = achievementTemplates[2].Id,
+                        AchievementTemplate = achievementTemplates[2],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-15),
+                        EarnedDetails = "Received positive feedback from 3 different project teams for excellent mentorship"
+                    },
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = mentor4.UserId,
+                        User = mentor4,
+                        AchievementTemplateId = achievementTemplates[4].Id,
+                        AchievementTemplate = achievementTemplates[4],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-8),
+                        EarnedDetails = "Led a project that successfully implemented innovative AI-powered solutions"
+                    },
+                    // Gainer7 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer7.UserId,
+                        User = gainer7,
+                        AchievementTemplateId = achievementTemplates[0].Id,
+                        AchievementTemplate = achievementTemplates[0],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-10),
+                        EarnedDetails = "Successfully completed the AI-Powered Learning Analytics project with all features implemented"
+                    },
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer7.UserId,
+                        User = gainer7,
+                        AchievementTemplateId = achievementTemplates[6].Id,
+                        AchievementTemplate = achievementTemplates[6],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-3),
+                        EarnedDetails = "Used advanced AI and machine learning technologies in 3 different projects"
+                    },
+                    // Gainer8 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer8.UserId,
+                        User = gainer8,
+                        AchievementTemplateId = achievementTemplates[0].Id,
+                        AchievementTemplate = achievementTemplates[0],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-7),
+                        EarnedDetails = "Successfully completed the Sustainable Energy Monitoring project with all features implemented"
+                    },
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer8.UserId,
+                        User = gainer8,
+                        AchievementTemplateId = achievementTemplates[1].Id,
+                        AchievementTemplate = achievementTemplates[1],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-2),
+                        EarnedDetails = "Actively participated in 5 different projects as a team member"
+                    },
+                    // Nonprofit2 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = nonprofit2.UserId,
+                        User = nonprofit2,
+                        AchievementTemplateId = achievementTemplates[5].Id,
+                        AchievementTemplate = achievementTemplates[5],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-20),
+                        EarnedDetails = "Successfully organized and led 2 community-focused environmental projects"
+                    },
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = nonprofit2.UserId,
+                        User = nonprofit2,
+                        AchievementTemplateId = achievementTemplates[7].Id,
+                        AchievementTemplate = achievementTemplates[7],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-15),
+                        EarnedDetails = "Contributed to 3 nonprofit projects with significant environmental impact"
+                    },
+                    // Nonprofit3 achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = nonprofit3.UserId,
+                        User = nonprofit3,
+                        AchievementTemplateId = achievementTemplates[5].Id,
+                        AchievementTemplate = achievementTemplates[5],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-18),
+                        EarnedDetails = "Successfully organized and led 2 community-focused healthcare projects"
+                    },
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = nonprofit3.UserId,
+                        User = nonprofit3,
+                        AchievementTemplateId = achievementTemplates[7].Id,
+                        AchievementTemplate = achievementTemplates[7],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-12),
+                        EarnedDetails = "Contributed to 3 nonprofit projects with significant healthcare impact"
                     }
                 };
 
@@ -1625,6 +2042,12 @@ namespace GainIt.API.Data
                 gainer3.Achievements = userAchievements.Where(a => a.UserId == gainer3.UserId).ToList();
                 gainer4.Achievements = userAchievements.Where(a => a.UserId == gainer4.UserId).ToList();
                 mentor.Achievements = userAchievements.Where(a => a.UserId == mentor.UserId).ToList();
+                mentor3.Achievements = userAchievements.Where(a => a.UserId == mentor3.UserId).ToList();
+                mentor4.Achievements = userAchievements.Where(a => a.UserId == mentor4.UserId).ToList();
+                gainer7.Achievements = userAchievements.Where(a => a.UserId == gainer7.UserId).ToList();
+                gainer8.Achievements = userAchievements.Where(a => a.UserId == gainer8.UserId).ToList();
+                nonprofit2.Achievements = userAchievements.Where(a => a.UserId == nonprofit2.UserId).ToList();
+                nonprofit3.Achievements = userAchievements.Where(a => a.UserId == nonprofit3.UserId).ToList();
 
                 // Add achievements to users' collections
                 foreach (var achievement in userAchievements)
@@ -1639,6 +2062,20 @@ namespace GainIt.API.Data
             else{
                 logger?.LogInformation("Database already seeded");
             }
+        }
+
+        /// <summary>
+        /// Helper method to parse difficulty level string to enum
+        /// </summary>
+        private static eDifficultyLevel ParseDifficultyLevel(string difficultyLevel)
+        {
+            return difficultyLevel.ToLower() switch
+            {
+                "beginner" => eDifficultyLevel.Beginner,
+                "intermediate" => eDifficultyLevel.Intermediate,
+                "advanced" => eDifficultyLevel.Advanced,
+                _ => eDifficultyLevel.Beginner
+            };
         }
     }
 }

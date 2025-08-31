@@ -1,0 +1,146 @@
+[
+  {
+    "projectId": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+    "projectName": "Digital Literacy for Seniors",
+    "projectDescription": "A comprehensive digital literacy program for senior citizens, featuring easy-to-use interfaces, step-by-step tutorials, and support for common digital tasks like online banking, video calls, and social media.",
+    "difficultyLevel": "Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1200",
+    "durationDays": 25,
+    "goals": [
+      "Create intuitive user interfaces for seniors",
+      "Develop step-by-step tutorial system",
+      "Implement accessibility features",
+      "Build support and help system",
+      "Provide progress tracking"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "Express",
+      "MongoDB",
+      "Accessibility APIs",
+      "Progressive Web App",
+      "Responsive Design",
+      "Analytics"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer",
+      "UI/UX Designer",
+      "Accessibility Specialist",
+      "Content Creator"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ],
+    "repositoryLink": "https://github.com/senior-digital-literacy/senior-tech",
+    "nonprofitName": "TechForSeniors Foundation",
+    "nonprofitDescription": "Empowering senior citizens with digital skills and technology access to improve their quality of life and social connections.",
+    "nonprofitWebsiteUrl": "https://techforseniors.org",
+    "nonprofitProfilePictureUrl": "https://images.unsplash.com/photo-1515378960530-7c0da6231fb1?q=80&w=400",
+    "nonprofitLinkedInUrl": "https://linkedin.com/company/techforseniors",
+    "nonprofitFacebookPageUrl": "https://facebook.com/TechForSeniors",
+    "nonprofitGitHubUrl": "https://github.com/techforseniors",
+    "nonprofitGitHubUsername": "techforseniors",
+    "nonprofitCountry": "Israel",
+    "nonprofitBiography": "Dedicated to bridging the digital divide for senior citizens through education, support, and accessible technology solutions."
+  },
+  {
+    "projectId": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+    "projectName": "Community Emergency Response System",
+    "projectDescription": "A real-time emergency response platform for communities, featuring emergency alerts, volunteer coordination, resource management, and communication tools for first responders and community members.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1200",
+    "durationDays": 60,
+    "goals": [
+      "Implement real-time emergency alerts",
+      "Create volunteer coordination system",
+      "Build resource management tools",
+      "Develop communication platform",
+      "Ensure system reliability"
+    ],
+    "technologies": [
+      "React Native",
+      "Node.js",
+      "Socket.io",
+      "PostgreSQL",
+      "Redis",
+      "Push Notifications",
+      "WebRTC",
+      "Docker"
+    ],
+    "requiredRoles": [
+      "Mobile Developer",
+      "Backend Developer",
+      "DevOps Engineer",
+      "Security Specialist",
+      "Emergency Response Expert"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "SQL"
+    ],
+    "repositoryLink": "https://github.com/community-emergency/response-system",
+    "nonprofitName": "Community Safety Network",
+    "nonprofitDescription": "Building safer communities through technology-enabled emergency response systems and volunteer coordination.",
+    "nonprofitWebsiteUrl": "https://communitysafetynet.org",
+    "nonprofitProfilePictureUrl": "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?q=80&w=400",
+    "nonprofitLinkedInUrl": "https://linkedin.com/company/communitysafetynet",
+    "nonprofitFacebookPageUrl": "https://facebook.com/CommunitySafetyNet",
+    "nonprofitGitHubUrl": "https://github.com/communitysafetynet",
+    "nonprofitGitHubUsername": "communitysafetynet",
+    "nonprofitCountry": "Israel",
+    "nonprofitBiography": "Dedicated to enhancing community safety through innovative technology solutions and coordinated emergency response systems."
+  },
+  {
+    "projectId": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+    "projectName": "Youth Coding Mentorship Platform",
+    "projectDescription": "A platform connecting young aspiring developers with experienced mentors for coding education, project collaboration, and career guidance. Features include video calls, code sharing, project tracking, and learning resources.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200",
+    "durationDays": 40,
+    "goals": [
+      "Create mentor-student matching system",
+      "Implement video call functionality",
+      "Build code sharing and review tools",
+      "Develop learning resource library",
+      "Provide progress tracking"
+    ],
+    "technologies": [
+      "Next.js",
+      "TypeScript",
+      "WebRTC",
+      "PostgreSQL",
+      "Prisma",
+      "CodeMirror",
+      "Socket.io",
+      "AWS"
+    ],
+    "requiredRoles": [
+      "Full Stack Developer",
+      "UI/UX Designer",
+      "DevOps Engineer",
+      "Education Specialist",
+      "Security Specialist"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "SQL"
+    ],
+    "repositoryLink": "https://github.com/youth-coding/mentorship-platform",
+    "nonprofitName": "CodeMentor Youth Initiative",
+    "nonprofitDescription": "Empowering young people through coding education, mentorship, and real-world project experience to prepare them for technology careers.",
+    "nonprofitWebsiteUrl": "https://codementoryouth.org",
+    "nonprofitProfilePictureUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400",
+    "nonprofitLinkedInUrl": "https://linkedin.com/company/codementoryouth",
+    "nonprofitFacebookPageUrl": "https://facebook.com/CodeMentorYouth",
+    "nonprofitGitHubUrl": "https://github.com/codementoryouth",
+    "nonprofitGitHubUsername": "codementoryouth",
+    "nonprofitCountry": "Israel",
+    "nonprofitBiography": "Committed to bridging the technology skills gap by connecting young learners with experienced mentors in a collaborative learning environment."
+  }
+]
