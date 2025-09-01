@@ -45,6 +45,7 @@ namespace GainIt.API.Services.Projects.Interfaces
         public List<string> Technologies { get; set; } = new();
         public List<string> RequiredRoles { get; set; } = new();
         public List<string> ProgrammingLanguages { get; set; } = new();
+        public RagContextDto? RagContext { get; set; }
     }
 
     /// <summary>
@@ -73,6 +74,21 @@ namespace GainIt.API.Services.Projects.Interfaces
         public string NonprofitGitHubUsername { get; set; } = string.Empty;
         public string NonprofitCountry { get; set; } = string.Empty;
         public string NonprofitBiography { get; set; } = string.Empty;
+        public RagContextDto? RagContext { get; set; }
+    }
+
+    /// <summary>
+    /// Data transfer object for RAG context loaded from JSON configuration
+    /// </summary>
+    public class RagContextDto
+    {
+        public string SearchableText { get; set; } = string.Empty;
+        public List<string> Tags { get; set; } = new();
+        public List<string> SkillLevels { get; set; } = new();
+        public string ProjectType { get; set; } = string.Empty;
+        public string Domain { get; set; } = string.Empty;
+        public List<string> LearningOutcomes { get; set; } = new();
+        public List<string> ComplexityFactors { get; set; } = new();
     }
 
     /// <summary>

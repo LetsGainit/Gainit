@@ -45,7 +45,52 @@
       "HTML",
       "CSS",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Comprehensive collaborative platform connecting developers, mentors, and nonprofits for meaningful project collaboration. Features advanced project management, GitHub integration, AI-powered matching, real-time collaboration, and gamification systems. Built with modern web technologies including React, ASP.NET Core, and Azure cloud services.",
+      "tags": [
+        "collaboration-platform",
+        "project-management",
+        "github-integration",
+        "ai-matching",
+        "real-time-collaboration",
+        "gamification",
+        "mentorship",
+        "nonprofit",
+        "full-stack",
+        "azure-cloud",
+        "openai-integration",
+        "user-management",
+        "forum-system",
+        "achievement-system"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced"
+      ],
+      "projectType": "web-platform",
+      "domain": "education",
+      "learningOutcomes": [
+        "full-stack-development",
+        "cloud-architecture",
+        "ai-integration",
+        "real-time-applications",
+        "user-authentication",
+        "database-design",
+        "api-development",
+        "devops-practices",
+        "collaborative-features",
+        "gamification-systems"
+      ],
+      "complexityFactors": [
+        "multi-tenant-architecture",
+        "real-time-synchronization",
+        "ai-algorithm-development",
+        "complex-user-roles",
+        "third-party-integrations",
+        "scalable-cloud-infrastructure"
+      ]
+    }
   },
   {
     "projectId": "ai-finance-coach",
@@ -82,7 +127,51 @@
       "JavaScript",
       "TypeScript",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "AI-powered personal finance application with Hebrew banking integration, expense categorization, and multi-language support. Features CSV processing, AI insights, budgeting tips, and RTL layout support. Built with modern full-stack technologies including Next.js, NestJS, and OpenAI integration.",
+      "tags": [
+        "ai-finance",
+        "banking-integration",
+        "expense-tracking",
+        "hebrew-support",
+        "rtl-layout",
+        "csv-processing",
+        "budgeting-app",
+        "multi-language",
+        "openai-integration",
+        "full-stack",
+        "personal-finance",
+        "data-analysis",
+        "financial-literacy"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "web-mobile-app",
+      "domain": "finance",
+      "learningOutcomes": [
+        "full-stack-development",
+        "ai-integration",
+        "multi-language-support",
+        "financial-applications",
+        "rtl-layout-development",
+        "csv-data-processing",
+        "api-integration",
+        "database-design",
+        "user-experience-design",
+        "financial-technology"
+      ],
+      "complexityFactors": [
+        "ai-integration",
+        "multi-language-support",
+        "financial-data-processing",
+        "rtl-layout",
+        "csv-parsing",
+        "hebrew-text-processing"
+      ]
+    }
   },
   {
     "projectId": "cyber-anomaly-monitor",
@@ -116,7 +205,52 @@
     "programmingLanguages": [
       "Python",
       "JavaScript"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced cybersecurity monitoring system with real-time log analysis, machine learning anomaly detection, and multi-language alerting. Features log streaming, ML models, incident management, and integration with popular collaboration tools. Built with Python, FastAPI, and modern ML/DevOps technologies.",
+      "tags": [
+        "cybersecurity",
+        "anomaly-detection",
+        "machine-learning",
+        "log-analysis",
+        "real-time-monitoring",
+        "security-dashboard",
+        "ml-engineering",
+        "devops",
+        "kafka-streaming",
+        "elasticsearch",
+        "incident-response",
+        "security-operations",
+        "mlops",
+        "threat-detection"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "security-platform",
+      "domain": "security",
+      "learningOutcomes": [
+        "cybersecurity-monitoring",
+        "machine-learning-engineering",
+        "real-time-data-processing",
+        "security-operations",
+        "mlops-practices",
+        "log-analysis",
+        "anomaly-detection",
+        "incident-management",
+        "streaming-architectures",
+        "security-automation"
+      ],
+      "complexityFactors": [
+        "real-time-processing",
+        "ml-model-development",
+        "multi-source-integration",
+        "security-critical-system",
+        "scalable-architecture",
+        "multi-language-support"
+      ]
+    }
   },
   {
     "projectId": "healthcare-wearables",
@@ -151,7 +285,52 @@
       "JavaScript",
       "Python",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Healthcare analytics dashboard for wearable device data with AI-powered pattern recognition and Hebrew language support. Features data ingestion, anomaly detection, trend analysis, and automated reporting. Integrates with health APIs and provides clinician-friendly insights.",
+      "tags": [
+        "healthcare",
+        "wearable-devices",
+        "health-analytics",
+        "ai-patterns",
+        "data-visualization",
+        "health-data",
+        "biometric-analysis",
+        "clinical-insights",
+        "hebrew-support",
+        "health-api",
+        "data-science",
+        "healthcare-technology",
+        "patient-monitoring",
+        "medical-analytics"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "healthcare-dashboard",
+      "domain": "healthcare",
+      "learningOutcomes": [
+        "healthcare-data-analysis",
+        "wearable-data-processing",
+        "ai-pattern-recognition",
+        "health-api-integration",
+        "data-visualization",
+        "biometric-analysis",
+        "clinical-data-handling",
+        "healthcare-privacy",
+        "automated-reporting",
+        "medical-technology"
+      ],
+      "complexityFactors": [
+        "healthcare-data-privacy",
+        "multi-source-data-integration",
+        "ai-model-development",
+        "clinical-requirements",
+        "hebrew-language-support",
+        "healthcare-compliance"
+      ]
+    }
   },
   {
     "projectId": "rag-knowledge-assistant",
@@ -185,7 +364,52 @@
       "JavaScript",
       "TypeScript",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced RAG (Retrieval-Augmented Generation) system for bilingual document processing with Hebrew and English support. Features document indexing, semantic search, citation tracking, and RTL-aware interface. Built with modern AI technologies including OpenAI, LangChain, and vector databases.",
+      "tags": [
+        "rag-system",
+        "document-processing",
+        "semantic-search",
+        "bilingual-support",
+        "hebrew-english",
+        "rtl-support",
+        "ai-search",
+        "document-indexing",
+        "vector-database",
+        "langchain",
+        "openai-integration",
+        "knowledge-management",
+        "regulatory-compliance",
+        "legal-documents"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "ai-search-platform",
+      "domain": "legal-education",
+      "learningOutcomes": [
+        "rag-system-development",
+        "vector-database-design",
+        "semantic-search",
+        "ai-integration",
+        "bilingual-processing",
+        "document-chunking",
+        "embedding-generation",
+        "citation-tracking",
+        "rtl-interface",
+        "knowledge-retrieval"
+      ],
+      "complexityFactors": [
+        "ai-model-integration",
+        "bilingual-processing",
+        "vector-database-design",
+        "document-chunking",
+        "rtl-interface",
+        "regulatory-compliance"
+      ]
+    }
   },
   {
     "projectId": "smart-job-match",
@@ -219,7 +443,52 @@
       "JavaScript",
       "TypeScript",
       "Python"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "AI-powered job matching and resume tailoring system with bilingual support for Hebrew and English. Features GitHub profile analysis, job description parsing, skill matching, and automated resume generation. Integrates with AI services for personalized career guidance.",
+      "tags": [
+        "job-matching",
+        "resume-builder",
+        "career-tools",
+        "github-integration",
+        "ai-resume",
+        "bilingual-support",
+        "hebrew-english",
+        "skill-matching",
+        "career-development",
+        "job-search",
+        "ai-career-coach",
+        "resume-optimization",
+        "military-experience",
+        "career-guidance"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "career-platform",
+      "domain": "career-development",
+      "learningOutcomes": [
+        "ai-integration",
+        "github-api-usage",
+        "natural-language-processing",
+        "career-tools-development",
+        "bilingual-application",
+        "resume-optimization",
+        "skill-analysis",
+        "job-matching-algorithms",
+        "career-automation",
+        "professional-development"
+      ],
+      "complexityFactors": [
+        "ai-integration",
+        "bilingual-processing",
+        "github-api-integration",
+        "resume-generation",
+        "skill-matching-algorithms",
+        "career-data-privacy"
+      ]
+    }
   },
   {
     "projectId": "marketing-automations-hub",
@@ -253,7 +522,52 @@
     "programmingLanguages": [
       "Python",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Marketing automation platform integrating multiple advertising platforms with automated data processing, anomaly detection, and bilingual reporting. Features ETL pipelines, marketing analytics, automated alerts, and integration with collaboration tools. Built with modern data engineering technologies.",
+      "tags": [
+        "marketing-automation",
+        "data-engineering",
+        "marketing-analytics",
+        "etl-pipelines",
+        "anomaly-detection",
+        "multi-platform-integration",
+        "facebook-ads",
+        "google-ads",
+        "marketing-metrics",
+        "automated-reporting",
+        "bilingual-support",
+        "hebrew-campaigns",
+        "slack-integration",
+        "data-visualization"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "marketing-platform",
+      "domain": "marketing",
+      "learningOutcomes": [
+        "data-engineering",
+        "marketing-automation",
+        "etl-development",
+        "marketing-analytics",
+        "anomaly-detection",
+        "multi-platform-integration",
+        "automated-reporting",
+        "data-visualization",
+        "marketing-metrics",
+        "business-intelligence"
+      ],
+      "complexityFactors": [
+        "multi-platform-integration",
+        "etl-pipeline-development",
+        "anomaly-detection-algorithms",
+        "marketing-data-processing",
+        "bilingual-support",
+        "real-time-data-processing"
+      ]
+    }
   },
   {
     "projectId": "gitops-cicd-starter",
@@ -286,7 +600,52 @@
       "JavaScript",
       "Go",
       "YAML"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Production-ready GitOps CI/CD starter kit with automated testing, Docker containerization, infrastructure as code, and security scanning. Features GitHub Actions workflows, Kubernetes deployment, Terraform provisioning, and comprehensive DevOps practices for microservices.",
+      "tags": [
+        "gitops",
+        "ci-cd",
+        "devops",
+        "kubernetes",
+        "docker",
+        "terraform",
+        "infrastructure-as-code",
+        "github-actions",
+        "microservices",
+        "helm",
+        "security-scanning",
+        "automated-testing",
+        "preview-deployments",
+        "production-ready"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "devops-template",
+      "domain": "devops",
+      "learningOutcomes": [
+        "gitops-practices",
+        "ci-cd-pipeline-development",
+        "kubernetes-deployment",
+        "infrastructure-automation",
+        "docker-containerization",
+        "terraform-provisioning",
+        "helm-chart-development",
+        "security-automation",
+        "microservice-architecture",
+        "production-deployment"
+      ],
+      "complexityFactors": [
+        "multi-tool-integration",
+        "infrastructure-automation",
+        "security-compliance",
+        "production-deployment",
+        "multi-environment-management",
+        "devops-automation"
+      ]
+    }
   },
   {
     "projectId": "sports-analytics-saas",
@@ -321,7 +680,52 @@
       "JavaScript",
       "TypeScript",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Sports analytics SaaS platform with machine learning-powered match prediction and explainable AI insights. Features predictive modeling, subscription management, API development, and comprehensive sports data analysis. Built with Python ML stack and modern web technologies.",
+      "tags": [
+        "sports-analytics",
+        "machine-learning",
+        "predictive-modeling",
+        "saas-platform",
+        "sports-data",
+        "ml-engineering",
+        "feature-engineering",
+        "xgboost",
+        "subscription-business",
+        "api-development",
+        "data-science",
+        "sports-prediction",
+        "explainable-ai",
+        "model-monitoring"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "ml-saas",
+      "domain": "sports",
+      "learningOutcomes": [
+        "machine-learning-engineering",
+        "predictive-modeling",
+        "feature-engineering",
+        "saas-development",
+        "sports-analytics",
+        "ml-model-deployment",
+        "subscription-management",
+        "api-development",
+        "data-science",
+        "business-intelligence"
+      ],
+      "complexityFactors": [
+        "ml-model-development",
+        "saas-architecture",
+        "subscription-management",
+        "real-time-predictions",
+        "data-pipeline-development",
+        "model-explainability"
+      ]
+    }
   },
   {
     "projectId": "nonprofit-volunteer-match",
@@ -355,7 +759,52 @@
       "JavaScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Volunteer matching platform connecting NGOs with volunteers using AI-powered skill matching and multi-language support. Features matching algorithms, AI-generated tasks, progress tracking, and comprehensive volunteer management. Built with modern web technologies and AI integration.",
+      "tags": [
+        "volunteer-matching",
+        "nonprofit-platform",
+        "ai-matching",
+        "community-service",
+        "ngo-platform",
+        "skill-matching",
+        "volunteer-management",
+        "ai-tasks",
+        "progress-tracking",
+        "badge-system",
+        "multi-language",
+        "hebrew-arabic",
+        "community-engagement",
+        "social-impact"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "community-platform",
+      "domain": "social-impact",
+      "learningOutcomes": [
+        "matching-algorithms",
+        "ai-integration",
+        "volunteer-management",
+        "community-platforms",
+        "multi-language-support",
+        "user-experience-design",
+        "nonprofit-technology",
+        "social-impact-apps",
+        "progress-tracking",
+        "community-engagement"
+      ],
+      "complexityFactors": [
+        "matching-algorithm-development",
+        "ai-integration",
+        "multi-language-support",
+        "user-matching",
+        "volunteer-coordination",
+        "ngo-administration"
+      ]
+    }
   },
   {
     "projectId": "supply-chain-risk-radar",
@@ -392,7 +841,52 @@
       "TypeScript",
       "Python",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Supply chain risk monitoring dashboard with AI-powered vendor news analysis, risk classification, and automated procurement team alerts. Features web scraping, LLM risk assessment, real-time monitoring, and mitigation recommendations. Built with Next.js, Python, and AI technologies for comprehensive supply chain risk management.",
+      "tags": [
+        "supply-chain-risk",
+        "vendor-monitoring",
+        "risk-classification",
+        "ai-risk-assessment",
+        "procurement-alerts",
+        "web-scraping",
+        "llm-analysis",
+        "risk-scoring",
+        "time-series-trends",
+        "mitigation-recommendations",
+        "procurement-technology",
+        "vendor-intelligence",
+        "risk-monitoring",
+        "supply-chain-analytics"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "risk-monitoring-platform",
+      "domain": "supply-chain",
+      "learningOutcomes": [
+        "supply-chain-risk-management",
+        "ai-risk-classification",
+        "web-scraping-automation",
+        "llm-integration",
+        "risk-scoring-algorithms",
+        "procurement-technology",
+        "vendor-monitoring-systems",
+        "risk-mitigation-strategies",
+        "time-series-analysis",
+        "supply-chain-analytics"
+      ],
+      "complexityFactors": [
+        "ai-risk-classification",
+        "multi-language-processing",
+        "real-time-monitoring",
+        "risk-scoring-algorithms",
+        "procurement-integration",
+        "vendor-data-analysis"
+      ]
+    }
   },
   {
     "projectId": "ai-music-playlist-curator",
@@ -420,7 +914,52 @@
     "programmingLanguages": [
       "JavaScript",
       "TypeScript"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "AI-powered music playlist curator that generates personalized Spotify playlists using GPT prompts and mood detection from listening history. Features Spotify API integration, AI mood analysis, personalized playlist generation, and modern web interface. Built with Next.js, TypeScript, and AI integration for intelligent music curation.",
+      "tags": [
+        "ai-music-curation",
+        "spotify-integration",
+        "playlist-generation",
+        "mood-detection",
+        "ai-playlists",
+        "music-recommendations",
+        "spotify-api",
+        "openai-integration",
+        "personalized-music",
+        "music-ai",
+        "playlist-curation",
+        "mood-analysis",
+        "music-technology",
+        "ai-music-app"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "music-app",
+      "domain": "entertainment",
+      "learningOutcomes": [
+        "spotify-api-integration",
+        "ai-music-curation",
+        "mood-detection-algorithms",
+        "playlist-generation",
+        "ai-integration",
+        "music-recommendations",
+        "personalized-content",
+        "music-technology",
+        "ai-applications",
+        "music-platforms"
+      ],
+      "complexityFactors": [
+        "spotify-api-integration",
+        "ai-mood-detection",
+        "playlist-generation-algorithms",
+        "music-data-analysis",
+        "ai-integration",
+        "personalized-recommendations"
+      ]
+    }
   },
   {
     "projectId": "pet-care-reminder-bot",
@@ -445,7 +984,52 @@
     ],
     "programmingLanguages": [
       "Python"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Telegram bot for pet care reminders with Hebrew language support and AI-generated pet care tips. Features scheduling, notification system, and localized content generation. Perfect for learning bot development, API integration, and AI services.",
+      "tags": [
+        "telegram-bot",
+        "pet-care",
+        "reminder-bot",
+        "hebrew-support",
+        "ai-tips",
+        "bot-development",
+        "telegram-api",
+        "scheduling",
+        "notifications",
+        "pet-health",
+        "ai-integration",
+        "localization",
+        "sqlite-database",
+        "python-bot"
+      ],
+      "skillLevels": [
+        "beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "telegram-bot",
+      "domain": "pet-care",
+      "learningOutcomes": [
+        "bot-development",
+        "telegram-api-integration",
+        "scheduling-systems",
+        "ai-integration",
+        "database-management",
+        "localization",
+        "notification-systems",
+        "python-development",
+        "api-integration",
+        "pet-care-automation"
+      ],
+      "complexityFactors": [
+        "telegram-api-integration",
+        "scheduling-logic",
+        "ai-integration",
+        "hebrew-language-support",
+        "database-design",
+        "notification-management"
+      ]
+    }
   },
   {
     "projectId": "streetwear-outfit-recommender",
@@ -473,7 +1057,52 @@
     "programmingLanguages": [
       "JavaScript",
       "Python"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "AI-powered streetwear outfit recommendation app that suggests fashion combinations based on user wardrobe items and trending styles. Features image upload, AI outfit matching, trend analysis, and personalized fashion recommendations. Built with React, FastAPI, and TensorFlow.js for intelligent fashion curation.",
+      "tags": [
+        "fashion-recommendation",
+        "streetwear-app",
+        "outfit-matching",
+        "ai-fashion",
+        "wardrobe-upload",
+        "trend-analysis",
+        "fashion-ai",
+        "outfit-recommendations",
+        "streetwear-style",
+        "fashion-technology",
+        "ai-outfits",
+        "trending-looks",
+        "fashion-curation",
+        "style-recommendations"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "fashion-app",
+      "domain": "fashion",
+      "learningOutcomes": [
+        "ai-fashion-recommendations",
+        "image-upload-processing",
+        "outfit-matching-algorithms",
+        "trend-analysis",
+        "fashion-ai",
+        "wardrobe-management",
+        "style-recommendations",
+        "fashion-technology",
+        "ai-curation",
+        "fashion-platforms"
+      ],
+      "complexityFactors": [
+        "ai-outfit-matching",
+        "image-processing",
+        "trend-analysis-algorithms",
+        "fashion-recommendations",
+        "wardrobe-management",
+        "style-curation"
+      ]
+    }
   },
   {
     "projectId": "ai-sports-highlight-generator",
@@ -500,7 +1129,52 @@
     ],
     "programmingLanguages": [
       "Python"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced AI sports highlight generator that automatically creates highlight clips from sports match videos with intelligent moment detection and caption generation. Features video processing, audio analysis, score change detection, and automated highlight creation. Built with Python, OpenCV, PyTorch, and computer vision technologies for sports content automation.",
+      "tags": [
+        "ai-sports-highlights",
+        "video-processing",
+        "highlight-generation",
+        "sports-video",
+        "computer-vision",
+        "audio-analysis",
+        "score-detection",
+        "video-segmentation",
+        "highlight-clips",
+        "sports-technology",
+        "ai-video-editing",
+        "moment-detection",
+        "sports-content",
+        "video-automation"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "ai-video-tool",
+      "domain": "sports",
+      "learningOutcomes": [
+        "ai-video-processing",
+        "computer-vision",
+        "sports-highlight-generation",
+        "audio-analysis",
+        "video-segmentation",
+        "moment-detection",
+        "highlight-clip-creation",
+        "sports-technology",
+        "ai-video-editing",
+        "video-automation"
+      ],
+      "complexityFactors": [
+        "video-processing",
+        "ai-moment-detection",
+        "audio-video-synchronization",
+        "highlight-generation",
+        "computer-vision-algorithms",
+        "sports-content-analysis"
+      ]
+    }
   },
   {
     "projectId": "cooking-recipe-generator",
@@ -527,7 +1201,52 @@
       "JavaScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "AI-powered cooking recipe generator that creates personalized recipes from available ingredients. Features ingredient input, AI recipe generation, step-by-step instructions, and recipe storage. Built with Vue.js, Node.js, and OpenAI integration for culinary creativity.",
+      "tags": [
+        "recipe-generator",
+        "cooking-app",
+        "ai-recipes",
+        "ingredient-matching",
+        "culinary-ai",
+        "recipe-management",
+        "food-app",
+        "ai-cooking",
+        "ingredient-input",
+        "recipe-storage",
+        "cooking-instructions",
+        "personalized-recipes",
+        "food-technology",
+        "culinary-innovation"
+      ],
+      "skillLevels": [
+        "beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "food-app",
+      "domain": "culinary",
+      "learningOutcomes": [
+        "ai-integration",
+        "full-stack-development",
+        "recipe-management",
+        "ingredient-processing",
+        "user-input-handling",
+        "ai-content-generation",
+        "food-app-development",
+        "database-design",
+        "api-integration",
+        "culinary-technology"
+      ],
+      "complexityFactors": [
+        "ai-integration",
+        "ingredient-matching",
+        "recipe-generation",
+        "user-input-validation",
+        "recipe-storage",
+        "cooking-instructions"
+      ]
+    }
   },
   {
     "projectId": "travel-photo-journal",
@@ -553,7 +1272,52 @@
     "programmingLanguages": [
       "JavaScript",
       "TypeScript"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Travel photo journal web app with AI-powered caption generation and digital trip diary creation. Features photo upload, cloud storage, AI caption generation, and shareable travel documentation. Built with Next.js, Firebase, and AI integration for creating memorable travel experiences.",
+      "tags": [
+        "travel-journal",
+        "photo-upload",
+        "ai-captions",
+        "trip-diary",
+        "travel-app",
+        "photo-management",
+        "ai-caption-generation",
+        "travel-documentation",
+        "cloud-storage",
+        "travel-technology",
+        "photo-journal",
+        "ai-travel",
+        "trip-sharing",
+        "travel-memories"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "travel-app",
+      "domain": "travel",
+      "learningOutcomes": [
+        "photo-upload-systems",
+        "ai-caption-generation",
+        "travel-app-development",
+        "cloud-storage-integration",
+        "photo-management",
+        "ai-integration",
+        "travel-documentation",
+        "photo-journal-platforms",
+        "travel-technology",
+        "ai-travel-apps"
+      ],
+      "complexityFactors": [
+        "photo-upload-processing",
+        "ai-caption-generation",
+        "cloud-storage-integration",
+        "travel-documentation",
+        "photo-management",
+        "ai-integration"
+      ]
+    }
   },
   {
     "projectId": "fitness-progress-tracker",
@@ -579,7 +1343,52 @@
     "programmingLanguages": [
       "JavaScript",
       "TypeScript"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Mobile fitness progress tracking app with AI-powered workout insights and visual progress analytics. Features workout logging, AI feedback generation, progress visualization, and comprehensive fitness tracking. Built with React Native, SQLite, and AI integration for personalized fitness guidance.",
+      "tags": [
+        "fitness-tracker",
+        "workout-logging",
+        "ai-fitness-insights",
+        "progress-tracking",
+        "fitness-app",
+        "workout-history",
+        "ai-feedback",
+        "progress-charts",
+        "fitness-analytics",
+        "mobile-fitness",
+        "workout-tracking",
+        "ai-fitness-coach",
+        "fitness-visualization",
+        "personal-fitness"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "fitness-app",
+      "domain": "health-fitness",
+      "learningOutcomes": [
+        "mobile-fitness-apps",
+        "workout-tracking-systems",
+        "ai-fitness-insights",
+        "progress-visualization",
+        "fitness-analytics",
+        "ai-integration",
+        "workout-logging",
+        "fitness-technology",
+        "mobile-development",
+        "fitness-platforms"
+      ],
+      "complexityFactors": [
+        "workout-tracking-algorithms",
+        "ai-feedback-generation",
+        "progress-visualization",
+        "fitness-data-management",
+        "ai-integration",
+        "mobile-fitness-tracking"
+      ]
+    }
   },
   {
     "projectId": "photography-portfolio-builder",
@@ -606,7 +1415,52 @@
       "JavaScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Minimalist photography portfolio builder with AI-generated captions and SEO-optimized structure. Features photo gallery management, automated caption generation, static site export, and professional portfolio creation. Built with Gatsby.js, GraphQL, and AI integration for photographers to showcase their work effectively.",
+      "tags": [
+        "photography-portfolio",
+        "portfolio-builder",
+        "ai-captions",
+        "photo-galleries",
+        "seo-optimization",
+        "static-site",
+        "photography-app",
+        "ai-caption-generation",
+        "portfolio-website",
+        "photography-technology",
+        "gallery-management",
+        "seo-friendly",
+        "photography-showcase",
+        "portfolio-creation"
+      ],
+      "skillLevels": [
+        "beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "portfolio-builder",
+      "domain": "photography",
+      "learningOutcomes": [
+        "portfolio-builder-development",
+        "ai-caption-generation",
+        "photo-gallery-management",
+        "seo-optimization",
+        "static-site-generation",
+        "photography-technology",
+        "portfolio-websites",
+        "ai-integration",
+        "gallery-systems",
+        "photography-platforms"
+      ],
+      "complexityFactors": [
+        "ai-caption-generation",
+        "photo-gallery-management",
+        "seo-optimization",
+        "static-site-generation",
+        "portfolio-creation",
+        "photography-technology"
+      ]
+    }
   },
   {
     "projectId": "indie-music-discovery-app",
@@ -631,7 +1485,52 @@
     ],
     "programmingLanguages": [
       "Dart"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Indie music discovery mobile app that recommends emerging artists and generates weekly discovery playlists using Spotify's API. Features artist recommendations, automated playlist generation, weekly reports, and music discovery algorithms. Built with Flutter, Dart, and Spotify integration for discovering new independent music.",
+      "tags": [
+        "indie-music",
+        "music-discovery",
+        "spotify-api",
+        "artist-recommendations",
+        "discovery-playlists",
+        "indie-artists",
+        "music-recommendations",
+        "weekly-reports",
+        "music-discovery-app",
+        "indie-music-app",
+        "playlist-generation",
+        "music-curation",
+        "indie-discovery",
+        "music-technology"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "music-discovery-app",
+      "domain": "entertainment",
+      "learningOutcomes": [
+        "spotify-api-integration",
+        "music-discovery-algorithms",
+        "artist-recommendations",
+        "playlist-generation",
+        "indie-music-curation",
+        "music-technology",
+        "discovery-algorithms",
+        "music-recommendations",
+        "indie-music-platforms",
+        "music-discovery-systems"
+      ],
+      "complexityFactors": [
+        "spotify-api-integration",
+        "music-discovery-algorithms",
+        "artist-recommendations",
+        "playlist-generation",
+        "indie-music-curation",
+        "music-discovery-technology"
+      ]
+    }
   },
   {
     "projectId": "mindfulness-journal",
@@ -658,7 +1557,52 @@
       "JavaScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Mindfulness journaling web app with AI-generated reflection prompts and comprehensive mood analysis tracking. Features daily journaling, AI prompt generation, mood tracking dashboard, and personal wellness insights. Built with React, Firebase, and AI integration for supporting mental health and mindfulness practices.",
+      "tags": [
+        "mindfulness-journal",
+        "journaling-app",
+        "ai-prompts",
+        "mood-tracking",
+        "mindfulness-app",
+        "reflection-prompts",
+        "mood-analysis",
+        "wellness-app",
+        "ai-journaling",
+        "mental-health",
+        "mindfulness-technology",
+        "daily-journaling",
+        "mood-dashboard",
+        "wellness-tracking"
+      ],
+      "skillLevels": [
+        "beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "wellness-app",
+      "domain": "mental-health",
+      "learningOutcomes": [
+        "mindfulness-app-development",
+        "ai-prompt-generation",
+        "mood-tracking-systems",
+        "journaling-platforms",
+        "wellness-technology",
+        "ai-integration",
+        "mental-health-apps",
+        "mindfulness-technology",
+        "mood-analysis",
+        "wellness-platforms"
+      ],
+      "complexityFactors": [
+        "ai-prompt-generation",
+        "mood-tracking-algorithms",
+        "journaling-systems",
+        "wellness-data-management",
+        "ai-integration",
+        "mindfulness-technology"
+      ]
+    }
   },
   {
     "projectId": "civic-issue-reporting",
@@ -693,7 +1637,52 @@
       "JavaScript",
       "TypeScript",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Civic engagement platform for reporting municipal issues with geo-tagging, photo uploads, and Hebrew RTL support. Features mobile and web interfaces, workflow management, public transparency maps, and automated reporting. Connects citizens with local government for community improvement.",
+      "tags": [
+        "civic-engagement",
+        "municipal-platform",
+        "issue-reporting",
+        "geo-tagging",
+        "photo-upload",
+        "hebrew-rtl",
+        "mobile-web",
+        "workflow-management",
+        "transparency-map",
+        "community-improvement",
+        "local-government",
+        "accessibility",
+        "public-service",
+        "civic-technology"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "civic-platform",
+      "domain": "government",
+      "learningOutcomes": [
+        "mobile-web-development",
+        "geo-tagging-systems",
+        "workflow-management",
+        "civic-technology",
+        "photo-upload-systems",
+        "rtl-interface-development",
+        "mapping-integration",
+        "public-service-apps",
+        "transparency-systems",
+        "community-engagement"
+      ],
+      "complexityFactors": [
+        "multi-platform-development",
+        "geo-tagging-integration",
+        "photo-processing",
+        "rtl-interface",
+        "workflow-automation",
+        "government-integration"
+      ]
+    }
   },
   {
     "projectId": "accessible-learning-converter",
@@ -728,7 +1717,52 @@
       "JavaScript",
       "TypeScript",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced accessible learning materials converter that transforms multilingual educational PDFs into accessible HTML/EPUB formats with AI-powered alt-text generation and reading-level summaries. Features OCR processing, vision AI integration, multi-language support, and accessibility compliance. Built with Python, FastAPI, and AI vision technologies for inclusive education.",
+      "tags": [
+        "accessible-learning",
+        "pdf-converter",
+        "multilingual-support",
+        "alt-text-generation",
+        "reading-level-summaries",
+        "ocr-processing",
+        "vision-ai",
+        "accessibility-compliance",
+        "educational-technology",
+        "hebrew-arabic-english",
+        "html-epub-conversion",
+        "inclusive-education",
+        "ai-vision",
+        "accessibility-technology"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "accessibility-tool",
+      "domain": "education",
+      "learningOutcomes": [
+        "accessible-learning-technology",
+        "pdf-conversion-systems",
+        "multilingual-processing",
+        "ai-vision-integration",
+        "ocr-processing",
+        "accessibility-compliance",
+        "educational-technology",
+        "inclusive-education",
+        "ai-vision-applications",
+        "accessibility-tools"
+      ],
+      "complexityFactors": [
+        "multilingual-processing",
+        "ai-vision-integration",
+        "ocr-processing",
+        "accessibility-compliance",
+        "multi-format-conversion",
+        "educational-content-processing"
+      ]
+    }
   },
   {
     "projectId": "carbon-footprint-tracker",
@@ -760,7 +1794,52 @@
       "JavaScript",
       "TypeScript",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Carbon footprint tracking dashboard for small businesses with emissions calculation, Hebrew reduction recommendations, and sustainability trend visualization. Features energy data logging, transportation tracking, procurement analysis, and AI-powered sustainability insights. Built with Next.js, TypeScript, and AI integration for environmental impact management.",
+      "tags": [
+        "carbon-footprint",
+        "sustainability-tracking",
+        "emissions-calculation",
+        "hebrew-recommendations",
+        "environmental-impact",
+        "energy-tracking",
+        "transportation-tracking",
+        "procurement-analysis",
+        "sustainability-dashboard",
+        "co2-tracking",
+        "environmental-technology",
+        "sustainability-recommendations",
+        "carbon-accounting",
+        "green-business"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "sustainability-platform",
+      "domain": "environmental",
+      "learningOutcomes": [
+        "carbon-footprint-tracking",
+        "emissions-calculation",
+        "sustainability-dashboards",
+        "environmental-impact-analysis",
+        "energy-data-tracking",
+        "sustainability-technology",
+        "carbon-accounting",
+        "environmental-recommendations",
+        "sustainability-visualization",
+        "green-business-technology"
+      ],
+      "complexityFactors": [
+        "emissions-calculation-algorithms",
+        "multi-source-data-integration",
+        "hebrew-language-support",
+        "sustainability-data-analysis",
+        "environmental-impact-modeling",
+        "sustainability-recommendations"
+      ]
+    }
   },
   {
     "projectId": "disaster-relief-coordination",
@@ -794,7 +1873,52 @@
       "Python",
       "JavaScript",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced disaster relief coordination platform with real-time resource management, volunteer matching, and bilingual Hebrew/English support. Features shelter registration, inventory tracking, volunteer coordination, and real-time mapping. Critical infrastructure for emergency response and humanitarian aid coordination.",
+      "tags": [
+        "disaster-relief",
+        "emergency-response",
+        "resource-coordination",
+        "volunteer-management",
+        "shelter-coordination",
+        "inventory-tracking",
+        "real-time-mapping",
+        "bilingual-support",
+        "hebrew-english",
+        "humanitarian-aid",
+        "emergency-management",
+        "nonprofit-coordination",
+        "crisis-response",
+        "resource-allocation"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "emergency-platform",
+      "domain": "humanitarian",
+      "learningOutcomes": [
+        "emergency-response-systems",
+        "real-time-coordination",
+        "resource-management",
+        "volunteer-coordination",
+        "disaster-management",
+        "humanitarian-technology",
+        "real-time-mapping",
+        "bilingual-platforms",
+        "crisis-management",
+        "emergency-automation"
+      ],
+      "complexityFactors": [
+        "real-time-coordination",
+        "emergency-critical-system",
+        "multi-organization-coordination",
+        "real-time-mapping",
+        "bilingual-support",
+        "disaster-response-automation"
+      ]
+    }
   },
   {
     "projectId": "open-source-mentorship",
@@ -824,7 +1948,52 @@
       "JavaScript",
       "TypeScript",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Open source mentorship matching portal connecting junior developers with experienced maintainers based on technical skills, availability, and bilingual Hebrew/English communication preferences. Features profile matching, automated email generation, session tracking, and feedback management. Built with Next.js, Prisma, and AI integration for fostering open source collaboration.",
+      "tags": [
+        "open-source-mentorship",
+        "mentor-matching",
+        "junior-developers",
+        "open-source-maintainers",
+        "bilingual-support",
+        "hebrew-english",
+        "skill-matching",
+        "mentorship-portal",
+        "open-source-collaboration",
+        "mentor-mentee",
+        "open-source-community",
+        "mentorship-matching",
+        "developer-mentorship",
+        "open-source-technology"
+      ],
+      "skillLevels": [
+        "beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "mentorship-platform",
+      "domain": "open-source",
+      "learningOutcomes": [
+        "mentorship-matching-systems",
+        "open-source-community-building",
+        "bilingual-platform-development",
+        "skill-matching-algorithms",
+        "mentorship-coordination",
+        "open-source-technology",
+        "mentor-mentee-matching",
+        "community-platforms",
+        "open-source-collaboration",
+        "mentorship-technology"
+      ],
+      "complexityFactors": [
+        "mentorship-matching-algorithms",
+        "bilingual-support",
+        "open-source-community-coordination",
+        "skill-matching",
+        "mentorship-coordination",
+        "open-source-technology"
+      ]
+    }
   },
   {
     "projectId": "ai-code-review-assistant",
@@ -855,7 +2024,52 @@
     "programmingLanguages": [
       "JavaScript",
       "TypeScript"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "AI-powered code review assistant that analyzes pull requests for improvements, security issues, and provides bilingual learning resources. Features automated code analysis, security scanning, OWASP compliance checking, and educational content generation. Helps junior developers learn best practices and security awareness.",
+      "tags": [
+        "code-review",
+        "ai-assistant",
+        "security-scanning",
+        "owasp-compliance",
+        "pull-request-analysis",
+        "code-quality",
+        "security-awareness",
+        "bilingual-support",
+        "hebrew-english",
+        "learning-resources",
+        "github-integration",
+        "code-improvement",
+        "privacy-protection",
+        "developer-education"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "developer-tool",
+      "domain": "software-development",
+      "learningOutcomes": [
+        "ai-code-analysis",
+        "security-scanning",
+        "code-review-automation",
+        "owasp-compliance",
+        "github-api-integration",
+        "code-quality-assessment",
+        "security-best-practices",
+        "bilingual-content",
+        "developer-education",
+        "automated-review-systems"
+      ],
+      "complexityFactors": [
+        "ai-code-analysis",
+        "security-scanning",
+        "github-api-integration",
+        "bilingual-support",
+        "code-quality-assessment",
+        "educational-content-generation"
+      ]
+    }
   },
   {
     "projectId": "iot-community-garden",
@@ -888,7 +2102,52 @@
       "Python",
       "JavaScript",
       "TypeScript"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "IoT monitoring system for community gardens with soil moisture and temperature sensors, automated watering recommendations, and Hebrew language support. Features MQTT data collection, time-series analysis, SMS alerts, and nonprofit coordinator dashboard. Perfect for learning IoT development and environmental monitoring.",
+      "tags": [
+        "iot-monitoring",
+        "community-garden",
+        "soil-monitoring",
+        "temperature-sensors",
+        "moisture-sensors",
+        "automated-watering",
+        "mqtt-protocol",
+        "time-series-data",
+        "hebrew-support",
+        "environmental-monitoring",
+        "smart-gardening",
+        "sensor-data",
+        "watering-automation",
+        "nonprofit-technology"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "iot-platform",
+      "domain": "environmental",
+      "learningOutcomes": [
+        "iot-development",
+        "sensor-integration",
+        "mqtt-protocol",
+        "time-series-analysis",
+        "environmental-monitoring",
+        "automated-systems",
+        "sensor-data-processing",
+        "hebrew-interface",
+        "nonprofit-technology",
+        "smart-agriculture"
+      ],
+      "complexityFactors": [
+        "iot-hardware-integration",
+        "real-time-data-processing",
+        "sensor-calibration",
+        "hebrew-language-support",
+        "automated-recommendations",
+        "environmental-data-analysis"
+      ]
+    }
   },
   {
     "projectId": "healthcare-appointment-predictor",
@@ -920,7 +2179,52 @@
     "programmingLanguages": [
       "Python",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced healthcare appointment no-show prediction system using machine learning to optimize clinic scheduling and reduce missed appointments. Features behavioral analysis, temporal feature engineering, predictive modeling, and automated reminder workflows. Built with Python ML stack and healthcare data analytics.",
+      "tags": [
+        "healthcare-prediction",
+        "appointment-optimization",
+        "no-show-prediction",
+        "machine-learning",
+        "healthcare-analytics",
+        "behavioral-analysis",
+        "temporal-features",
+        "predictive-modeling",
+        "clinic-optimization",
+        "healthcare-ml",
+        "appointment-scheduling",
+        "patient-behavior",
+        "healthcare-automation",
+        "ml-healthcare"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "healthcare-ml",
+      "domain": "healthcare",
+      "learningOutcomes": [
+        "healthcare-ml",
+        "predictive-modeling",
+        "behavioral-analysis",
+        "temporal-feature-engineering",
+        "healthcare-data-analytics",
+        "appointment-optimization",
+        "healthcare-automation",
+        "ml-model-deployment",
+        "healthcare-workflows",
+        "patient-behavior-analysis"
+      ],
+      "complexityFactors": [
+        "healthcare-data-privacy",
+        "ml-model-development",
+        "behavioral-prediction",
+        "healthcare-compliance",
+        "real-time-predictions",
+        "healthcare-workflow-integration"
+      ]
+    }
   },
   {
     "projectId": "ngo-donation-impact",
@@ -952,7 +2256,52 @@
       "JavaScript",
       "TypeScript",
       "SQL"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "NGO donation impact visualization platform with Hebrew language support and AI-generated impact narratives. Features donation tracking, program expense modeling, impact allocation analysis, and donor-friendly visualizations. Built with modern web technologies and data visualization tools for transparency reporting.",
+      "tags": [
+        "ngo-impact",
+        "donation-tracking",
+        "impact-visualization",
+        "transparency-reporting",
+        "hebrew-support",
+        "donor-analytics",
+        "program-expenses",
+        "impact-allocation",
+        "data-visualization",
+        "ngo-transparency",
+        "donor-engagement",
+        "compliance-reporting",
+        "impact-narratives",
+        "nonprofit-analytics"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "analytics-dashboard",
+      "domain": "nonprofit",
+      "learningOutcomes": [
+        "impact-visualization",
+        "donation-analytics",
+        "ngo-transparency",
+        "data-visualization",
+        "hebrew-language-support",
+        "impact-reporting",
+        "donor-engagement",
+        "compliance-automation",
+        "nonprofit-technology",
+        "transparency-systems"
+      ],
+      "complexityFactors": [
+        "donation-data-modeling",
+        "impact-allocation-analysis",
+        "hebrew-language-support",
+        "data-visualization",
+        "transparency-reporting",
+        "donor-engagement"
+      ]
+    }
   },
   {
     "projectId": "remote-internship-tracker",
@@ -982,7 +2331,52 @@
       "JavaScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Remote internship task tracking tool with AI-generated guidance hints and bilingual Hebrew/English support including RTL layout. Features task assignment, learning objectives, AI hints, progress tracking, and automated reporting. Built with Vue.js, Node.js, and AI integration for effective remote mentorship.",
+      "tags": [
+        "remote-internship",
+        "task-tracking",
+        "ai-guidance-hints",
+        "bilingual-support",
+        "hebrew-english",
+        "rtl-layout",
+        "mentorship-tool",
+        "task-assignment",
+        "learning-objectives",
+        "progress-tracking",
+        "internship-management",
+        "ai-mentorship",
+        "remote-mentorship",
+        "internship-technology"
+      ],
+      "skillLevels": [
+        "beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "mentorship-tool",
+      "domain": "education",
+      "learningOutcomes": [
+        "remote-internship-management",
+        "ai-guidance-systems",
+        "bilingual-platform-development",
+        "rtl-layout-implementation",
+        "task-tracking-systems",
+        "mentorship-technology",
+        "ai-mentorship",
+        "remote-mentorship",
+        "internship-platforms",
+        "mentorship-tools"
+      ],
+      "complexityFactors": [
+        "ai-guidance-generation",
+        "bilingual-support",
+        "rtl-layout-implementation",
+        "task-tracking-algorithms",
+        "mentorship-coordination",
+        "remote-internship-management"
+      ]
+    }
   },
   {
     "projectId": "personal-portfolio-blog",
@@ -1011,7 +2405,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Beginner-friendly personal portfolio website with integrated Markdown blog and responsive design. Features Next.js dynamic routing, Markdown content management, basic authentication, and modern Tailwind CSS styling. Perfect for learning modern web development and creating a professional online presence.",
+      "tags": [
+        "personal-portfolio",
+        "blog-platform",
+        "nextjs",
+        "markdown-blog",
+        "responsive-design",
+        "tailwind-css",
+        "portfolio-website",
+        "markdown-rendering",
+        "dynamic-routing",
+        "basic-auth",
+        "modern-web",
+        "frontend-development",
+        "content-management",
+        "professional-portfolio"
+      ],
+      "skillLevels": [
+        "beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "portfolio-website",
+      "domain": "personal-development",
+      "learningOutcomes": [
+        "nextjs-development",
+        "markdown-processing",
+        "responsive-design",
+        "tailwind-css",
+        "dynamic-routing",
+        "basic-authentication",
+        "content-management",
+        "modern-web-development",
+        "portfolio-creation",
+        "blog-platforms"
+      ],
+      "complexityFactors": [
+        "markdown-rendering",
+        "dynamic-routing",
+        "basic-authentication",
+        "responsive-design",
+        "content-management",
+        "modern-framework-usage"
+      ]
+    }
   },
   {
     "projectId": "ecommerce-platform",
@@ -1044,7 +2483,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Full-stack e-commerce platform with product catalog, shopping cart, checkout system, and Stripe payment integration. Features user authentication, order management, product filtering, and complete online store functionality. Built with modern web technologies including React, Next.js, and MongoDB.",
+      "tags": [
+        "ecommerce",
+        "online-store",
+        "shopping-cart",
+        "checkout-system",
+        "stripe-integration",
+        "product-catalog",
+        "order-management",
+        "user-authentication",
+        "full-stack",
+        "payment-processing",
+        "product-filtering",
+        "inventory-management",
+        "online-commerce",
+        "web-store"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "ecommerce-platform",
+      "domain": "business",
+      "learningOutcomes": [
+        "full-stack-development",
+        "ecommerce-systems",
+        "payment-integration",
+        "shopping-cart-development",
+        "product-catalog-management",
+        "order-processing",
+        "user-authentication",
+        "inventory-management",
+        "payment-processing",
+        "online-store-development"
+      ],
+      "complexityFactors": [
+        "payment-integration",
+        "shopping-cart-logic",
+        "order-management",
+        "product-catalog",
+        "user-authentication",
+        "inventory-tracking"
+      ]
+    }
   },
   {
     "projectId": "realtime-chat-app",
@@ -1074,7 +2558,52 @@
       "JavaScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Real-time chat application with channel management, private messaging, file sharing, and live user presence indicators. Features Socket.IO real-time communication, JWT authentication, file upload capabilities, and comprehensive chat functionality. Built with MERN stack and real-time technologies for seamless communication experiences.",
+      "tags": [
+        "real-time-chat",
+        "chat-application",
+        "socket-io",
+        "channel-management",
+        "private-messaging",
+        "file-sharing",
+        "typing-indicators",
+        "user-presence",
+        "real-time-communication",
+        "chat-app",
+        "jwt-authentication",
+        "real-time-messaging",
+        "chat-platform",
+        "communication-app"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "chat-application",
+      "domain": "communication",
+      "learningOutcomes": [
+        "real-time-communication",
+        "socket-io-implementation",
+        "chat-application-development",
+        "channel-management",
+        "file-sharing-systems",
+        "real-time-messaging",
+        "chat-platforms",
+        "real-time-technology",
+        "communication-apps",
+        "chat-systems"
+      ],
+      "complexityFactors": [
+        "real-time-communication",
+        "socket-io-implementation",
+        "file-sharing-systems",
+        "channel-management",
+        "real-time-presence",
+        "chat-architecture"
+      ]
+    }
   },
   {
     "projectId": "video-streaming-platform",
@@ -1107,7 +2636,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced video streaming platform with video upload, encoding, streaming, and user engagement features. Includes HLS streaming, video transcoding, content recommendations, and social features like comments and likes. Built with modern web technologies and video processing tools for a complete streaming experience.",
+      "tags": [
+        "video-streaming",
+        "video-platform",
+        "video-upload",
+        "video-encoding",
+        "hls-streaming",
+        "video-transcoding",
+        "content-recommendations",
+        "video-engagement",
+        "video-comments",
+        "video-likes",
+        "video-history",
+        "streaming-technology",
+        "video-processing",
+        "content-platform"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "video-platform",
+      "domain": "media",
+      "learningOutcomes": [
+        "video-streaming-development",
+        "video-encoding",
+        "hls-streaming",
+        "video-processing",
+        "content-recommendations",
+        "video-engagement-systems",
+        "streaming-architecture",
+        "video-storage",
+        "content-platforms",
+        "media-technology"
+      ],
+      "complexityFactors": [
+        "video-processing",
+        "streaming-architecture",
+        "video-encoding",
+        "content-recommendations",
+        "real-time-streaming",
+        "video-storage-optimization"
+      ]
+    }
   },
   {
     "projectId": "task-management-kanban",
@@ -1138,7 +2712,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced collaborative Kanban task management application with real-time updates, drag-and-drop functionality, and comprehensive project management features. Features GraphQL API, WebSocket real-time updates, Kanban board interface, and role-based permissions. Built with React, Node.js, and modern web technologies for team collaboration.",
+      "tags": [
+        "kanban-board",
+        "task-management",
+        "collaborative-tools",
+        "real-time-updates",
+        "drag-and-drop",
+        "graphql-api",
+        "websockets",
+        "project-management",
+        "kanban-app",
+        "task-assignment",
+        "deadline-management",
+        "team-collaboration",
+        "kanban-technology",
+        "project-tracking"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "project-management-app",
+      "domain": "productivity",
+      "learningOutcomes": [
+        "kanban-board-development",
+        "graphql-api-design",
+        "real-time-updates",
+        "drag-and-drop-implementation",
+        "collaborative-tools",
+        "project-management-systems",
+        "kanban-technology",
+        "team-collaboration",
+        "real-time-applications",
+        "project-tracking-systems"
+      ],
+      "complexityFactors": [
+        "real-time-updates",
+        "drag-and-drop-implementation",
+        "graphql-api-design",
+        "kanban-board-logic",
+        "collaborative-features",
+        "project-management-complexity"
+      ]
+    }
   },
   {
     "projectId": "blockchain-marketplace",
@@ -1168,7 +2787,52 @@
       "Solidity",
       "JavaScript",
       "TypeScript"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Expert-level decentralized marketplace dApp built on blockchain technology with smart contracts, wallet integration, and IPFS asset storage. Features listing management, bidding systems, smart contract automation, and decentralized asset storage. Built with Solidity, Next.js, and blockchain technologies for secure, transparent trading.",
+      "tags": [
+        "blockchain-marketplace",
+        "decentralized-app",
+        "smart-contracts",
+        "wallet-integration",
+        "ipfs-storage",
+        "dapp-development",
+        "blockchain-technology",
+        "marketplace-app",
+        "solidity-development",
+        "metamask-integration",
+        "decentralized-trading",
+        "blockchain-commerce",
+        "smart-contract-automation",
+        "web3-technology"
+      ],
+      "skillLevels": [
+        "expert",
+        "advanced"
+      ],
+      "projectType": "blockchain-dapp",
+      "domain": "blockchain",
+      "learningOutcomes": [
+        "blockchain-marketplace-development",
+        "smart-contract-development",
+        "wallet-integration",
+        "ipfs-storage-systems",
+        "dapp-architecture",
+        "blockchain-technology",
+        "decentralized-applications",
+        "smart-contract-automation",
+        "blockchain-commerce",
+        "web3-development"
+      ],
+      "complexityFactors": [
+        "smart-contract-development",
+        "blockchain-integration",
+        "wallet-integration",
+        "ipfs-storage-systems",
+        "decentralized-architecture",
+        "blockchain-security"
+      ]
+    }
   },
   {
     "projectId": "weather-dashboard",
@@ -1195,7 +2859,52 @@
       "JavaScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Weather dashboard application with city search, current weather conditions, 7-day forecast, and dark mode toggle. Features OpenWeatherMap API integration, responsive design, and modern UI components. Perfect for learning API integration, React development, and weather data visualization.",
+      "tags": [
+        "weather-dashboard",
+        "weather-app",
+        "weather-api",
+        "openweathermap",
+        "city-search",
+        "weather-forecast",
+        "current-weather",
+        "dark-mode",
+        "weather-data",
+        "api-integration",
+        "weather-visualization",
+        "responsive-design",
+        "weather-conditions",
+        "forecast-display"
+      ],
+      "skillLevels": [
+        "beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "weather-app",
+      "domain": "weather",
+      "learningOutcomes": [
+        "api-integration",
+        "react-development",
+        "weather-data-handling",
+        "city-search-implementation",
+        "weather-visualization",
+        "dark-mode-implementation",
+        "responsive-design",
+        "weather-forecasting",
+        "api-data-processing",
+        "weather-app-development"
+      ],
+      "complexityFactors": [
+        "api-integration",
+        "weather-data-processing",
+        "city-search",
+        "forecast-display",
+        "dark-mode-toggle",
+        "responsive-design"
+      ]
+    }
   },
   {
     "projectId": "multiplayer-game",
@@ -1224,7 +2933,52 @@
       "JavaScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced browser-based multiplayer game with real-time player synchronization, lobby management, scoring systems, and in-game chat functionality. Features Socket.IO real-time communication, Canvas API rendering, multiplayer game logic, and comprehensive game management. Built with React, Node.js, and real-time technologies for engaging multiplayer experiences.",
+      "tags": [
+        "multiplayer-game",
+        "real-time-gaming",
+        "browser-game",
+        "lobby-management",
+        "player-synchronization",
+        "scoring-systems",
+        "in-game-chat",
+        "real-time-gaming",
+        "canvas-api",
+        "socket-io-gaming",
+        "multiplayer-technology",
+        "game-development",
+        "real-time-games",
+        "browser-gaming"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "multiplayer-game",
+      "domain": "gaming",
+      "learningOutcomes": [
+        "multiplayer-game-development",
+        "real-time-gaming",
+        "lobby-management-systems",
+        "player-synchronization",
+        "scoring-systems",
+        "in-game-chat",
+        "real-time-gaming",
+        "canvas-api-gaming",
+        "multiplayer-technology",
+        "browser-game-development"
+      ],
+      "complexityFactors": [
+        "real-time-player-sync",
+        "multiplayer-game-logic",
+        "lobby-management",
+        "real-time-gaming",
+        "game-state-management",
+        "multiplayer-architecture"
+      ]
+    }
   },
   {
     "projectId": "pomodoro-timer",
@@ -1251,7 +3005,52 @@
       "JavaScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Productivity app combining Pomodoro time management technique with comprehensive task management, completion tracking, and notification systems. Features timer intervals, task CRUD operations, progress tracking, and dark mode interface. Built with React and TailwindCSS for effective productivity management.",
+      "tags": [
+        "pomodoro-timer",
+        "productivity-app",
+        "time-management",
+        "task-management",
+        "completion-tracking",
+        "pomodoro-technique",
+        "productivity-timer",
+        "task-crud",
+        "time-tracking",
+        "productivity-tools",
+        "pomodoro-app",
+        "task-estimates",
+        "productivity-technology",
+        "time-management-app"
+      ],
+      "skillLevels": [
+        "advanced-beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "productivity-app",
+      "domain": "productivity",
+      "learningOutcomes": [
+        "pomodoro-timer-development",
+        "task-management-systems",
+        "time-tracking-applications",
+        "productivity-app-development",
+        "timer-implementation",
+        "task-crud-operations",
+        "completion-tracking",
+        "productivity-technology",
+        "time-management-systems",
+        "productivity-platforms"
+      ],
+      "complexityFactors": [
+        "timer-implementation",
+        "task-management-systems",
+        "completion-tracking",
+        "productivity-logic",
+        "time-management",
+        "productivity-features"
+      ]
+    }
   },
   {
     "projectId": "crypto-portfolio-tracker",
@@ -1281,7 +3080,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Expert-level cryptocurrency portfolio tracker with real-time pricing, comprehensive portfolio valuation, historical performance analysis, and optional wallet integration. Features multi-crypto support, real-time data updates, performance charts, and portfolio management tools. Built with React, Node.js, and cryptocurrency APIs for professional crypto portfolio management.",
+      "tags": [
+        "crypto-portfolio",
+        "cryptocurrency-tracker",
+        "real-time-pricing",
+        "portfolio-valuation",
+        "historical-charts",
+        "wallet-integration",
+        "crypto-tracking",
+        "portfolio-management",
+        "cryptocurrency-app",
+        "real-time-crypto",
+        "crypto-analytics",
+        "portfolio-tracking",
+        "cryptocurrency-technology",
+        "crypto-management"
+      ],
+      "skillLevels": [
+        "expert",
+        "advanced"
+      ],
+      "projectType": "crypto-platform",
+      "domain": "finance",
+      "learningOutcomes": [
+        "crypto-portfolio-tracking",
+        "real-time-crypto-data",
+        "portfolio-valuation-systems",
+        "historical-performance-analysis",
+        "cryptocurrency-technology",
+        "wallet-integration",
+        "crypto-analytics",
+        "portfolio-management-systems",
+        "cryptocurrency-apps",
+        "crypto-data-integration"
+      ],
+      "complexityFactors": [
+        "real-time-crypto-data",
+        "portfolio-valuation-algorithms",
+        "historical-data-analysis",
+        "wallet-integration",
+        "crypto-data-processing",
+        "portfolio-management-complexity"
+      ]
+    }
   },
   {
     "projectId": "ai-document-scanner",
@@ -1312,7 +3156,52 @@
       "Python",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced AI-powered document scanner with OCR text extraction, intelligent content categorization, and comprehensive document management. Features text recognition, AI tagging, document storage, and PDF export with annotations. Built with React, Python, TensorFlow.js, and AWS Lambda for intelligent document processing and analysis.",
+      "tags": [
+        "ai-document-scanner",
+        "ocr-text-extraction",
+        "ai-category-tagging",
+        "document-analysis",
+        "ai-document-processing",
+        "document-storage",
+        "pdf-export",
+        "ai-tagging",
+        "document-management",
+        "ocr-technology",
+        "ai-document-analysis",
+        "document-categorization",
+        "ai-document-technology",
+        "document-processing"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "ai-document-tool",
+      "domain": "document-management",
+      "learningOutcomes": [
+        "ai-document-processing",
+        "ocr-text-extraction",
+        "ai-category-tagging",
+        "document-analysis-systems",
+        "ai-document-technology",
+        "document-management-systems",
+        "ai-tagging-algorithms",
+        "document-categorization",
+        "ai-document-analysis",
+        "document-processing-technology"
+      ],
+      "complexityFactors": [
+        "ocr-text-extraction",
+        "ai-category-tagging",
+        "document-analysis-algorithms",
+        "ai-document-processing",
+        "document-management-systems",
+        "ai-document-technology"
+      ]
+    }
   },
   {
     "projectId": "habit-tracker",
@@ -1340,7 +3229,52 @@
       "JavaScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Habit tracking application with progress analytics, streak visualization, and customizable habit management. Features CRUD operations, weekly/monthly charts, streak tracking, and dark mode interface. Built with React, Chart.js, and local storage for a complete habit management experience.",
+      "tags": [
+        "habit-tracker",
+        "progress-analytics",
+        "streak-tracking",
+        "habit-management",
+        "progress-charts",
+        "weekly-analytics",
+        "monthly-analytics",
+        "streak-visualization",
+        "dark-mode",
+        "habit-icons",
+        "progress-tracking",
+        "behavioral-tracking",
+        "productivity-app",
+        "habit-formation"
+      ],
+      "skillLevels": [
+        "beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "productivity-app",
+      "domain": "personal-development",
+      "learningOutcomes": [
+        "react-development",
+        "data-visualization",
+        "progress-tracking",
+        "habit-management",
+        "chart-integration",
+        "local-storage",
+        "crud-operations",
+        "streak-algorithms",
+        "dark-mode-implementation",
+        "productivity-apps"
+      ],
+      "complexityFactors": [
+        "progress-tracking",
+        "streak-calculation",
+        "chart-visualization",
+        "habit-management",
+        "local-storage",
+        "dark-mode-toggle"
+      ]
+    }
   },
   {
     "projectId": "book-recommendation-system",
@@ -1370,7 +3304,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Book recommendation platform with comprehensive search functionality, user rating systems, and personalized recommendation engine. Features book search, review management, recommendation algorithms, and user profile management. Built with Next.js, Node.js, and Google Books API integration for intelligent book discovery and personalized reading suggestions.",
+      "tags": [
+        "book-recommendations",
+        "book-search",
+        "user-reviews",
+        "rating-systems",
+        "recommendation-engine",
+        "book-platform",
+        "personalized-recommendations",
+        "book-discovery",
+        "user-profiles",
+        "book-technology",
+        "recommendation-system",
+        "book-reviews",
+        "reading-platform",
+        "book-management"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "recommendation-platform",
+      "domain": "education",
+      "learningOutcomes": [
+        "book-recommendation-systems",
+        "search-functionality",
+        "user-rating-systems",
+        "recommendation-algorithms",
+        "book-platform-development",
+        "personalized-recommendations",
+        "book-discovery-systems",
+        "user-profile-management",
+        "book-technology",
+        "recommendation-platforms"
+      ],
+      "complexityFactors": [
+        "recommendation-algorithms",
+        "search-functionality",
+        "user-rating-systems",
+        "book-data-management",
+        "personalized-recommendations",
+        "book-platform-complexity"
+      ]
+    }
   },
   {
     "projectId": "video-conference-platform",
@@ -1401,7 +3380,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced video conference platform with multi-participant support, screen sharing capabilities, in-call chat, and comprehensive session management. Features WebRTC peer connections, screen sharing technology, participant controls, and session logging. Built with React, Node.js, and WebRTC for professional video conferencing solutions.",
+      "tags": [
+        "video-conference",
+        "screen-sharing",
+        "webrtc-platform",
+        "multi-participant",
+        "video-conferencing",
+        "screen-sharing-technology",
+        "in-call-chat",
+        "participant-controls",
+        "session-logging",
+        "video-platform",
+        "webrtc-technology",
+        "conference-platform",
+        "video-technology",
+        "conference-systems"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "video-conference-platform",
+      "domain": "communication",
+      "learningOutcomes": [
+        "video-conference-development",
+        "webrtc-implementation",
+        "screen-sharing-technology",
+        "multi-participant-systems",
+        "video-conferencing",
+        "webrtc-technology",
+        "conference-platforms",
+        "video-technology",
+        "screen-sharing-systems",
+        "conference-systems"
+      ],
+      "complexityFactors": [
+        "webrtc-peer-connections",
+        "screen-sharing-technology",
+        "multi-participant-management",
+        "video-conferencing",
+        "conference-controls",
+        "video-platform-complexity"
+      ]
+    }
   },
   {
     "projectId": "music-playlist-generator",
@@ -1431,7 +3455,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Music playlist generator with personalized recommendations based on mood, genre, and activity preferences. Features Spotify API integration, intelligent playlist generation, mood-based suggestions, and comprehensive music management. Built with React, Node.js, and Spotify integration for creating personalized music experiences.",
+      "tags": [
+        "music-playlist-generator",
+        "personalized-playlists",
+        "mood-based-recommendations",
+        "genre-based-playlists",
+        "spotify-api",
+        "playlist-generation",
+        "music-recommendations",
+        "mood-music",
+        "activity-based-music",
+        "music-curation",
+        "playlist-management",
+        "music-technology",
+        "personalized-music",
+        "music-app"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "music-app",
+      "domain": "entertainment",
+      "learningOutcomes": [
+        "music-playlist-generation",
+        "spotify-api-integration",
+        "personalized-recommendations",
+        "mood-based-music",
+        "genre-based-playlists",
+        "music-technology",
+        "playlist-management",
+        "music-curation",
+        "personalized-music",
+        "music-platforms"
+      ],
+      "complexityFactors": [
+        "spotify-api-integration",
+        "playlist-generation-algorithms",
+        "mood-based-recommendations",
+        "personalized-music",
+        "music-curation",
+        "playlist-management"
+      ]
+    }
   },
   {
     "projectId": "job-application-tracker",
@@ -1460,7 +3529,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced job application tracking system with comprehensive status management, deadline tracking, automated reminders, and detailed company information management. Features CRUD operations, status workflows, reminder systems, and advanced filtering capabilities. Built with Next.js, MongoDB, and Firebase for professional job search management.",
+      "tags": [
+        "job-application-tracker",
+        "application-tracking",
+        "status-management",
+        "deadline-tracking",
+        "follow-up-reminders",
+        "job-search-tool",
+        "application-crud",
+        "reminder-systems",
+        "job-tracking",
+        "career-management",
+        "application-filtering",
+        "company-information",
+        "job-search-technology",
+        "career-tracking"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "career-management-app",
+      "domain": "career-development",
+      "learningOutcomes": [
+        "job-application-tracking",
+        "status-management-systems",
+        "deadline-tracking",
+        "reminder-systems",
+        "application-crud",
+        "career-management",
+        "job-tracking-systems",
+        "application-filtering",
+        "career-technology",
+        "job-search-platforms"
+      ],
+      "complexityFactors": [
+        "status-workflow-management",
+        "deadline-tracking-systems",
+        "reminder-automation",
+        "application-filtering",
+        "career-data-management",
+        "job-tracking-complexity"
+      ]
+    }
   },
   {
     "projectId": "document-vault-encryption",
@@ -1491,7 +3605,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced secure document vault with end-to-end encryption, comprehensive access control, and robust security features. Features encrypted document storage, advanced tagging systems, role-based access control, and comprehensive audit logging. Built with React, Node.js, and cryptographic technologies for maximum document security and privacy protection.",
+      "tags": [
+        "document-vault",
+        "encryption",
+        "secure-storage",
+        "access-control",
+        "document-security",
+        "encrypted-upload",
+        "role-based-access",
+        "audit-logging",
+        "document-tagging",
+        "security-vault",
+        "cryptographic-security",
+        "document-privacy",
+        "secure-document-management",
+        "encryption-technology"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "security-vault",
+      "domain": "security",
+      "learningOutcomes": [
+        "document-encryption",
+        "secure-storage-systems",
+        "access-control-implementation",
+        "audit-logging-systems",
+        "document-security",
+        "cryptographic-technologies",
+        "role-based-access-control",
+        "secure-document-management",
+        "encryption-technology",
+        "security-vault-development"
+      ],
+      "complexityFactors": [
+        "document-encryption",
+        "access-control-systems",
+        "audit-logging",
+        "cryptographic-security",
+        "secure-storage",
+        "document-security-complexity"
+      ]
+    }
   },
   {
     "projectId": "p2p-file-sharing",
@@ -1520,7 +3679,52 @@
       "TypeScript",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Advanced peer-to-peer file sharing application built with WebRTC technology for decentralized file transfer. Features direct peer connections, file chunk management, progress tracking, authentication systems, and in-transfer chat functionality. Built with React, Node.js, and WebRTC for secure, efficient file sharing without central servers.",
+      "tags": [
+        "p2p-file-sharing",
+        "webrtc-file-sharing",
+        "decentralized-file-transfer",
+        "peer-connections",
+        "file-chunk-transfer",
+        "progress-tracking",
+        "authentication-systems",
+        "in-transfer-chat",
+        "decentralized-app",
+        "file-sharing-technology",
+        "webrtc-technology",
+        "p2p-technology",
+        "file-transfer",
+        "decentralized-technology"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "p2p-file-sharing-app",
+      "domain": "file-sharing",
+      "learningOutcomes": [
+        "p2p-file-sharing-development",
+        "webrtc-implementation",
+        "decentralized-file-transfer",
+        "peer-connection-management",
+        "file-chunk-transfer",
+        "p2p-technology",
+        "decentralized-applications",
+        "file-sharing-technology",
+        "webrtc-file-sharing",
+        "decentralized-technology"
+      ],
+      "complexityFactors": [
+        "webrtc-peer-connections",
+        "file-chunk-transfer",
+        "decentralized-architecture",
+        "authentication-systems",
+        "p2p-file-sharing",
+        "decentralized-technology"
+      ]
+    }
   },
   {
     "projectId": "ai-movie-recommendation",
@@ -1552,7 +3756,52 @@
       "Python",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Expert-level AI-driven movie recommendation system with machine learning algorithms, user preference profiling, and intelligent content suggestions. Features ML recommendation engines, user preference analysis, rating systems, and comprehensive watchlist management. Built with React, Node.js, Python, and TensorFlow.js for intelligent movie discovery and personalized recommendations.",
+      "tags": [
+        "ai-movie-recommendations",
+        "ml-recommendation-engine",
+        "user-preference-profiles",
+        "movie-recommendations",
+        "ai-movie-suggestions",
+        "ml-based-suggestions",
+        "movie-rating-systems",
+        "watchlist-management",
+        "ai-movie-technology",
+        "recommendation-algorithms",
+        "movie-discovery",
+        "personalized-recommendations",
+        "ai-movie-platform",
+        "ml-movie-technology"
+      ],
+      "skillLevels": [
+        "expert",
+        "advanced"
+      ],
+      "projectType": "ai-recommendation-platform",
+      "domain": "entertainment",
+      "learningOutcomes": [
+        "ai-movie-recommendations",
+        "ml-recommendation-engines",
+        "user-preference-analysis",
+        "movie-recommendation-systems",
+        "ai-movie-technology",
+        "recommendation-algorithms",
+        "movie-discovery-systems",
+        "personalized-recommendations",
+        "ai-movie-platforms",
+        "ml-movie-technology"
+      ],
+      "complexityFactors": [
+        "ml-recommendation-algorithms",
+        "user-preference-analysis",
+        "movie-recommendation-systems",
+        "ai-movie-technology",
+        "recommendation-engines",
+        "movie-discovery-complexity"
+      ]
+    }
   },
   {
     "projectId": "stock-market-dashboard",
@@ -1586,6 +3835,51 @@
       "Python",
       "HTML",
       "CSS"
-    ]
+    ],
+    "ragContext": {
+      "searchableText": "Expert-level real-time stock market dashboard with live price streaming, advanced trend analysis, AI-powered predictions, and comprehensive market intelligence. Features real-time data processing, technical indicators, machine learning predictions, personalized watchlists, and integrated financial news. Built with React, Node.js, and AI technologies for professional financial market analysis.",
+      "tags": [
+        "stock-market-dashboard",
+        "real-time-stock-prices",
+        "ai-predictions",
+        "trend-analysis",
+        "stock-watchlists",
+        "financial-news",
+        "real-time-financial-data",
+        "ai-stock-predictions",
+        "market-intelligence",
+        "stock-analysis",
+        "financial-dashboard",
+        "ai-financial-technology",
+        "stock-market-technology",
+        "financial-analytics"
+      ],
+      "skillLevels": [
+        "expert",
+        "advanced"
+      ],
+      "projectType": "financial-dashboard",
+      "domain": "finance",
+      "learningOutcomes": [
+        "real-time-financial-data",
+        "ai-stock-predictions",
+        "trend-analysis-systems",
+        "stock-market-technology",
+        "financial-dashboard-development",
+        "ai-financial-technology",
+        "market-intelligence-systems",
+        "stock-analysis-platforms",
+        "financial-analytics",
+        "stock-market-technology"
+      ],
+      "complexityFactors": [
+        "real-time-financial-data",
+        "ai-prediction-algorithms",
+        "trend-analysis-systems",
+        "financial-data-processing",
+        "stock-market-technology",
+        "financial-analytics-complexity"
+      ]
+    }
   }
 ]

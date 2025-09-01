@@ -45,5 +45,7 @@ namespace GainIt.API.Models.Projects
         [Required(ErrorMessage = "Open Roles are required")]
         [JsonIgnore]
         public List<string> RequiredRoles { get; set; } = new();
+
+        public RagContext? RagContext { get; set; }
     }
 }

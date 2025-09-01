@@ -10,6 +10,7 @@ using GainIt.API.Models.Users.Nonprofits;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace GainIt.API.Data
 {
@@ -285,6 +286,47 @@ namespace GainIt.API.Data
                     entity.Property(e => e.ProjectDescription)
                         .IsRequired()
                         .HasMaxLength(1000);
+
+                    // Configure RagContext as owned entity (stored as JSON in same table)
+                    entity.OwnsOne(tp => tp.RagContext, rag =>
+                    {
+                        // Force EF to detect the RAG context as JSON
+                        rag.ToJson();
+
+                        rag.Property(r => r.SearchableText)
+                            .HasMaxLength(5000);
+
+                        rag.Property(r => r.ProjectType)
+                            .HasMaxLength(100);
+
+                        rag.Property(r => r.Domain)
+                            .HasMaxLength(100);
+
+                        // Configure JSON serialization for List<string> properties
+                        rag.Property(r => r.Tags)
+                            .HasConversion(
+                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
+                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
+                            );
+
+                        rag.Property(r => r.SkillLevels)
+                            .HasConversion(
+                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
+                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
+                            );
+
+                        rag.Property(r => r.LearningOutcomes)
+                            .HasConversion(
+                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
+                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
+                            );
+
+                        rag.Property(r => r.ComplexityFactors)
+                            .HasConversion(
+                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
+                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
+                            );
+                    });
                 });
                 #endregion
 
@@ -1309,8 +1351,27 @@ namespace GainIt.API.Data
                         Duration = TimeSpan.FromDays(tp.DurationDays),
                         Goals = tp.Goals,
                         Technologies = tp.Technologies,
-                        RequiredRoles = tp.RequiredRoles
+                        RequiredRoles = tp.RequiredRoles,
+                        RagContext = tp.RagContext != null ? new RagContext
+                        {
+                            SearchableText = tp.RagContext.SearchableText,
+                            Tags = tp.RagContext.Tags,
+                            SkillLevels = tp.RagContext.SkillLevels,
+                            ProjectType = tp.RagContext.ProjectType,
+                            Domain = tp.RagContext.Domain,
+                            LearningOutcomes = tp.RagContext.LearningOutcomes,
+                            ComplexityFactors = tp.RagContext.ComplexityFactors
+                        } : null
                     }).ToList();
+
+                    // Set the correct ProjectId for RAG context
+                    foreach (var project in templateProjectEntities)
+                    {
+                        if (project.RagContext != null)
+                        {
+                            project.RagContext.ProjectId = project.ProjectId;
+                        }
+                    }
 
                     context.TemplateProjects.AddRange(templateProjectEntities);
                     context.SaveChanges();
@@ -1650,22 +1711,41 @@ namespace GainIt.API.Data
                 // Add nonprofit projects if they exist
                 if (nonprofitSuggestions.Any())
                 {
-                    var nonprofitProjects = nonprofitSuggestions.Select(nps => new UserProject
-                    {
-                        ProjectId = Guid.NewGuid(), // Generate new GUID for nonprofit projects
-                        ProjectName = nps.ProjectName,
-                        ProjectDescription = nps.ProjectDescription,
-                        ProjectStatus = eProjectStatus.Pending,
-                        ProjectSource = eProjectSource.NonprofitOrganization,
-                        CreatedAtUtc = DateTime.UtcNow.AddDays(-Random.Shared.Next(1, 30)),
-                        RepositoryLink = nps.RepositoryLink,
-                        ProjectPictureUrl = nps.ProjectPictureUrl,
-                        Duration = TimeSpan.FromDays(nps.DurationDays),
-                        Goals = nps.Goals,
-                        Technologies = nps.Technologies,
-                        RequiredRoles = nps.RequiredRoles,
-                        ProgrammingLanguages = nps.ProgrammingLanguages
-                    }).ToList();
+                                         var nonprofitProjects = nonprofitSuggestions.Select(nps => new UserProject
+                     {
+                         ProjectId = Guid.NewGuid(), // Generate new GUID for nonprofit projects
+                         ProjectName = nps.ProjectName,
+                         ProjectDescription = nps.ProjectDescription,
+                         ProjectStatus = eProjectStatus.Pending,
+                         ProjectSource = eProjectSource.NonprofitOrganization,
+                         CreatedAtUtc = DateTime.UtcNow.AddDays(-Random.Shared.Next(1, 30)),
+                         RepositoryLink = nps.RepositoryLink,
+                         ProjectPictureUrl = nps.ProjectPictureUrl,
+                         Duration = TimeSpan.FromDays(nps.DurationDays),
+                         Goals = nps.Goals,
+                         Technologies = nps.Technologies,
+                         RequiredRoles = nps.RequiredRoles,
+                         ProgrammingLanguages = nps.ProgrammingLanguages,
+                         RagContext = nps.RagContext != null ? new RagContext
+                         {
+                             SearchableText = nps.RagContext.SearchableText,
+                             Tags = nps.RagContext.Tags,
+                             SkillLevels = nps.RagContext.SkillLevels,
+                             ProjectType = nps.RagContext.ProjectType,
+                             Domain = nps.RagContext.Domain,
+                             LearningOutcomes = nps.RagContext.LearningOutcomes,
+                             ComplexityFactors = nps.RagContext.ComplexityFactors
+                         } : null
+                     }).ToList();
+
+                     // Set the correct ProjectId for RAG context
+                     foreach (var project in nonprofitProjects)
+                     {
+                         if (project.RagContext != null)
+                         {
+                             project.RagContext.ProjectId = project.ProjectId;
+                         }
+                     }
 
                     // Assign nonprofit organizations to projects
                     for (int i = 0; i < nonprofitProjects.Count; i++)

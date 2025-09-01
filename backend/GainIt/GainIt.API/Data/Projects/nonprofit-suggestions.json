@@ -45,7 +45,52 @@
     "nonprofitGitHubUrl": "https://github.com/techforseniors",
     "nonprofitGitHubUsername": "techforseniors",
     "nonprofitCountry": "Israel",
-    "nonprofitBiography": "Dedicated to bridging the digital divide for senior citizens through education, support, and accessible technology solutions."
+    "nonprofitBiography": "Dedicated to bridging the digital divide for senior citizens through education, support, and accessible technology solutions.",
+    "ragContext": {
+      "searchableText": "Digital literacy platform for senior citizens with accessible interfaces, step-by-step tutorials, and support for common digital tasks. Features progressive web app design, accessibility APIs, and comprehensive learning management system. Built with React, Node.js, and modern web technologies for senior-friendly user experience.",
+      "tags": [
+        "digital-literacy",
+        "senior-citizens",
+        "accessibility",
+        "educational-platform",
+        "progressive-web-app",
+        "senior-technology",
+        "digital-inclusion",
+        "tutorial-system",
+        "accessibility-apis",
+        "responsive-design",
+        "learning-management",
+        "senior-support",
+        "digital-education",
+        "inclusive-technology"
+      ],
+      "skillLevels": [
+        "beginner",
+        "intermediate-beginner"
+      ],
+      "projectType": "educational-platform",
+      "domain": "education",
+      "learningOutcomes": [
+        "accessibility-development",
+        "senior-user-interface",
+        "progressive-web-apps",
+        "educational-platforms",
+        "accessibility-apis",
+        "responsive-design",
+        "senior-technology",
+        "tutorial-systems",
+        "inclusive-design",
+        "digital-literacy-apps"
+      ],
+      "complexityFactors": [
+        "accessibility-requirements",
+        "senior-user-experience",
+        "multi-device-support",
+        "educational-content-management",
+        "accessibility-compliance",
+        "senior-friendly-interface"
+      ]
+    }
   },
   {
     "projectId": "l2m3n4o5-p6q7-8901-lmno-234567890123",
@@ -93,7 +138,52 @@
     "nonprofitGitHubUrl": "https://github.com/communitysafetynet",
     "nonprofitGitHubUsername": "communitysafetynet",
     "nonprofitCountry": "Israel",
-    "nonprofitBiography": "Dedicated to enhancing community safety through innovative technology solutions and coordinated emergency response systems."
+    "nonprofitBiography": "Dedicated to enhancing community safety through innovative technology solutions and coordinated emergency response systems.",
+    "ragContext": {
+      "searchableText": "Real-time emergency response platform for communities with emergency alerts, volunteer coordination, resource management, and communication tools. Features mobile app development, real-time messaging, push notifications, and critical infrastructure reliability. Built with React Native, Node.js, and real-time technologies for emergency response coordination.",
+      "tags": [
+        "emergency-response",
+        "community-safety",
+        "real-time-platform",
+        "volunteer-coordination",
+        "emergency-alerts",
+        "resource-management",
+        "first-responders",
+        "real-time-messaging",
+        "push-notifications",
+        "emergency-communication",
+        "community-safety",
+        "crisis-response",
+        "volunteer-management",
+        "emergency-technology"
+      ],
+      "skillLevels": [
+        "advanced",
+        "expert"
+      ],
+      "projectType": "emergency-platform",
+      "domain": "public-safety",
+      "learningOutcomes": [
+        "emergency-response-systems",
+        "real-time-platforms",
+        "volunteer-coordination",
+        "emergency-alerts",
+        "resource-management",
+        "real-time-messaging",
+        "push-notifications",
+        "emergency-communication",
+        "crisis-response",
+        "community-safety-technology"
+      ],
+      "complexityFactors": [
+        "real-time-system-reliability",
+        "emergency-critical-system",
+        "volunteer-coordination",
+        "multi-organization-integration",
+        "emergency-compliance",
+        "real-time-communication"
+      ]
+    }
   },
   {
     "projectId": "m3n4o5p6-q7r8-9012-mnop-345678901234",
@@ -141,6 +231,51 @@
     "nonprofitGitHubUrl": "https://github.com/codementoryouth",
     "nonprofitGitHubUsername": "codementoryouth",
     "nonprofitCountry": "Israel",
-    "nonprofitBiography": "Committed to bridging the technology skills gap by connecting young learners with experienced mentors in a collaborative learning environment."
+    "nonprofitBiography": "Committed to bridging the technology skills gap by connecting young learners with experienced mentors in a collaborative learning environment.",
+    "ragContext": {
+      "searchableText": "Youth coding mentorship platform connecting aspiring developers with experienced mentors for coding education and project collaboration. Features video calls, code sharing, project tracking, and comprehensive learning resources. Built with Next.js, WebRTC, and modern web technologies for interactive learning experiences.",
+      "tags": [
+        "youth-mentorship",
+        "coding-education",
+        "mentor-matching",
+        "video-calls",
+        "code-sharing",
+        "project-tracking",
+        "learning-resources",
+        "youth-development",
+        "coding-mentorship",
+        "educational-platform",
+        "mentor-student",
+        "coding-projects",
+        "youth-technology",
+        "mentorship-system"
+      ],
+      "skillLevels": [
+        "intermediate",
+        "advanced-beginner"
+      ],
+      "projectType": "mentorship-platform",
+      "domain": "education",
+      "learningOutcomes": [
+        "mentor-matching-systems",
+        "video-call-integration",
+        "code-sharing-platforms",
+        "project-tracking-systems",
+        "learning-resource-management",
+        "youth-mentorship",
+        "coding-education",
+        "mentor-student-coordination",
+        "educational-platforms",
+        "youth-development-technology"
+      ],
+      "complexityFactors": [
+        "mentor-matching-algorithms",
+        "video-call-integration",
+        "code-sharing-security",
+        "project-tracking",
+        "youth-safety-compliance",
+        "mentorship-coordination"
+      ]
+    }
   }
 ]

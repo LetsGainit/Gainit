@@ -6,6 +6,8 @@ using GainIt.API.Services.Projects.Interfaces;
 using GainIt.API.Services.GitHub.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
+using Azure.AI.OpenAI;
 
 namespace GainIt.API.Services.Projects.Implementations
 {
@@ -14,14 +16,15 @@ namespace GainIt.API.Services.Projects.Implementations
         private readonly GainItDbContext r_DbContext;
         private readonly ILogger<ProjectService> r_logger;
         private readonly IGitHubService r_gitHubService;
+        private readonly OpenAIClient r_chatClient;
 
-        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService)
+        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, OpenAIClient i_chatClient)
         {
             r_DbContext = i_DbContext;
             r_logger = i_logger;
             r_gitHubService = i_gitHubService;
+            r_chatClient = i_chatClient;
         }
-
         public async Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId, string i_Role)
         {
             r_logger.LogInformation("Adding team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
@@ -215,6 +218,9 @@ namespace GainIt.API.Services.Projects.Implementations
                     OwningOrganization = nonprofit,
                     ProjectMembers = new List<ProjectMember>()
                 };
+
+                // Generate RAG context for the project
+                newProject.RagContext = await GenerateRagContextAsync(newProject);
 
                 r_DbContext.Projects.Add(newProject);
                 await r_DbContext.SaveChangesAsync();
@@ -637,5 +643,122 @@ namespace GainIt.API.Services.Projects.Implementations
             r_logger.LogInformation("Successfully updated and re-linked GitHub repository: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", i_ProjectId, i_RepositoryLink);
             return project;
         }
+
+        /// <summary>
+        /// Generates RAG context for a project to improve search and matching capabilities
+        /// </summary>
+        /// <param name="project">The project to generate RAG context for</param>
+        /// <returns>Generated RAG context</returns>
+        private async Task<RagContext> GenerateRagContextAsync(UserProject project)
+        {
+            r_logger.LogInformation("Generating RAG context for project: ProjectId={ProjectId}, ProjectName={ProjectName}", 
+                project.ProjectId, project.ProjectName);
+
+            try
+            {
+                var ragContext = await GenerateRagContextWithAIAsync(project);
+                
+                r_logger.LogInformation("Successfully generated RAG context for project: ProjectId={ProjectId}, TagsCount={TagsCount}, SkillLevelsCount={SkillLevelsCount}", 
+                    project.ProjectId, ragContext.Tags.Count, ragContext.SkillLevels.Count);
+
+                return ragContext;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error generating RAG context for project: ProjectId={ProjectId}", project.ProjectId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Simple fallback searchable text generation
+        /// </summary>
+        private string GenerateSearchableText(UserProject project)
+        {
+            return $"{project.ProjectName} - {project.ProjectDescription}";
+        }
+
+        /// <summary>
+        /// Generates RAG context using AI for better accuracy
+        /// </summary>
+        private async Task<RagContext> GenerateRagContextWithAIAsync(UserProject project)
+        {
+            try
+            {
+                var projectInfo = 
+                    $"Project Name: {project.ProjectName}\n" +
+                    $"Description: {project.ProjectDescription}\n" +
+                    $"Technologies: [{string.Join(", ", project.Technologies)}]\n" +
+                    $"Required Roles: [{string.Join(", ", project.RequiredRoles)}]\n" +
+                    $"Difficulty: {project.DifficultyLevel}\n" +
+                    $"Duration: {project.Duration.TotalDays} days\n" +
+                    $"Goals: [{string.Join(", ", project.Goals)}]";
+
+                var messages = new ChatMessage[]
+                {
+                    new SystemChatMessage(
+                        "You are an expert at analyzing software projects and generating structured metadata for search and matching. " +
+                        "Analyze the project and return ONLY a JSON object with these exact fields:\n" +
+                        "{\n" +
+                        "  \"searchableText\": \"concise searchable description\",\n" +
+                        "  \"tags\": [\"tag1\", \"tag2\", \"tag3\"],\n" +
+                        "  \"skillLevels\": [\"beginner\", \"intermediate\", \"advanced\"],\n" +
+                        "  \"projectType\": \"web-app|mobile-app|api|data-project|ai-project|general-project\",\n" +
+                        "  \"domain\": \"education|healthcare|environment|social-impact|business|technology|general\",\n" +
+                        "  \"learningOutcomes\": [\"outcome1\", \"outcome2\", \"outcome3\"],\n" +
+                        "  \"complexityFactors\": [\"factor1\", \"factor2\", \"factor3\"]\n" +
+                        "}\n\n" +
+                        "Rules:\n" +
+                        "- SearchableText: Concise 1-2 sentence description combining name and key features\n" +
+                        "- Tags: 5-10 relevant, lowercase, hyphenated tags (technologies, concepts, domains)\n" +
+                        "- SkillLevels: Based on technologies and difficulty (1-2 levels max)\n" +
+                        "- ProjectType: Choose the most appropriate type\n" +
+                        "- Domain: Choose the primary domain\n" +
+                        "- LearningOutcomes: 3-5 specific skills users will develop\n" +
+                        "- ComplexityFactors: 2-4 factors that make this project complex\n" +
+                        "- Return ONLY valid JSON, no other text"
+                    ),
+                    new UserChatMessage($"Analyze this project:\n\n{projectInfo}")
+                };
+
+                var options = new ChatCompletionOptions
+                {
+                    Temperature = 0.1f // Low temperature for consistent results
+                };
+
+                ChatCompletion completion = await r_chatClient.CompleteChatAsync(messages, options);
+                var response = completion.Content[0].Text.Trim();
+
+                // Parse JSON response
+                var result = JsonSerializer.Deserialize<Dictionary<string, object>>(response);
+                
+                // Validate that we have all required fields
+                if (!result.ContainsKey("searchableText") || !result.ContainsKey("tags") || !result.ContainsKey("skillLevels") ||
+                    !result.ContainsKey("projectType") || !result.ContainsKey("domain") || !result.ContainsKey("learningOutcomes") ||
+                    !result.ContainsKey("complexityFactors"))
+                {
+                    throw new InvalidOperationException("AI response missing required fields");
+                }
+
+                return new RagContext
+                {
+                    Id = Guid.NewGuid(),
+                    ProjectId = project.ProjectId,
+                    SearchableText = result["searchableText"]?.ToString() ?? $"{project.ProjectName} - {project.ProjectDescription}",
+                    Tags = JsonSerializer.Deserialize<List<string>>(result["tags"]?.ToString() ?? "[]") ?? new List<string>(),
+                    SkillLevels = JsonSerializer.Deserialize<List<string>>(result["skillLevels"]?.ToString() ?? "[]") ?? new List<string>(),
+                    ProjectType = result["projectType"]?.ToString() ?? "general-project",
+                    Domain = result["domain"]?.ToString() ?? "general",
+                    LearningOutcomes = JsonSerializer.Deserialize<List<string>>(result["learningOutcomes"]?.ToString() ?? "[]") ?? new List<string>(),
+                    ComplexityFactors = JsonSerializer.Deserialize<List<string>>(result["complexityFactors"]?.ToString() ?? "[]") ?? new List<string>()
+                };
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error generating RAG context with AI for project: ProjectId={ProjectId}", project.ProjectId);
+            }
+        }
+
+
     }
 }
