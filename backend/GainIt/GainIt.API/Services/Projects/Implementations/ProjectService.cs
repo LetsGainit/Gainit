@@ -307,7 +307,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 .ThenInclude(projectMember => projectMember.User)
                 .Include(project => project.OwningOrganization!)
                 .ThenInclude(org => org.NonprofitExpertise)
-                .Where(project => project.ProjectStatus == eProjectStatus.InProgress)
+                .Where(project => project.ProjectStatus == eProjectStatus.Pending)
                 .ToListAsync();
 
             r_logger.LogInformation("Retrieved all active projects: Count={Count}", projects.Count);
@@ -491,7 +491,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 .Include(project => project.ProjectMembers)
                 .ThenInclude(member => member.User)
                 .Where(project =>
-                    project.ProjectStatus == eProjectStatus.InProgress &&
+                    project.ProjectStatus == eProjectStatus.InProgress  &&
                     (project.ProjectName.ToLower().Contains(searchTerm) ||
                      project.ProjectDescription.ToLower().Contains(searchTerm)))
                 .ToListAsync();
