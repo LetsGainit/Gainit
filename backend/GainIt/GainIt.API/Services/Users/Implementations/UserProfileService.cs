@@ -139,7 +139,20 @@ namespace GainIt.API.Services.Users.Implementations
                 }
             }
 
-            // Return minimal profile DTO
+            // Check if existing user has completed their profile form
+            if (!isNewUser)
+            {
+                var hasCompletedProfile = await CheckIfUserHasCompletedProfileAsync(user.UserId);
+                if (!hasCompletedProfile)
+                {
+                    // User exists but hasn't completed profile form - treat as new user
+                    isNewUser = true;
+                    r_logger.LogInformation("User exists but hasn't completed profile form - treating as new user: UserId={UserId}, ExternalId={ExternalId}", 
+                        user.UserId, user.ExternalId);
+                }
+            }
+
+            // Return profile DTO
             var profileDto = new UserProfileDto
             {
                 UserId = user.UserId,
@@ -147,7 +160,7 @@ namespace GainIt.API.Services.Users.Implementations
                 EmailAddress = user.EmailAddress,
                 FullName = user.FullName,
                 Country = user.Country,
-                GitHubUsername = user.GitHubUsername,  // Add GitHub username
+                GitHubUsername = user.GitHubUsername,
                 IsNewUser = isNewUser
             };
 
@@ -156,6 +169,50 @@ namespace GainIt.API.Services.Users.Implementations
                 profileDto.UserId, profileDto.ExternalId, profileDto.EmailAddress, profileDto.FullName, totalTime);
 
             return profileDto;
+        }
+
+        /// <summary>
+        /// Simple check if a user has completed their profile by looking for their existence in derived tables
+        /// </summary>
+        /// <param name="userId">The user ID to check</param>
+        /// <returns>True if user exists in Gainers, Mentors, or Nonprofits table</returns>
+        public async Task<bool> CheckIfUserHasCompletedProfileAsync(Guid userId)
+        {
+            r_logger.LogDebug("Checking if user has completed profile: UserId={UserId}", userId);
+
+            try
+            {
+                // Check if user exists in any of the derived tables
+                var existsInGainers = await r_DbContext.Gainers.AnyAsync(g => g.UserId == userId);
+                if (existsInGainers)
+                {
+                    r_logger.LogDebug("User found in Gainers table: UserId={UserId}", userId);
+                    return true;
+                }
+
+                var existsInMentors = await r_DbContext.Mentors.AnyAsync(m => m.UserId == userId);
+                if (existsInMentors)
+                {
+                    r_logger.LogDebug("User found in Mentors table: UserId={UserId}", userId);
+                    return true;
+                }
+
+                var existsInNonprofits = await r_DbContext.Nonprofits.AnyAsync(n => n.UserId == userId);
+                if (existsInNonprofits)
+                {
+                    r_logger.LogDebug("User found in Nonprofits table: UserId={UserId}", userId);
+                    return true;
+                }
+
+                r_logger.LogDebug("User not found in any derived tables - profile incomplete: UserId={UserId}", userId);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error checking if user has completed profile: UserId={UserId}", userId);
+                // Return false to be safe - assume profile is incomplete if we can't determine
+                return false;
+            }
         }
 
         public async Task<Gainer> GetGainerByIdAsync(Guid i_userId)

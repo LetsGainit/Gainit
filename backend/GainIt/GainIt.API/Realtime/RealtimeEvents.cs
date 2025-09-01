@@ -14,11 +14,14 @@
             public const string TaskCreated = "taskCreated";
             public const string TaskUnblocked = "taskUnblocked";
             public const string TaskCompleted = "taskCompleted";
-        }
-
-        public static class Milestones
-        {
             public const string MilestoneCompleted = "milestoneCompleted";
+        }
+        
+        public static class Forum
+        {
+            public const string PostReplied = "postReplied";
+            public const string PostLiked = "postLiked";
+            public const string ReplyLiked = "replyLiked";
         }
     }
 }

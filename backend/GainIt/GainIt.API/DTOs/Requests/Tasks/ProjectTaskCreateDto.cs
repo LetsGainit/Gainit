@@ -19,5 +19,8 @@ namespace GainIt.API.DTOs.Requests.Tasks
         public Guid? AssignedUserId { get; set; }  
 
         public int? OrderIndex { get; set; }        // optional initial order
+        
+        // Optional subtasks to create along with the main task
+        public List<SubtaskCreateDto>? Subtasks { get; set; }
     }
 }

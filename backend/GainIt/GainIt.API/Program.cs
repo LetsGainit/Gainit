@@ -16,6 +16,8 @@ using GainIt.API.Services.Tasks.Implementations;
 using GainIt.API.Services.Tasks.Interfaces;
 using GainIt.API.Services.Users.Implementations;
 using GainIt.API.Services.Users.Interfaces;
+using GainIt.API.Services.Forum.Implementations;
+using GainIt.API.Services.Forum.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.SignalR;
@@ -45,6 +47,12 @@ var loggerConfig = new LoggerConfiguration()
 var instrumentationKey = Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
 var connectionString = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING");
 
+// Add GitHub environment variables (same pattern as Application Insights)
+var githubAppId = Environment.GetEnvironmentVariable("GITHUB__APPID");
+var githubClientId = Environment.GetEnvironmentVariable("GITHUB__CLIENTID");
+var githubClientSecret = Environment.GetEnvironmentVariable("GITHUB__CLIENTSECRET");
+var githubPrivateKey = Environment.GetEnvironmentVariable("GITHUB__PRIVATEKEYCONTENT");
+var githubInstallationId = Environment.GetEnvironmentVariable("GITHUB__INSTALLATIONID");
 
 if (!string.IsNullOrWhiteSpace(connectionString))
 {
@@ -78,8 +86,6 @@ else
 
 // Create the logger only once after all configuration is complete
 Log.Logger = loggerConfig.CreateLogger();
-
-
 
 // Test the Application Insights sink immediately if it was configured
 if (!string.IsNullOrWhiteSpace(connectionString) || !string.IsNullOrWhiteSpace(instrumentationKey))
@@ -375,24 +381,30 @@ try
         );
     });
 
-            // Add services to the container.
-        builder.Services.AddScoped<IProjectService, ProjectService>();
-        builder.Services.AddScoped<IUserProfileService, UserProfileService>();
-        builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
-        builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
-        builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
-        builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
-        builder.Services.AddScoped<IMilestoneService, MilestoneService>();
-        builder.Services.AddScoped<ITaskNotificationService, TaskNotificationService>();
-    
-        // GitHub Services
-        builder.Services.AddScoped<IGitHubService, GitHubService>();
-        builder.Services.AddScoped<IGitHubApiClient, GitHubApiClient>();
-        builder.Services.AddScoped<IGitHubAnalyticsService, GitHubAnalyticsService>();
+    // Add services to the container.
+    builder.Services.AddScoped<IProjectService, ProjectService>();
+    builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+    builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
+    builder.Services.AddScoped<IProjectConfigurationService, ProjectConfigurationService>();
+    builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
+    builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
+    builder.Services.AddScoped<IJoinRequestService, JoinRequestService>();
+    builder.Services.AddScoped<IMilestoneService, MilestoneService>();
+    builder.Services.AddScoped<ITaskService, TaskService>();
+    builder.Services.AddScoped<ITaskNotificationService, TaskNotificationService>();
+    builder.Services.AddScoped<IPlanningService, PlanningService>();
 
-        // Add HTTP client for GitHub API
-        builder.Services.AddHttpClient<IGitHubApiClient, GitHubApiClient>();
+    // GitHub Services
+    builder.Services.AddScoped<IGitHubService, GitHubService>();
+    builder.Services.AddScoped<IGitHubApiClient, GitHubApiClient>();
+    builder.Services.AddScoped<IGitHubAnalyticsService, GitHubAnalyticsService>();
 
+    // Forum Services
+    builder.Services.AddScoped<IForumService, ForumService>();
+    builder.Services.AddScoped<IForumNotificationService, ForumNotificationService>();
+
+    // Add HTTP client for GitHub API
+    builder.Services.AddHttpClient<IGitHubApiClient, GitHubApiClient>();
 
     // Add health checks
     builder.Services.AddHealthChecks()
@@ -525,14 +537,15 @@ try
         return "Logging test completed - check Application Insights for log messages";
     });
 
-
-
     // Seed the database with initial data
     using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<GainItDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<GainItDbContext>>();
-        GainItDbContextSeeder.SeedData(context, logger);
+        var projectConfigService = scope.ServiceProvider.GetRequiredService<IProjectConfigurationService>();
+        
+        // Simple synchronous seeding
+        GainItDbContextSeeder.SeedData(context, projectConfigService, logger);
     }
 
     Log.Information("GainIt.API application started successfully");

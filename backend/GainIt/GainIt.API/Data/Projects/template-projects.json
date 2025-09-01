@@ -1,0 +1,1591 @@
+[
+  {
+    "projectId": "gainit-platform",
+    "projectName": "GainIt - Learning & Project Matching Platform",
+    "projectDescription": "A comprehensive collaborative platform that connects Gainers (developers), Mentors (experienced developers), and Nonprofit Organizations to work together on meaningful projects with advanced project management, GitHub integration, and task tracking capabilities. The platform features user authentication, project discovery, achievement systems, forum discussions, and real-time collaboration tools.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://media.licdn.com/dms/image/v2/D4D0BAQEgfPskp-i7vA/company-logo_100_100/B4DZhwIY3vG8AQ-/0/1754227904566/gainit_logo?e=1759363200&v=beta&t=_oc5vqP2-CABsk-MqfgJY7fTfBd3f-KUTUyqz5cuNzk",
+    "durationDays": 365,
+    "goals": [
+      "Build a comprehensive user management system with authentication and role-based access control",
+      "Create an advanced project discovery and matching algorithm using AI and user expertise",
+      "Implement a complete project management system with task tracking and milestone management",
+      "Develop a real-time collaboration platform with forum discussions and notifications",
+      "Integrate GitHub for seamless project repository management and contribution tracking",
+      "Build an achievement and gamification system to encourage user engagement and skill development",
+      "Create responsive web and mobile interfaces using modern design principles",
+      "Implement Azure cloud services for scalability and reliability",
+      "Integrate OpenAI APIs for intelligent project recommendations and user assistance"
+    ],
+    "technologies": [
+      "React",
+      "Tailwind CSS",
+      "C#",
+      "ASP.NET Core",
+      "Azure",
+      "OpenAI API",
+      "Entity Framework Core",
+      "SignalR",
+      "GitHub API",
+      "SQL Server",
+      "Docker",
+      "Azure DevOps",
+      "Azure Cognitive Search",
+      "Azure Blob Storage"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer",
+      "UI/UX Designer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "C#",
+      "HTML",
+      "CSS",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "ai-finance-coach",
+    "projectName": "AI-Powered Personal Finance Coach",
+    "projectDescription": "Web & mobile app that ingests local bank / credit card CSV exports (Hebrew headers), categorizes NIS expenses (including VAT/מע\"מ considerations) and provides Hebrew + English GPT-based budgeting tips, anomaly alerts, and saving goals tailored to regional cost-of-living.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Ingest and normalize Bank Leumi / Hapoalim CSV & Isracard statements",
+      "Generate AI insights and coaching prompts",
+      "Provide goal tracking and weekly reports",
+      "Support Hebrew + English UI toggle (RTL layout)",
+      "Export a shareable portfolio README with screenshots"
+    ],
+    "technologies": [
+      "Next.js",
+      "TypeScript",
+      "TailwindCSS",
+      "NestJS",
+      "PostgreSQL",
+      "Prisma",
+      "OpenAI API",
+      "LangChain"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer",
+      "Data Analyst",
+      "UI/UX Designer",
+      "Product Manager"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "cyber-anomaly-monitor",
+    "projectName": "Real-Time Cyber Anomaly Monitor",
+    "projectDescription": "Security dashboard streaming logs from a typical startup stack (Node.js, Kubernetes on AWS / local DC), detects anomalies with ML and sends Hebrew/English alerts (Slack / Teams). Includes rule-based & ML detectors plus incident war-room timeline.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1510511459019-5dda7724fd87?q=80&w=1200",
+    "durationDays": 60,
+    "goals": [
+      "Ingest logs from multiple sources",
+      "Train unsupervised model for anomaly scoring",
+      "Create alerting workflow with severity levels",
+      "Document runbooks for incidents"
+    ],
+    "technologies": [
+      "Python",
+      "FastAPI",
+      "Kafka",
+      "Elasticsearch",
+      "Kibana",
+      "Scikit-learn",
+      "Docker",
+      "Slack Webhooks"
+    ],
+    "requiredRoles": [
+      "Security Analyst",
+      "Backend Developer",
+      "ML Engineer",
+      "DevOps Engineer"
+    ],
+    "programmingLanguages": [
+      "Python",
+      "JavaScript"
+    ]
+  },
+  {
+    "projectId": "healthcare-wearables",
+    "projectName": "Healthcare Wearables Insights",
+    "projectDescription": "Dashboard ingesting heart-rate & sleep data (CSV / Google Fit) generating explainable AI patterns with Hebrew summaries for clinicians and optional integration with mock HMO-style APIs.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1516841273335-e39b37888115?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Normalize wearable datasets",
+      "Detect anomalies and trend shifts",
+      "Provide weekly PDF summary via email",
+      "Ensure data privacy with role-based access"
+    ],
+    "technologies": [
+      "React",
+      "Vite",
+      "Node.js",
+      "PostgreSQL",
+      "Pandas",
+      "Plotly",
+      "JWT Auth",
+      "SendGrid"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer",
+      "Data Scientist",
+      "QA Tester"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "Python",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "rag-knowledge-assistant",
+    "projectName": "RAG Knowledge Assistant for Docs",
+    "projectDescription": "RAG app indexing bilingual (Hebrew + English) PDFs and local regulatory pages (e.g., privacy law summaries) answering questions with sources, confidence scores, and highlighted citations (RTL aware).",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=1200",
+    "durationDays": 45,
+    "goals": [
+      "Implement document chunking & embeddings",
+      "Answer queries with citations and highlights",
+      "Add feedback loop to improve results",
+      "Ship a one-click deploy demo"
+    ],
+    "technologies": [
+      "Next.js",
+      "tRPC",
+      "OpenAI API",
+      "LangChain",
+      "Postgres + pgvector",
+      "Supabase",
+      "Docker"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer",
+      "ML Engineer",
+      "Product Manager",
+      "UI/UX Designer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "smart-job-match",
+    "projectName": "Smart Job-Match & Resume Tailor",
+    "projectDescription": "Tool parsing bilingual tech job descriptions (Hebrew / English mixed), scoring fit vs. a GitHub profile and generating tailored bilingual resume bullets (including military service experience anonymization option) with quantifiable impact.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200",
+    "durationDays": 14,
+    "goals": [
+      "Scrape job descriptions safely (upload alternative)",
+      "Extract skills and compare with GitHub repos",
+      "Generate tailored resume bullets and cover letter",
+      "Produce a shareable public profile page"
+    ],
+    "technologies": [
+      "Next.js",
+      "TypeScript",
+      "FastAPI",
+      "GitHub API",
+      "OpenAI API",
+      "Pinecone or Weaviate",
+      "Redis"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer",
+      "Data Engineer",
+      "Product Manager"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "Python"
+    ]
+  },
+  {
+    "projectId": "marketing-automations-hub",
+    "projectName": "Marketing Automations Hub",
+    "projectDescription": "Low-code hub integrating Facebook/Meta, Google Ads & local campaign CSV exports to pull daily metrics, detect anomalies in CPL/ROAS for Hebrew campaigns, and post bilingual Slack summaries with charts.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200",
+    "durationDays": 21,
+    "goals": [
+      "ETL for multi-platform marketing data",
+      "Automated anomaly detection & alerts",
+      "Daily Slack digest with charts",
+      "Downloadable CSV/Looker Studio connector"
+    ],
+    "technologies": [
+      "Python",
+      "Airflow",
+      "BigQuery",
+      "dbt",
+      "FastAPI",
+      "Matplotlib/Plotly",
+      "Slack API",
+      "Docker"
+    ],
+    "requiredRoles": [
+      "Data Engineer",
+      "Backend Developer",
+      "Data Analyst",
+      "DevOps Engineer"
+    ],
+    "programmingLanguages": [
+      "Python",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "gitops-cicd-starter",
+    "projectName": "GitOps CI/CD Starter Kit",
+    "projectDescription": "Template repo that ships a production-like CI/CD with tests, Docker images, preview deployments, and IaC for a small microservice.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1518779578993-ec3579fee39f?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Build CI pipelines with unit/integration tests",
+      "Push Docker images & create preview URLs",
+      "Provision cloud infra using IaC",
+      "Security checks (SAST/Dependabot)"
+    ],
+    "technologies": [
+      "GitHub Actions",
+      "Docker",
+      "Kubernetes (kind/minikube)",
+      "Terraform",
+      "Helm",
+      "Node.js or Go",
+      "OpenAPI"
+    ],
+    "requiredRoles": [
+      "DevOps Engineer",
+      "Backend Developer",
+      "QA Tester"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "Go",
+      "YAML"
+    ]
+  },
+  {
+    "projectId": "sports-analytics-saas",
+    "projectName": "Sports Analytics Micro-SaaS",
+    "projectDescription": "Subscription app that predicts match outcomes from public datasets and provides betting-agnostic insights with explainability and confidence intervals.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200",
+    "durationDays": 45,
+    "goals": [
+      "Build feature engineering pipeline",
+      "Train & evaluate predictive models",
+      "Expose API and simple paywall",
+      "Publish model cards and monitoring"
+    ],
+    "technologies": [
+      "Python",
+      "Pandas",
+      "XGBoost",
+      "FastAPI",
+      "PostgreSQL",
+      "Stripe",
+      "Next.js"
+    ],
+    "requiredRoles": [
+      "ML Engineer",
+      "Data Scientist",
+      "Full-Stack Developer",
+      "Product Manager"
+    ],
+    "programmingLanguages": [
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "nonprofit-volunteer-match",
+    "projectName": "Nonprofit Volunteer Match Platform",
+    "projectDescription": "Marketplace matching volunteers to local NGOs / community initiatives using skills & availability, with AI-generated onboarding tasks (Hebrew + Arabic optional) and progress badges.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Create matching algorithm by skills/time",
+      "Generate onboarding micro-tasks with AI",
+      "Build profile and badge system",
+      "Admin dashboard for NGOs"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "MongoDB",
+      "Mongoose",
+      "OpenAI API",
+      "TailwindCSS",
+      "JWT Auth"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer",
+      "UI/UX Designer",
+      "Project Manager"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "supply-chain-risk-radar",
+    "projectName": "Supply-Chain Risk Radar",
+    "projectDescription": "Dashboard crawling Hebrew & English vendor news/RSS, classifying risk (financial, legal, cyber) with LLMs, and alerting procurement teams (email / WhatsApp integration placeholder) with mitigation suggestions.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1518085250887-2f903c200fee?q=80&w=1200",
+    "durationDays": 60,
+    "goals": [
+      "Ingest & classify vendor signals",
+      "Build risk scoring and time-series trends",
+      "Provide mitigation playbooks via AI",
+      "Role-based access and audit log"
+    ],
+    "technologies": [
+      "Next.js",
+      "Python",
+      "Playwright",
+      "FastAPI",
+      "PostgreSQL",
+      "OpenAI API",
+      "LangChain",
+      "Redis"
+    ],
+    "requiredRoles": [
+      "Data Engineer",
+      "ML Engineer",
+      "Backend Developer",
+      "Security Analyst",
+      "Product Manager"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "Python",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "ai-music-playlist-curator",
+    "projectName": "AI Music Playlist Curator",
+    "projectDescription": "App that generates personalized Spotify playlists using GPT prompts and mood detection from recent listening history.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200",
+    "durationDays": 14,
+    "goals": [
+      "Integrate with Spotify API",
+      "Detect mood based on listening patterns",
+      "Generate playlists with GPT",
+      "Deploy as a web app"
+    ],
+    "technologies": [
+      "Next.js",
+      "TypeScript",
+      "Spotify API",
+      "OpenAI API",
+      "TailwindCSS"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript"
+    ]
+  },
+  {
+    "projectId": "pet-care-reminder-bot",
+    "projectName": "Pet Care Reminder Bot",
+    "projectDescription": "Telegram bot reminding pet owners (Hebrew UI) of feeding, walks, vet visits and vaccinations, with AI-generated localized pet care tips.",
+    "difficultyLevel": "Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=1200",
+    "durationDays": 7,
+    "goals": [
+      "Set up reminders with scheduling",
+      "Integrate with Telegram API",
+      "Add AI-generated daily tips for pets"
+    ],
+    "technologies": [
+      "Python",
+      "Aiogram",
+      "SQLite",
+      "OpenAI API"
+    ],
+    "requiredRoles": [
+      "Backend Developer"
+    ],
+    "programmingLanguages": [
+      "Python"
+    ]
+  },
+  {
+    "projectId": "streetwear-outfit-recommender",
+    "projectName": "Streetwear Outfit Recommender",
+    "projectDescription": "Fashion recommendation web app that suggests streetwear outfits based on user-uploaded items and trending styles.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?q=80&w=1200",
+    "durationDays": 21,
+    "goals": [
+      "Allow users to upload wardrobe items",
+      "Use AI to recommend outfit combinations",
+      "Scrape trending looks for inspiration"
+    ],
+    "technologies": [
+      "React",
+      "FastAPI",
+      "TensorFlow.js",
+      "MongoDB",
+      "TailwindCSS"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "Python"
+    ]
+  },
+  {
+    "projectId": "ai-sports-highlight-generator",
+    "projectName": "AI Sports Highlight Generator",
+    "projectDescription": "Tool that takes a sports match video and generates short highlights with captions.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1517927033932-b3d18e61fb3a?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Ingest and segment match video",
+      "Detect key moments using audio + score changes",
+      "Generate highlight clips with captions"
+    ],
+    "technologies": [
+      "Python",
+      "OpenCV",
+      "FFmpeg",
+      "PyTorch",
+      "Streamlit"
+    ],
+    "requiredRoles": [
+      "ML Engineer",
+      "Data Engineer"
+    ],
+    "programmingLanguages": [
+      "Python"
+    ]
+  },
+  {
+    "projectId": "cooking-recipe-generator",
+    "projectName": "Cooking Recipe Generator",
+    "projectDescription": "AI app that generates recipes from the ingredients you already have at home.",
+    "difficultyLevel": "Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1498579150354-977475b7ea0b?q=80&w=1200",
+    "durationDays": 7,
+    "goals": [
+      "Input ingredients via text",
+      "Generate recipes with GPT",
+      "Display step-by-step cooking instructions"
+    ],
+    "technologies": [
+      "Vue.js",
+      "Node.js",
+      "OpenAI API",
+      "MongoDB"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "travel-photo-journal",
+    "projectName": "Travel Photo Journal",
+    "projectDescription": "Web app to upload travel photos, auto-generate captions and build a digital trip diary.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200",
+    "durationDays": 14,
+    "goals": [
+      "Upload photos with cloud storage",
+      "Generate AI captions",
+      "Build a shareable trip diary page"
+    ],
+    "technologies": [
+      "Next.js",
+      "Firebase",
+      "Cloudinary",
+      "OpenAI API"
+    ],
+    "requiredRoles": [
+      "Frontend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript"
+    ]
+  },
+  {
+    "projectId": "fitness-progress-tracker",
+    "projectName": "Fitness Progress Tracker",
+    "projectDescription": "App for logging workouts and generating AI insights about progress with visual charts.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1200",
+    "durationDays": 21,
+    "goals": [
+      "Log exercises and track history",
+      "Generate AI feedback for improvement",
+      "Visualize progress with charts"
+    ],
+    "technologies": [
+      "React Native",
+      "SQLite",
+      "Recharts",
+      "OpenAI API"
+    ],
+    "requiredRoles": [
+      "Mobile Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript"
+    ]
+  },
+  {
+    "projectId": "photography-portfolio-builder",
+    "projectName": "Photography Portfolio Builder",
+    "projectDescription": "Minimalist site builder that helps photographers create a portfolio with auto-generated captions and SEO-friendly structure.",
+    "difficultyLevel": "Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1504208434309-cb69f4fe52b0?q=80&w=1200",
+    "durationDays": 10,
+    "goals": [
+      "Upload and showcase photo galleries",
+      "Generate SEO captions",
+      "Export as a static website"
+    ],
+    "technologies": [
+      "Gatsby.js",
+      "GraphQL",
+      "OpenAI API",
+      "Netlify"
+    ],
+    "requiredRoles": [
+      "Frontend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "indie-music-discovery-app",
+    "projectName": "Indie Music Discovery App",
+    "projectDescription": "App that recommends indie artists using Spotify's API and generates weekly discovery playlists.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1526470608268-f674ce90ebd4?q=80&w=1200",
+    "durationDays": 14,
+    "goals": [
+      "Integrate with Spotify API",
+      "Generate discovery playlists",
+      "Provide shareable weekly report"
+    ],
+    "technologies": [
+      "Flutter",
+      "Dart",
+      "Spotify API",
+      "Firebase"
+    ],
+    "requiredRoles": [
+      "Mobile Developer"
+    ],
+    "programmingLanguages": [
+      "Dart"
+    ]
+  },
+  {
+    "projectId": "mindfulness-journal",
+    "projectName": "Mindfulness Journal",
+    "projectDescription": "Web app for daily journaling with AI-generated prompts and mood analysis.",
+    "difficultyLevel": "Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=1200",
+    "durationDays": 10,
+    "goals": [
+      "Daily journaling form",
+      "AI-generated reflection prompts",
+      "Mood tracking dashboard"
+    ],
+    "technologies": [
+      "React",
+      "Firebase",
+      "OpenAI API",
+      "Chart.js"
+    ],
+    "requiredRoles": [
+      "Frontend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "civic-issue-reporting",
+    "projectName": "Civic Issue Reporting Platform",
+    "projectDescription": "Mobile + web platform for residents to report potholes, broken lights, accessibility barriers (Hebrew RTL) with geo-tagging and triage dashboard for municipal / nonprofit partners.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1487956382158-bb926046304a?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Capture geo-tagged issue reports with photos",
+      "Implement status workflow (New/In Progress/Resolved)",
+      "Provide public transparency map",
+      "Export weekly metrics PDF for stakeholders"
+    ],
+    "technologies": [
+      "React Native",
+      "Next.js",
+      "Node.js",
+      "PostgreSQL",
+      "Prisma",
+      "Leaflet.js",
+      "OpenAI API"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer",
+      "Mobile Developer",
+      "UI/UX Designer",
+      "Project Manager"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "accessible-learning-converter",
+    "projectName": "Accessible Learning Materials Converter",
+    "projectDescription": "Service converting Hebrew / Arabic / English educational PDFs into accessible HTML/EPUB with alt-text suggestions and reading-level summaries for educational nonprofits.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1556761175-4b46a572b786?q=80&w=1200",
+    "durationDays": 45,
+    "goals": [
+      "Extract structured text & images from PDFs",
+      "Suggest alt text with vision model",
+      "Generate simplified reading-level summary",
+      "Provide downloadable accessible formats"
+    ],
+    "technologies": [
+      "Python",
+      "FastAPI",
+      "Tesseract OCR",
+      "OpenAI Vision API",
+      "PostgreSQL",
+      "React",
+      "TailwindCSS"
+    ],
+    "requiredRoles": [
+      "Backend Developer",
+      "ML Engineer",
+      "Frontend Developer",
+      "Accessibility Specialist"
+    ],
+    "programmingLanguages": [
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "carbon-footprint-tracker",
+    "projectName": "Carbon Footprint Tracker for Small Businesses",
+    "projectDescription": "Dashboard for small businesses to log electricity, transportation, and procurement data, estimate carbon footprint (CO₂e) and produce Hebrew reduction recommendations.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Input energy & activity data",
+      "Calculate emissions using factors",
+      "Generate reduction recommendations",
+      "Visualize trends and targets"
+    ],
+    "technologies": [
+      "Next.js",
+      "TypeScript",
+      "Node.js",
+      "PostgreSQL",
+      "Chart.js",
+      "OpenAI API"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer",
+      "Data Analyst",
+      "Product Manager"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "disaster-relief-coordination",
+    "projectName": "Disaster Relief Resource Coordination",
+    "projectDescription": "Platform for nonprofits to coordinate shelters, volunteers, and inventory (food, medical kits) with real-time availability maps and bilingual interface (Hebrew/English).",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200",
+    "durationDays": 60,
+    "goals": [
+      "Register shelters & capacities",
+      "Track inventory levels & expirations",
+      "Match volunteer skills to tasks",
+      "Provide incident situation dashboard"
+    ],
+    "technologies": [
+      "Django",
+      "PostgreSQL",
+      "Redis",
+      "Celery",
+      "Leaflet.js",
+      "React",
+      "Docker"
+    ],
+    "requiredRoles": [
+      "Backend Developer",
+      "Frontend Developer",
+      "Data Engineer",
+      "DevOps Engineer"
+    ],
+    "programmingLanguages": [
+      "Python",
+      "JavaScript",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "open-source-mentorship",
+    "projectName": "Open Source Mentorship Match Portal",
+    "projectDescription": "Portal matching junior developers with global & local open source maintainers based on stack interests, availability, and Hebrew/English communication preference.",
+    "difficultyLevel": "Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=1200",
+    "durationDays": 14,
+    "goals": [
+      "Collect mentor & mentee profiles",
+      "Match based on skills & goals",
+      "Automate intro email generation",
+      "Track session feedback & outcomes"
+    ],
+    "technologies": [
+      "Next.js",
+      "Prisma",
+      "PostgreSQL",
+      "SendGrid",
+      "OpenAI API"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "ai-code-review-assistant",
+    "projectName": "AI Code Review Assistant Lite",
+    "projectDescription": "Tool ingesting pull requests and generating suggested improvements, security hints (OWASP + privacy protection considerations), and Hebrew/English learning resources for junior devs.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200",
+    "durationDays": 21,
+    "goals": [
+      "Parse diffs from Git provider",
+      "Generate structured review comments",
+      "Highlight potential security issues",
+      "Provide learning resource links"
+    ],
+    "technologies": [
+      "Node.js",
+      "Express",
+      "GitHub API",
+      "OpenAI API",
+      "Redis",
+      "React"
+    ],
+    "requiredRoles": [
+      "Backend Developer",
+      "Frontend Developer",
+      "Security Analyst"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript"
+    ]
+  },
+  {
+    "projectId": "iot-community-garden",
+    "projectName": "IoT Community Garden Monitor",
+    "projectDescription": "System monitoring soil moisture & temperature in a community garden (e.g., urban rooftop) and suggesting watering schedules, accessible to local nonprofit coordinators (Hebrew UI).",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Collect sensor data via MQTT",
+      "Store & chart time-series readings",
+      "Generate watering recommendations",
+      "Send threshold alerts via SMS"
+    ],
+    "technologies": [
+      "Python",
+      "FastAPI",
+      "MQTT (Mosquitto)",
+      "TimescaleDB",
+      "React",
+      "Twilio API",
+      "Docker"
+    ],
+    "requiredRoles": [
+      "IoT Developer",
+      "Backend Developer",
+      "Frontend Developer"
+    ],
+    "programmingLanguages": [
+      "Python",
+      "JavaScript",
+      "TypeScript"
+    ]
+  },
+  {
+    "projectId": "healthcare-appointment-predictor",
+    "projectName": "Healthcare Appointment No-Show Predictor",
+    "projectDescription": "Predictive model that flags likely patient no-shows for clinics so staff can send reminders and optimize scheduling.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?q=80&w=1200",
+    "durationDays": 45,
+    "goals": [
+      "Ingest historical appointment data",
+      "Engineer behavioral & temporal features",
+      "Train & evaluate prediction model",
+      "Trigger reminder workflows"
+    ],
+    "technologies": [
+      "Python",
+      "Pandas",
+      "Scikit-learn",
+      "XGBoost",
+      "FastAPI",
+      "PostgreSQL",
+      "Airflow"
+    ],
+    "requiredRoles": [
+      "Data Scientist",
+      "ML Engineer",
+      "Backend Developer"
+    ],
+    "programmingLanguages": [
+      "Python",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "ngo-donation-impact",
+    "projectName": "NGO Donation Impact Visualizer",
+    "projectDescription": "Analytics dashboard tying donations (NIS) to funded NGO activities and generating Hebrew impact narratives with charts for transparency & compliance reporting.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Model donations & program expenses",
+      "Generate impact allocation summaries",
+      "Render donor-friendly visualizations",
+      "Export shareable impact report PDF"
+    ],
+    "technologies": [
+      "Next.js",
+      "TypeScript",
+      "PostgreSQL",
+      "Prisma",
+      "D3.js",
+      "OpenAI API"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer",
+      "Data Analyst",
+      "UI/UX Designer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "SQL"
+    ]
+  },
+  {
+    "projectId": "remote-internship-tracker",
+    "projectName": "Remote Internship Task Tracker",
+    "projectDescription": "Tool for mentors to assign scoped tasks with learning objectives and AI-generated hints to remote interns (supporting Hebrew / English tasks & right-to-left layout).",
+    "difficultyLevel": "Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1200",
+    "durationDays": 14,
+    "goals": [
+      "Create tasks with objectives & tags",
+      "Provide AI-generated guidance hints",
+      "Track progress & completion metrics",
+      "Generate weekly summary emails"
+    ],
+    "technologies": [
+      "Vue.js",
+      "Node.js",
+      "MongoDB",
+      "OpenAI API",
+      "SendGrid"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "personal-portfolio-blog",
+    "projectName": "Personal Portfolio with Blog",
+    "projectDescription": "Beginner-friendly personal portfolio site with integrated Markdown blog, basic auth for managing posts, and responsive design.",
+    "difficultyLevel": "Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1200",
+    "durationDays": 10,
+    "goals": [
+      "Set up Next.js pages & dynamic routes",
+      "Implement Markdown post rendering",
+      "Add basic authentication for admin",
+      "Responsive Tailwind layout"
+    ],
+    "technologies": [
+      "Next.js",
+      "TailwindCSS",
+      "Firebase",
+      "Markdown"
+    ],
+    "requiredRoles": [
+      "Frontend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "ecommerce-platform",
+    "projectName": "E-commerce Platform",
+    "projectDescription": "Full-stack store with product catalog, cart, checkout, order history, and Stripe payment integration.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Product listing & filtering",
+      "Shopping cart & checkout flow",
+      "Stripe payment integration",
+      "User accounts & order history"
+    ],
+    "technologies": [
+      "React",
+      "Next.js",
+      "Node.js",
+      "MongoDB",
+      "Stripe",
+      "Zustand"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer",
+      "Frontend Developer",
+      "Backend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "realtime-chat-app",
+    "projectName": "Real-Time Chat Application",
+    "projectDescription": "Chat app supporting channels, private messages, file sharing, typing indicators, and real-time presence.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200",
+    "durationDays": 21,
+    "goals": [
+      "Implement Socket.IO real-time messaging",
+      "Channel & DM architecture",
+      "File upload & sharing",
+      "JWT auth & user presence"
+    ],
+    "technologies": [
+      "MongoDB",
+      "Express",
+      "React",
+      "Node.js",
+      "Socket.IO",
+      "JWT"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "video-streaming-platform",
+    "projectName": "Full-Stack Video Streaming Platform",
+    "projectDescription": "Platform for uploading, encoding, streaming videos with user auth, recommendations, comments, and history tracking.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1200",
+    "durationDays": 45,
+    "goals": [
+      "Video upload & S3 storage",
+      "Transcode to HLS playlists",
+      "Content search & recommendations",
+      "Engagement (likes, comments, history)"
+    ],
+    "technologies": [
+      "Next.js",
+      "Node.js",
+      "MongoDB",
+      "AWS S3",
+      "HLS",
+      "FFmpeg"
+    ],
+    "requiredRoles": [
+      "Backend Developer",
+      "Full-Stack Developer",
+      "DevOps Engineer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "task-management-kanban",
+    "projectName": "Task Management App with Kanban",
+    "projectDescription": "Collaborative Kanban board with task assignment, deadlines, drag-and-drop, and real-time updates.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "GraphQL schema & resolvers",
+      "Real-time updates via WebSockets",
+      "Kanban drag-and-drop UI",
+      "Roles & permissions"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "GraphQL",
+      "Apollo",
+      "WebSockets"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer",
+      "Frontend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "blockchain-marketplace",
+    "projectName": "Decentralized Marketplace on Blockchain",
+    "projectDescription": "dApp for listing, bidding, and purchasing items using smart contracts with wallet integration and IPFS asset storage.",
+    "difficultyLevel": "Expert",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200",
+    "durationDays": 45,
+    "goals": [
+      "Smart contracts for listings & bids",
+      "Wallet (MetaMask) integration",
+      "IPFS asset storage",
+      "Transaction history UI"
+    ],
+    "technologies": [
+      "Solidity",
+      "Next.js",
+      "ethers.js",
+      "MetaMask",
+      "IPFS"
+    ],
+    "requiredRoles": [
+      "Blockchain Developer",
+      "Full-Stack Developer"
+    ],
+    "programmingLanguages": [
+      "Solidity",
+      "JavaScript",
+      "TypeScript"
+    ]
+  },
+  {
+    "projectId": "weather-dashboard",
+    "projectName": "Weather Dashboard",
+    "projectDescription": "Dashboard to search cities and display current weather, humidity, conditions, and a 7-day forecast with dark mode.",
+    "difficultyLevel": "Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1501973801540-537f08ccae7b?q=80&w=1200",
+    "durationDays": 7,
+    "goals": [
+      "City search UI",
+      "Current conditions panel",
+      "7-day forecast cards",
+      "Dark mode toggle"
+    ],
+    "technologies": [
+      "React",
+      "OpenWeatherMap API",
+      "TailwindCSS"
+    ],
+    "requiredRoles": [
+      "Frontend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "multiplayer-game",
+    "projectName": "Real-Time Multiplayer Game",
+    "projectDescription": "Browser-based multiplayer mini-game with lobbies, real-time player sync, scoring, and chat.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Lobby & room management",
+      "Real-time player actions",
+      "Scoring & leaderboard",
+      "In-game chat"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "Socket.IO",
+      "Canvas API"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer",
+      "Game Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "pomodoro-timer",
+    "projectName": "Pomodoro Timer with Task Management",
+    "projectDescription": "Productivity app combining Pomodoro intervals with a task list, completion tracking, and notifications.",
+    "difficultyLevel": "Advanced Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1456086272160-b28b0645b729?q=80&w=1200",
+    "durationDays": 7,
+    "goals": [
+      "Pomodoro & break timers",
+      "Task CRUD & estimates",
+      "Completion tracking",
+      "Dark mode & notifications"
+    ],
+    "technologies": [
+      "React",
+      "TailwindCSS",
+      "Local Storage"
+    ],
+    "requiredRoles": [
+      "Frontend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "crypto-portfolio-tracker",
+    "projectName": "Crypto Portfolio Tracker",
+    "projectDescription": "Tracker for multiple cryptocurrencies with real-time pricing, portfolio valuation, historical graphs, and wallet integration.",
+    "difficultyLevel": "Expert",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1497493292307-31c376b6e479?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Add & manage holdings",
+      "Real-time price updates",
+      "Historical performance charts",
+      "Wallet (MetaMask) optional sync"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "MongoDB",
+      "CoinGecko API"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer",
+      "Data Engineer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "ai-document-scanner",
+    "projectName": "AI-powered Document Scanner & Analyzer",
+    "projectDescription": "OCR-based document scanner extracting text, categorizing content, and enabling export with AI tagging.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1487017159836-4e23ece2e4cf?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "OCR text extraction",
+      "AI category tagging",
+      "Document storage & retrieval",
+      "PDF export with annotations"
+    ],
+    "technologies": [
+      "React",
+      "Python",
+      "TensorFlow.js",
+      "AWS Lambda"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "ML Engineer",
+      "Backend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "Python",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "habit-tracker",
+    "projectName": "Habit Tracker with Progress Analytics",
+    "projectDescription": "Daily habit tracker with streaks, weekly/monthly analytics, customizable habit icons, and dark mode.",
+    "difficultyLevel": "Beginner",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1492724441997-5dc865305da7?q=80&w=1200",
+    "durationDays": 10,
+    "goals": [
+      "CRUD habits & toggle completion",
+      "Weekly/monthly charts",
+      "Streak visualization",
+      "Dark mode UI"
+    ],
+    "technologies": [
+      "React",
+      "Local Storage",
+      "Chart.js",
+      "TailwindCSS"
+    ],
+    "requiredRoles": [
+      "Frontend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "book-recommendation-system",
+    "projectName": "Book Recommendation System",
+    "projectDescription": "Platform to search books, rate/review, and receive personalized recommendations with user profiles.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?q=80&w=1200",
+    "durationDays": 21,
+    "goals": [
+      "Search & detail pages",
+      "User reviews & ratings",
+      "Recommendation engine MVP",
+      "Profiles & favorites"
+    ],
+    "technologies": [
+      "Next.js",
+      "Node.js",
+      "MongoDB",
+      "Google Books API"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer",
+      "Backend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "video-conference-platform",
+    "projectName": "Video Conference Platform with Screen Sharing",
+    "projectDescription": "Multi-participant video conferencing with screen sharing, chat, participant controls, and session history.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1200",
+    "durationDays": 45,
+    "goals": [
+      "WebRTC multi-peer setup",
+      "Screen sharing feature",
+      "In-call chat & controls",
+      "Session logging"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "WebRTC",
+      "Socket.IO",
+      "Firebase"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer",
+      "DevOps Engineer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "music-playlist-generator",
+    "projectName": "Music Playlist Generator with Recommendations",
+    "projectDescription": "App generating personalized playlists based on mood, genre, and activity with Spotify playback.",
+    "difficultyLevel": "Intermediate",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200",
+    "durationDays": 14,
+    "goals": [
+      "Mood & genre input UI",
+      "Spotify API integration",
+      "Playlist generation logic",
+      "Save & playback"
+    ],
+    "technologies": [
+      "React",
+      "Spotify API",
+      "Node.js",
+      "MongoDB"
+    ],
+    "requiredRoles": [
+      "Frontend Developer",
+      "Backend Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "job-application-tracker",
+    "projectName": "Job Application Tracker",
+    "projectDescription": "Tracker for job applications with statuses, deadlines, reminders, and notes.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=1200",
+    "durationDays": 21,
+    "goals": [
+      "Application CRUD & statuses",
+      "Deadline & follow-up reminders",
+      "Filtering & search",
+      "Notes & company info"
+    ],
+    "technologies": [
+      "Next.js",
+      "MongoDB",
+      "TailwindCSS",
+      "Firebase"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "document-vault-encryption",
+    "projectName": "Personal Document Vault with Encryption",
+    "projectDescription": "Secure vault for encrypted document upload, tagging, search, and access control.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=1200",
+    "durationDays": 30,
+    "goals": [
+      "Encrypted upload & storage",
+      "Tagging & search",
+      "Role-based access",
+      "Audit logging"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "MongoDB",
+      "Crypto.js",
+      "AWS S3"
+    ],
+    "requiredRoles": [
+      "Backend Developer",
+      "Security Engineer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "p2p-file-sharing",
+    "projectName": "Peer-to-Peer File Sharing App",
+    "projectDescription": "Decentralized WebRTC-based file sharing with progress indicators, auth, and in-transfer chat.",
+    "difficultyLevel": "Advanced",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1200",
+    "durationDays": 21,
+    "goals": [
+      "WebRTC peer connections",
+      "File chunk transfer & progress",
+      "Auth & private rooms",
+      "Chat during transfer"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "WebRTC",
+      "TailwindCSS"
+    ],
+    "requiredRoles": [
+      "Full-Stack Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "ai-movie-recommendation",
+    "projectName": "AI-Driven Movie Recommendation System",
+    "projectDescription": "Movie recommender with user preference profiles, ML-based suggestions, ratings, and watchlists.",
+    "difficultyLevel": "Expert",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1200",
+    "durationDays": 45,
+    "goals": [
+      "User profile & preferences",
+      "ML recommendation engine",
+      "Ratings & reviews",
+      "Watchlist management"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "MongoDB",
+      "Python",
+      "TensorFlow.js"
+    ],
+    "requiredRoles": [
+      "ML Engineer",
+      "Full-Stack Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "Python",
+      "HTML",
+      "CSS"
+    ]
+  },
+  {
+    "projectId": "stock-market-dashboard",
+    "projectName": "Real-Time Stock Market Dashboard",
+    "projectDescription": "Dashboard with real-time stock prices, trends, AI predictions, personalized watchlists, and news integration.",
+    "difficultyLevel": "Expert",
+    "projectPictureUrl": "https://images.unsplash.com/photo-1505685296765-3a2736de412f?q=80&w=1200",
+    "durationDays": 45,
+    "goals": [
+      "Real-time price streaming",
+      "Trend & indicator charts",
+      "AI prediction module",
+      "Watchlist & news feed"
+    ],
+    "technologies": [
+      "React",
+      "Node.js",
+      "MongoDB",
+      "WebSocket",
+      "Alpha Vantage API",
+      "TensorFlow.js"
+    ],
+    "requiredRoles": [
+      "Data Engineer",
+      "ML Engineer",
+      "Full-Stack Developer"
+    ],
+    "programmingLanguages": [
+      "JavaScript",
+      "TypeScript",
+      "Python",
+      "HTML",
+      "CSS"
+    ]
+  }
+]

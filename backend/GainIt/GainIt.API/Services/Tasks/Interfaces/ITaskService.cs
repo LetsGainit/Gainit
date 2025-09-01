@@ -17,10 +17,9 @@ namespace GainIt.API.Services.Tasks.Interfaces
         Task<ProjectTaskViewModel> UpdateAsync(Guid i_ProjectId, Guid i_TaskId, ProjectTaskUpdateDto i_TaskUpdateModel, Guid i_ActorUserId);
         Task DeleteAsync(Guid i_ProjectId, Guid i_TaskId, Guid i_ActorUserId);
 
-        // Status / Ordering / Milestone
+        // Status / Ordering
         Task<ProjectTaskViewModel> ChangeStatusAsync(Guid i_ProjectId, Guid i_TaskId, eTaskStatus i_NewStatus, Guid i_ActorUserId);
         Task<ProjectTaskViewModel> ReorderAsync(Guid i_ProjectId, Guid i_TaskId, int i_NewOrderIndex, Guid i_ActorUserId);
-        Task<ProjectTaskViewModel> MoveToMilestoneAsync(Guid i_ProjectId, Guid i_TaskId, Guid? i_MilestoneId, Guid i_ActorUserId);
 
         // Dependencies
         Task AddDependencyAsync(Guid i_ProjectId, Guid i_TaskId, Guid i_DependsOnTaskId, Guid i_ActorUserId);
