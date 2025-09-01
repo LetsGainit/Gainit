@@ -79,6 +79,8 @@ namespace GainIt.API.Controllers.Users
 
                 var email = tryGetClaim(User, "emails")
                          ?? tryGetClaim(User, "email")
+                         ?? tryGetClaim(User, "upn")  // User Principal Name - often contains the actual email for Google OAuth
+                         ?? tryGetClaim(User, "signInNames.emailAddress")  // Azure AD B2C specific claim for email
                          ?? tryGetClaim(User, "preferred_username");
 
                 // Prefer display name if present, then compose from given + surname, then fallback
