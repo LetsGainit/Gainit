@@ -1364,15 +1364,6 @@ namespace GainIt.API.Data
                         } : null
                     }).ToList();
 
-                    // Set the correct ProjectId for RAG context
-                    foreach (var project in templateProjectEntities)
-                    {
-                        if (project.RagContext != null)
-                        {
-                            project.RagContext.ProjectId = project.ProjectId;
-                        }
-                    }
-
                     context.TemplateProjects.AddRange(templateProjectEntities);
                     context.SaveChanges();
                     logger?.LogInformation("Successfully seeded {Count} template projects", templateProjectEntities.Count);
@@ -1736,16 +1727,7 @@ namespace GainIt.API.Data
                              LearningOutcomes = nps.RagContext.LearningOutcomes,
                              ComplexityFactors = nps.RagContext.ComplexityFactors
                          } : null
-                     }).ToList();
-
-                     // Set the correct ProjectId for RAG context
-                     foreach (var project in nonprofitProjects)
-                     {
-                         if (project.RagContext != null)
-                         {
-                             project.RagContext.ProjectId = project.ProjectId;
-                         }
-                     }
+                     }).ToList();     
 
                     // Assign nonprofit organizations to projects
                     for (int i = 0; i < nonprofitProjects.Count; i++)

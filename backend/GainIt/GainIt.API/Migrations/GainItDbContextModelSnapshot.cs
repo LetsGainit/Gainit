@@ -683,12 +683,14 @@ namespace GainIt.API.Migrations
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
                     b.Property<int>("OrderIndex")
                         .HasColumnType("integer");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
@@ -697,6 +699,7 @@ namespace GainIt.API.Migrations
 
                     b.Property<DateTime?>("TargetDateUtc")
                         .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -720,6 +723,7 @@ namespace GainIt.API.Migrations
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
+
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -757,7 +761,6 @@ namespace GainIt.API.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
-
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreatedByUserId")

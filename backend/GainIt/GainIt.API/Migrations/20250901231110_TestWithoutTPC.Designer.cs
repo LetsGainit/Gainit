@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GainIt.API.Migrations
 {
     [DbContext(typeof(GainItDbContext))]
-    [Migration("20250824141947_AddGitHubIntegration")]
-    partial class AddGitHubIntegration
+    [Migration("20250901231110_TestWithoutTPC")]
+    partial class TestWithoutTPC
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,6 +25,127 @@ namespace GainIt.API.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("GainIt.API.Models.ProjectForum.ForumPost", b =>
+                {
+                    b.Property<Guid>("PostId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LikeCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ReplyCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("PostId");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("ForumPosts");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.ProjectForum.ForumPostLike", b =>
+                {
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uuid")
+                        .HasColumnOrder(0);
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnOrder(1);
+
+                    b.Property<DateTime>("LikedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("PostId", "UserId");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ForumPostLikes");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.ProjectForum.ForumReply", b =>
+                {
+                    b.Property<Guid>("ReplyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LikeCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ReplyId");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("ForumReplies");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.ProjectForum.ForumReplyLike", b =>
+                {
+                    b.Property<Guid>("ReplyId")
+                        .HasColumnType("uuid")
+                        .HasColumnOrder(0);
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnOrder(1);
+
+                    b.Property<DateTime>("LikedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ReplyId", "UserId");
+
+                    b.HasIndex("ReplyId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ForumReplyLikes");
+                });
 
             modelBuilder.Entity("GainIt.API.Models.Projects.GitHubAnalytics", b =>
                 {
@@ -296,6 +417,10 @@ namespace GainIt.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Branches")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -548,6 +673,190 @@ namespace GainIt.API.Migrations
                     b.ToTable("TemplateProjects");
 
                     b.UseTpcMappingStrategy();
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectMilestone", b =>
+                {
+                    b.Property<Guid>("MilestoneId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("TargetDateUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.HasKey("MilestoneId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("ProjectMilestones");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectSubtask", b =>
+                {
+                    b.Property<Guid>("SubtaskId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDone")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("SubtaskId");
+
+                    b.HasIndex("TaskId", "OrderIndex");
+
+                    b.ToTable("ProjectSubtasks");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectTask", b =>
+                {
+                    b.Property<Guid>("TaskId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AssignedRole")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("AssignedUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTime?>("DueAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsBlocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("MilestoneId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("TaskId");
+
+                    b.HasIndex("MilestoneId");
+
+                    b.HasIndex("ProjectId", "AssignedRole", "AssignedUserId");
+
+                    b.HasIndex("ProjectId", "Status", "OrderIndex");
+
+                    b.ToTable("ProjectTasks");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectTaskReference", b =>
+                {
+                    b.Property<Guid>("ReferenceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.HasKey("ReferenceId");
+
+                    b.HasIndex("TaskId", "Type");
+
+                    b.ToTable("ProjectTaskReferences");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.TaskDependency", b =>
+                {
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DependsOnTaskId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("TaskId", "DependsOnTaskId");
+
+                    b.HasIndex("DependsOnTaskId");
+
+                    b.ToTable("TaskDependencies");
                 });
 
             modelBuilder.Entity("GainIt.API.Models.Users.AchievementTemplate", b =>
@@ -835,6 +1144,82 @@ namespace GainIt.API.Migrations
                     b.ToTable("Nonprofits");
                 });
 
+            modelBuilder.Entity("GainIt.API.Models.ProjectForum.ForumPost", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Users.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GainIt.API.Models.Projects.UserProject", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.ProjectForum.ForumPostLike", b =>
+                {
+                    b.HasOne("GainIt.API.Models.ProjectForum.ForumPost", "Post")
+                        .WithMany("Likes")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GainIt.API.Models.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.ProjectForum.ForumReply", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Users.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GainIt.API.Models.ProjectForum.ForumPost", "Post")
+                        .WithMany("Replies")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Post");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.ProjectForum.ForumReplyLike", b =>
+                {
+                    b.HasOne("GainIt.API.Models.ProjectForum.ForumReply", "Reply")
+                        .WithMany("Likes")
+                        .HasForeignKey("ReplyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GainIt.API.Models.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reply");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("GainIt.API.Models.Projects.GitHubAnalytics", b =>
                 {
                     b.HasOne("GainIt.API.Models.Projects.GitHubRepository", "Repository")
@@ -923,6 +1308,76 @@ namespace GainIt.API.Migrations
                     b.Navigation("Project");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectMilestone", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Projects.UserProject", "Project")
+                        .WithMany("Milestones")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectSubtask", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Tasks.ProjectTask", "Task")
+                        .WithMany("Subtasks")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectTask", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Tasks.ProjectMilestone", "Milestone")
+                        .WithMany("Tasks")
+                        .HasForeignKey("MilestoneId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GainIt.API.Models.Projects.UserProject", "Project")
+                        .WithMany("Tasks")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Milestone");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectTaskReference", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Tasks.ProjectTask", "Task")
+                        .WithMany("References")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.TaskDependency", b =>
+                {
+                    b.HasOne("GainIt.API.Models.Tasks.ProjectTask", "DependsOn")
+                        .WithMany()
+                        .HasForeignKey("DependsOnTaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GainIt.API.Models.Tasks.ProjectTask", "Task")
+                        .WithMany("Dependencies")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DependsOn");
+
+                    b.Navigation("Task");
                 });
 
             modelBuilder.Entity("GainIt.API.Models.Users.Expertise.UserExpertise", b =>
@@ -1042,6 +1497,18 @@ namespace GainIt.API.Migrations
                     b.Navigation("NonprofitExpertise");
                 });
 
+            modelBuilder.Entity("GainIt.API.Models.ProjectForum.ForumPost", b =>
+                {
+                    b.Navigation("Likes");
+
+                    b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.ProjectForum.ForumReply", b =>
+                {
+                    b.Navigation("Likes");
+                });
+
             modelBuilder.Entity("GainIt.API.Models.Projects.GitHubRepository", b =>
                 {
                     b.Navigation("Analytics");
@@ -1051,6 +1518,20 @@ namespace GainIt.API.Migrations
                     b.Navigation("SyncLogs");
                 });
 
+            modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectMilestone", b =>
+                {
+                    b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectTask", b =>
+                {
+                    b.Navigation("Dependencies");
+
+                    b.Navigation("References");
+
+                    b.Navigation("Subtasks");
+                });
+
             modelBuilder.Entity("GainIt.API.Models.Users.User", b =>
                 {
                     b.Navigation("Achievements");
@@ -1058,7 +1539,11 @@ namespace GainIt.API.Migrations
 
             modelBuilder.Entity("GainIt.API.Models.Projects.UserProject", b =>
                 {
+                    b.Navigation("Milestones");
+
                     b.Navigation("ProjectMembers");
+
+                    b.Navigation("Tasks");
                 });
 
             modelBuilder.Entity("GainIt.API.Models.Users.Gainers.Gainer", b =>

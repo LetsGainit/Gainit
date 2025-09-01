@@ -1,13 +1,15 @@
-﻿using GainIt.API.Data;
+﻿using Azure.AI.OpenAI;
+using GainIt.API.Data;
 using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
-using GainIt.API.Services.Projects.Interfaces;
 using GainIt.API.Services.GitHub.Interfaces;
+using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using OpenAI;
+using OpenAI.Chat;
 using System.Text.Json;
-using Azure.AI.OpenAI;
 
 namespace GainIt.API.Services.Projects.Implementations
 {
@@ -16,9 +18,9 @@ namespace GainIt.API.Services.Projects.Implementations
         private readonly GainItDbContext r_DbContext;
         private readonly ILogger<ProjectService> r_logger;
         private readonly IGitHubService r_gitHubService;
-        private readonly OpenAIClient r_chatClient;
+        private readonly ChatClient r_chatClient;
 
-        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, OpenAIClient i_chatClient)
+        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, ChatClient i_chatClient)
         {
             r_DbContext = i_DbContext;
             r_logger = i_logger;
@@ -742,8 +744,6 @@ namespace GainIt.API.Services.Projects.Implementations
 
                 return new RagContext
                 {
-                    Id = Guid.NewGuid(),
-                    ProjectId = project.ProjectId,
                     SearchableText = result["searchableText"]?.ToString() ?? $"{project.ProjectName} - {project.ProjectDescription}",
                     Tags = JsonSerializer.Deserialize<List<string>>(result["tags"]?.ToString() ?? "[]") ?? new List<string>(),
                     SkillLevels = JsonSerializer.Deserialize<List<string>>(result["skillLevels"]?.ToString() ?? "[]") ?? new List<string>(),
@@ -756,6 +756,7 @@ namespace GainIt.API.Services.Projects.Implementations
             catch (Exception ex)
             {
                 r_logger.LogError(ex, "Error generating RAG context with AI for project: ProjectId={ProjectId}", project.ProjectId);
+                throw;
             }
         }
 
