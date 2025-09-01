@@ -3,6 +3,7 @@ using GainIt.API.Data;
 using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
+using GainIt.API.Options;
 using GainIt.API.Services.GitHub.Interfaces;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
