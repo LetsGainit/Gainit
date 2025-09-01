@@ -96,7 +96,11 @@ namespace GainIt.API.Controllers.Users
 
                 r_logger.LogDebug("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}", 
                     correlationId, email, name, idp);
-
+                
+                // Debug logging to see all available claims - this will help us find the correct claim for Google email
+                r_logger.LogInformation("ALL AVAILABLE CLAIMS: CorrelationId={CorrelationId}, Claims={Claims}", 
+                    correlationId, string.Join(" | ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+ 
                 var dto = new ExternalUserDto
                 {
                     ExternalId = externalId!,
