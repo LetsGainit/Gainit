@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using GainIt.API.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace GainIt.API.Controllers.Users
 {
@@ -24,11 +26,13 @@ namespace GainIt.API.Controllers.Users
     {
         private readonly IUserProfileService r_userProfileService;
         private readonly ILogger<UsersController> r_logger;
+        private readonly GainItDbContext r_DbContext;
 
-        public UsersController(IUserProfileService i_userProfileService, ILogger<UsersController> i_logger)
+        public UsersController(IUserProfileService i_userProfileService, ILogger<UsersController> i_logger, GainItDbContext i_DbContext)
         {
             r_userProfileService = i_userProfileService;
             r_logger = i_logger;
+            r_DbContext = i_DbContext;
         }
         private static string? tryGetClaim(ClaimsPrincipal user, params string[] types)
         {
@@ -127,6 +131,77 @@ namespace GainIt.API.Controllers.Users
             }
         }
 
+        /// <summary>
+        /// Retrieves the current authenticated user's profile.
+        /// Uses JWT claims to identify the user without requiring their ID.
+        /// </summary>
+        [HttpGet("me")]
+        [Authorize(Policy = "RequireAccessAsUser")]
+        [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<UserProfileDto>> GetCurrentUser()
+        {
+            var correlationId = HttpContext.TraceIdentifier;
+            var startTime = DateTimeOffset.UtcNow;
+            
+            r_logger.LogInformation("Getting current user profile. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}", 
+                correlationId, Request.Headers.UserAgent.ToString(), HttpContext.Connection.RemoteIpAddress, User.Identity?.Name);
+            
+            try
+            {
+                // Use the exact same pattern as ForumController
+                var externalId = User.FindFirst("oid")?.Value
+                      ?? User.FindFirst("sub")?.Value;
+
+                if (string.IsNullOrEmpty(externalId))
+                {
+                    r_logger.LogWarning("Missing external identity claim (oid/sub) for current user. CorrelationId={CorrelationId}", correlationId);
+                    return Unauthorized(new { Message = "Missing external identity claim (oid/sub)" });
+                }
+
+                r_logger.LogDebug("Extracted external ID for current user. CorrelationId={CorrelationId}, ExternalId={ExternalId}", correlationId, externalId);
+
+                // Find the user in the database by external ID (EXACTLY like ForumController)
+                var user = await r_DbContext.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.ExternalId == externalId);
+
+                if (user == null)
+                {
+                    r_logger.LogWarning("Current user not found in database. CorrelationId={CorrelationId}, ExternalId={ExternalId}", correlationId, externalId);
+                    return NotFound(new { Message = "User profile not found. Please ensure your profile is created first." });
+                }
+
+                // Check if user has completed their profile
+                var hasCompletedProfile = await r_userProfileService.CheckIfUserHasCompletedProfileAsync(user.UserId);
+
+                // Create UserProfileDto from the user entity
+                var profileDto = new UserProfileDto
+                {
+                    UserId = user.UserId,
+                    ExternalId = user.ExternalId,
+                    EmailAddress = user.EmailAddress,
+                    FullName = user.FullName,
+                    Country = user.Country,
+                    GitHubUsername = user.GitHubUsername,
+                    IsNewUser = !hasCompletedProfile
+                };
+
+                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                r_logger.LogInformation("Successfully retrieved current user profile. CorrelationId={CorrelationId}, UserId={UserId}, ExternalId={ExternalId}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
+                    correlationId, profileDto.UserId, profileDto.ExternalId, profileDto.EmailAddress, processingTime, HttpContext.Connection.RemoteIpAddress);
+                
+                return Ok(profileDto);
+            }
+            catch (Exception ex)
+            {
+                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                r_logger.LogError(ex, "Error retrieving current user profile. CorrelationId={CorrelationId}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
+                    correlationId, processingTime, HttpContext.Connection.RemoteIpAddress);
+                return StatusCode(500, new { Message = "An error occurred while retrieving the user profile" });
+            }
+        }
 
         /// <summary>
         /// Retrieves a complete Gainer profile by their ID.
