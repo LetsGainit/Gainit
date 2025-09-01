@@ -7,6 +7,7 @@ using GainIt.API.Services.GitHub.Interfaces;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Chat;
 using System.Text.Json;
@@ -18,14 +19,16 @@ namespace GainIt.API.Services.Projects.Implementations
         private readonly GainItDbContext r_DbContext;
         private readonly ILogger<ProjectService> r_logger;
         private readonly IGitHubService r_gitHubService;
+        private readonly AzureOpenAIClient r_azureOpenAIClient;
         private readonly ChatClient r_chatClient;
 
-        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, ChatClient i_chatClient)
+        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, AzureOpenAIClient i_azureOpenAIClient, IOptions<OpenAIOptions> i_openAIOptions)
         {
             r_DbContext = i_DbContext;
             r_logger = i_logger;
             r_gitHubService = i_gitHubService;
-            r_chatClient = i_chatClient;
+            r_azureOpenAIClient = i_azureOpenAIClient;
+            r_chatClient = i_azureOpenAIClient.GetChatClient(i_openAIOptions.Value.ChatDeploymentName);
         }
         public async Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId, string i_Role)
         {
