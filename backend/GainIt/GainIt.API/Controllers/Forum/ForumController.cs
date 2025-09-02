@@ -303,7 +303,7 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Toggles the like status of a forum post.
         /// </summary>
-        /// <param name="postId">The ID of the post to like/unlike.</param>
+        /// <param name="i_PostId">The ID of the post to like/unlike.</param>
         /// <returns>No content on success.</returns>
         [HttpPost("posts/{postId}/like")]
         public async Task<ActionResult> TogglePostLike(Guid i_PostId)
@@ -328,7 +328,7 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Toggles the like status of a forum reply.
         /// </summary>
-        /// <param name="replyId">The ID of the reply to like/unlike.</param>
+        /// <param name="i_ReplyId">The ID of the reply to like/unlike.</param>
         /// <returns>No content on success.</returns>
         [HttpPost("replies/{replyId}/like")]
         public async Task<ActionResult> ToggleReplyLike(Guid i_ReplyId)
