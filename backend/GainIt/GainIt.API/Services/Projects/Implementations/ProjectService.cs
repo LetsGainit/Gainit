@@ -696,11 +696,10 @@ namespace GainIt.API.Services.Projects.Implementations
                  Technologies = p.Technologies?.ToArray() ?? new string[0],
                  RequiredRoles = p.RequiredRoles?.ToArray() ?? new string[0],
                  
-                                   // UserProject-specific fields (if available)
+                                   // UserProject-specific fields (if available) - ensure consistent types
                   ProgrammingLanguages = p is UserProject userProject ? userProject.ProgrammingLanguages?.ToArray() ?? new string[0] : new string[0],
-                  ProjectSource = p is UserProject userProject2 ? userProject2.ProjectSource.ToString() : null,
-                  ProjectStatus = p is UserProject userProject3 ? userProject3.ProjectStatus.ToString() : null,
-                  CreatedAtUtc = p is UserProject userProject4 ? userProject4.CreatedAtUtc : null,
+                  ProjectSource = p is UserProject userProject2 ? userProject2.ProjectSource.ToString() : "Template",
+                  ProjectStatus = p is UserProject userProject3 ? userProject3.ProjectStatus.ToString() : "NotActive",
 
                  // RAG context - CRITICAL for vector search
                  RagContext = new RagContextViewModel

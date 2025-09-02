@@ -74,11 +74,6 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         [JsonPropertyName("projectStatus")]
         public string? ProjectStatus { get; set; }
 
-        /// <summary>
-        /// When the project was created (UserProject only)
-        /// </summary>
-        [JsonPropertyName("createdAtUtc")]
-        public DateTime? CreatedAtUtc { get; set; }
 
         /// <summary>
         /// RAG context with all the metadata for search and categorization
