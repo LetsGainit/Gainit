@@ -240,8 +240,10 @@ namespace GainIt.API.Services.Projects.Implementations
         /// </summary>
         /// <param name="analyticsSummary">Raw GitHub analytics summary</param>
         /// <param name="userQuery">Optional user query for context</param>
+        /// <param name="mode">Controls the output style and focus.</param>
+        /// <param name="daysPeriod">Number of days that the analytics summary covers.</param>
         /// <returns>Enhanced analytics explanation with AI insights</returns>
-        public async Task<string> GetGitHubAnalyticsExplanationAsync(string analyticsSummary, string? userQuery = null, GitHubInsightsMode mode = GitHubInsightsMode.QA)
+        public async Task<string> GetGitHubAnalyticsExplanationAsync(string analyticsSummary, string? userQuery = null, GitHubInsightsMode mode = GitHubInsightsMode.QA, int daysPeriod = 30)
         {
             r_logger.LogInformation("Generating GitHub analytics explanation: SummaryLength={SummaryLength}, HasUserQuery={HasUserQuery}", 
                 analyticsSummary.Length, !string.IsNullOrEmpty(userQuery));
@@ -275,14 +277,14 @@ namespace GainIt.API.Services.Projects.Implementations
                                        "Activity (5–7 bullets: commits, lines +/- , files, active days, issues/PRs breakdowns, reviews, top day/hour, languages, streaks, latest PR/Commit), " +
                                        "Impact (2–3 bullets with concrete outcomes), " +
                                        "Next steps (3–4 specific, project-scoped actions).";
-                        userPrompt = $"GitHub Analytics (public data):\n{safeSummary}\n\nGenerate the three sections as bullets only.";
+                        userPrompt = $"GitHub Analytics (public data):\nPeriod: last {daysPeriod} days\n\n{safeSummary}\n\nGenerate the three sections as bullets only. Include a first bullet: 'Period: last {daysPeriod} days'.";
                         break;
 
                     case GitHubInsightsMode.ProjectSummary:
                         systemPrompt = "You are a mentor writing a motivating team status update. Use only the provided analytics. " +
                                        "Output bullets only: start with strongest stat, add 2 concrete wins, include repository health score (and drivers), " +
                                        "then 2–3 next actions grounded in the data, and end with one short, supportive bullet.";
-                        userPrompt = $"GitHub Analytics (public data):\n{safeSummary}\n\nProduce the status update as instructed.";
+                        userPrompt = $"GitHub Analytics (public data):\nPeriod: last {daysPeriod} days\n\n{safeSummary}\n\nProduce the status update as instructed. Include a first bullet: 'Period: last {daysPeriod} days'.";
                         break;
 
                     case GitHubInsightsMode.QA:
@@ -292,13 +294,13 @@ namespace GainIt.API.Services.Projects.Implementations
                             systemPrompt = "You analyze GitHub repository activity and answer the user's question strictly from the provided data. " +
                                            "Do not provide an overview. If unsupported (e.g., exact dates), reply: 'Timeline cannot be inferred from analytics.' " +
                                            "Prefer last 7 days for 'this week'. Output at most 3 concise bullets (<=15 words).";
-                            userPrompt = $"User question: {safeUserQuery}\n\nGitHub Analytics (public data):\n{safeSummary}\n\nAnswer only the question in up to 3 bullets.";
+                            userPrompt = $"User question: {safeUserQuery}\n\nGitHub Analytics (public data):\nPeriod: last {daysPeriod} days\n\n{safeSummary}\n\nAnswer only the question in up to 3 bullets. Include one bullet with the analysis period.";
                         }
                         else
                         {
                             systemPrompt = "You analyze GitHub repository activity and produce insights strictly from the provided data. " +
                                            "Respond in four sections with concise bullets: 1) health/activity, 2) team patterns, 3) improvements, 4) successes.";
-                            userPrompt = $"GitHub Analytics (public data):\n{safeSummary}\n\nOutput the four sections as bullets.";
+                            userPrompt = $"GitHub Analytics (public data):\nPeriod: last {daysPeriod} days\n\n{safeSummary}\n\nOutput the four sections as bullets. Start with a bullet stating the analysis period.";
                         }
                         break;
                 }
@@ -329,7 +331,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     var fallbackMessages = new ChatMessage[]
                     {
                         new SystemChatMessage(systemPrompt),
-                        new UserChatMessage($"GitHub Analytics (public data):\n{safeSummary}\n\nProvide concise insights only from this data.")
+                        new UserChatMessage($"GitHub Analytics (public data):\nPeriod: last {daysPeriod} days\n\n{safeSummary}\n\nProvide concise insights only from this data. Include the analysis period as a bullet.")
                     };
 
                     ChatCompletion completion = await r_chatClient.CompleteChatAsync(fallbackMessages, options);

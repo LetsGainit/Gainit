@@ -568,18 +568,22 @@ namespace GainIt.API.Services.GitHub.Implementations
                 var summary = $"Repository Activity Summary for the last {analytics.DaysPeriod} days:\n\n";
 
                 // Repository overview
-                summary += $"📊 Repository Overview:\n";
+                summary += $" Repository Overview:\n";
                 summary += $"• Total Commits: {analytics.TotalCommits}\n";
                 summary += $"• Total Issues: {analytics.TotalIssues} (Open: {analytics.OpenIssues}, Closed: {analytics.ClosedIssues})\n";
                 summary += $"• Total Pull Requests: {analytics.TotalPullRequests} (Open: {analytics.OpenPullRequests}, Merged: {analytics.MergedPullRequests})\n";
                 summary += $"• Stars: {analytics.TotalStars}, Forks: {analytics.TotalForks}\n";
                 summary += $"• Active Contributors: {analytics.ActiveContributors}\n\n";
 
+                // Branches
+                summary += $" Branches:\n";
+                summary += $"• Total Branches: {analytics.TotalBranches}\n\n";
+
                 // Activity patterns
                 if (analytics.WeeklyCommits.Any())
                 {
                     var mostActiveWeek = analytics.WeeklyCommits.OrderByDescending(x => x.Value).First();
-                    summary += $"📈 Activity Patterns:\n";
+                    summary += $" Activity Patterns:\n";
                     summary += $"• Most Active Week: {mostActiveWeek.Key} ({mostActiveWeek.Value} commits)\n";
                 }
 
@@ -599,7 +603,7 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                 // Repository health
                 var healthScore = await CalculateRepositoryHealthScoreAsync(analytics);
-                summary += $"\n🏥 Repository Health Score: {healthScore}/100\n";
+                summary += $"\n Repository Health Score: {healthScore}/100\n";
 
                 if (healthScore >= 80)
                     summary += "Status: Excellent - Repository is very active and well-maintained\n";

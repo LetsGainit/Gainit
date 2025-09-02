@@ -22,7 +22,8 @@ namespace GainIt.API.Services.Projects.Interfaces
         /// <param name="analyticsSummary">Raw GitHub analytics summary</param>
         /// <param name="userQuery">Optional user query for context</param>
         /// <param name="mode">Controls the output style and focus</param>
+        /// <param name="daysPeriod">Number of days that the analytics summary covers.</param>
         /// <returns>Enhanced analytics explanation with AI insights</returns>
-        Task<string> GetGitHubAnalyticsExplanationAsync(string analyticsSummary, string? userQuery = null, GitHubInsightsMode mode = GitHubInsightsMode.QA);
+        Task<string> GetGitHubAnalyticsExplanationAsync(string analyticsSummary, string? userQuery = null, GitHubInsightsMode mode = GitHubInsightsMode.QA, int daysPeriod = 30);
     }
 }

@@ -227,8 +227,8 @@ namespace GainIt.API.Controllers.Projects
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
                 }
 
-                _logger.LogDebug("Calling _gitHubService.GetUserContributionsAsync for project {ProjectId} with daysPeriod {DaysPeriod}, force={Force}", projectId, daysPeriod, force);
-                var contributions = await _gitHubService.GetUserContributionsAsync(projectId, daysPeriod, force);
+                _logger.LogDebug("Calling _gitHubService.ListProjectMembersContributionsAsync for project {ProjectId} with daysPeriod {DaysPeriod}, force={Force}", projectId, daysPeriod, force);
+                var contributions = await _gitHubService.ListProjectMembersContributionsAsync(projectId, daysPeriod, force);
                 
                 _logger.LogDebug("Retrieved {ContributionsCount} contributions for project {ProjectId}", contributions.Count, projectId);
                 
@@ -276,7 +276,7 @@ namespace GainIt.API.Controllers.Projects
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
                 }
 
-                var contribution = await _gitHubService.GetUserContributionAsync(projectId, userId, daysPeriod, force);
+                var contribution = await _gitHubService.GetProjectMemberContributionAsync(projectId, userId, daysPeriod, force);
                 
                 if (contribution == null)
                 {
