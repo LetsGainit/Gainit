@@ -2,6 +2,6 @@
 {
     public class ProjectSearchResult
     {
-        public Guid ProjectId { get; set; }
+        public string projectId { get; set; } = string.Empty;
     }
 }
