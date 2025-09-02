@@ -52,13 +52,13 @@ jobs:
         shell: pwsh
         run: |
           dotnet tool install -g Swashbuckle.AspNetCore.Cli
-          echo "C:\\Users\\runneradmin\\.dotnet\\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $toolsPath = "C:\\Users\\runneradmin\\.dotnet\\tools"
+          $env:PATH = "$toolsPath;$env:PATH"
           $asm = "backend/GainIt/GainIt.API/bin/Release/net8.0/GainIt.API.dll"
           $out = Join-Path $env:RUNNER_TEMP "openapi.json"
           Write-Host "Generating OpenAPI spec from: $asm"
-          dotnet swagger tofile --output "$out" "$asm" v1
-          Test-Path $out | Out-Null
-          if (-not $?) { Write-Error "Failed to generate OpenAPI JSON"; exit 1 }
+          swagger tofile --output "$out" "$asm" v1
+          if (-not (Test-Path $out)) { Write-Error "Failed to generate OpenAPI JSON"; exit 1 }
 
       - name: Generate TypeScript types from OpenAPI
         shell: pwsh
