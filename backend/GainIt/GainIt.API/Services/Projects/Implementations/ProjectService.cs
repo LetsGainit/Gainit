@@ -691,15 +691,16 @@ namespace GainIt.API.Services.Projects.Implementations
                  ProjectName = p.ProjectName,
                  ProjectDescription = p.ProjectDescription,
                  DifficultyLevel = p.DifficultyLevel.ToString(),
-                 DurationDays = (int)(p.Duration?.TotalDays ?? 30),
+                 DurationDays = (int)(p.Duration.HasValue ? p.Duration.Value.TotalDays : 30),
                  Goals = p.Goals?.ToArray() ?? new string[0],
                  Technologies = p.Technologies?.ToArray() ?? new string[0],
                  RequiredRoles = p.RequiredRoles?.ToArray() ?? new string[0],
                  
-                 // UserProject-specific fields (if available)
-                 ProgrammingLanguages = p is UserProject userProject ? userProject.ProgrammingLanguages?.ToArray() ?? new string[0] : new string[0],
-                 ProjectSource = p is UserProject userProject2 ? userProject2.ProjectSource.ToString() : null,
-                 ProjectStatus = p is UserProject userProject3 ? userProject3.ProjectStatus.ToString() : null,
+                                   // UserProject-specific fields (if available)
+                  ProgrammingLanguages = p is UserProject userProject ? userProject.ProgrammingLanguages?.ToArray() ?? new string[0] : new string[0],
+                  ProjectSource = p is UserProject userProject2 ? userProject2.ProjectSource.ToString() : null,
+                  ProjectStatus = p is UserProject userProject3 ? userProject3.ProjectStatus.ToString() : null,
+                  CreatedAtUtc = p is UserProject userProject4 ? userProject4.CreatedAtUtc : null,
 
                  // RAG context - CRITICAL for vector search
                  RagContext = new RagContextViewModel

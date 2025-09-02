@@ -72,7 +72,13 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         /// Current status of the project (UserProject only)
         /// </summary>
         [JsonPropertyName("projectStatus")]
-        public string? ProjectStatus { get; set; 
+        public string? ProjectStatus { get; set; }
+
+        /// <summary>
+        /// When the project was created (UserProject only)
+        /// </summary>
+        [JsonPropertyName("createdAtUtc")]
+        public DateTime? CreatedAtUtc { get; set; }
 
         /// <summary>
         /// RAG context with all the metadata for search and categorization
@@ -130,7 +136,5 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         /// </summary>
         [JsonPropertyName("complexityFactors")]
         public string[] ComplexityFactors { get; set; } = new string[0];
-
-
     }
 }

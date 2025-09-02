@@ -42,9 +42,6 @@ namespace GainIt.API.Services.Projects.Interfaces
         // Update project repository link
         Task<UserProject> UpdateRepositoryLinkAsync(Guid i_ProjectId, string i_RepositoryLink);
 
-        // Add team member to project
-        Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId, string i_Role);
-
         // Remove team member from project
         Task<UserProject> RemoveTeamMemberAsync(Guid i_ProjectId, Guid i_UserId);
 
