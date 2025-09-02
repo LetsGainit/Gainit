@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GainIt.API.Migrations
 {
     /// <inheritdoc />
-    public partial class TestWithoutTPC : Migration
+    public partial class AddRagContextToProjects : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -26,25 +26,6 @@ namespace GainIt.API.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AchievementTemplates", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "TemplateProjects",
-                columns: table => new
-                {
-                    ProjectId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProjectName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    ProjectDescription = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
-                    DifficultyLevel = table.Column<int>(type: "integer", nullable: false),
-                    ProjectPictureUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    Duration = table.Column<TimeSpan>(type: "interval", nullable: false),
-                    Goals = table.Column<List<string>>(type: "text[]", maxLength: 2000, nullable: false),
-                    Technologies = table.Column<List<string>>(type: "text[]", nullable: false),
-                    RequiredRoles = table.Column<List<string>>(type: "text[]", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TemplateProjects", x => x.ProjectId);
                 });
 
             migrationBuilder.CreateTable(
@@ -245,14 +226,16 @@ namespace GainIt.API.Migrations
                     Goals = table.Column<List<string>>(type: "text[]", maxLength: 2000, nullable: false),
                     Technologies = table.Column<List<string>>(type: "text[]", nullable: false),
                     RequiredRoles = table.Column<List<string>>(type: "text[]", nullable: false),
-                    ProjectStatus = table.Column<int>(type: "integer", nullable: false),
-                    ProjectSource = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    RepositoryLink = table.Column<string>(type: "text", nullable: true),
+                    ProjectKind = table.Column<string>(type: "character varying(21)", maxLength: 21, nullable: false),
+                    ProjectStatus = table.Column<int>(type: "integer", nullable: true),
+                    ProjectSource = table.Column<int>(type: "integer", nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    RepositoryLink = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
                     OwningOrganizationUserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ProgrammingLanguages = table.Column<List<string>>(type: "text[]", nullable: false),
+                    ProgrammingLanguages = table.Column<string>(type: "text", nullable: true),
                     GainerUserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    MentorUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    MentorUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    RagContext = table.Column<string>(type: "jsonb", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -981,9 +964,6 @@ namespace GainIt.API.Migrations
 
             migrationBuilder.DropTable(
                 name: "TaskDependencies");
-
-            migrationBuilder.DropTable(
-                name: "TemplateProjects");
 
             migrationBuilder.DropTable(
                 name: "UserAchievements");
