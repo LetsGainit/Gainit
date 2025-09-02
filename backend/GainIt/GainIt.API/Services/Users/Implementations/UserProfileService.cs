@@ -441,6 +441,9 @@ namespace GainIt.API.Services.Users.Implementations
                     throw new KeyNotFoundException($"User with ID {i_userId} not found");
                 }
 
+                // Detach the user entity to avoid tracking conflicts
+                r_DbContext.Entry(user).State = EntityState.Detached;
+
                 // Create new Gainer record
                 var gainer = new Gainer
                 {
@@ -1225,6 +1228,9 @@ namespace GainIt.API.Services.Users.Implementations
                 throw new KeyNotFoundException($"User with ID {userId} not found");
             }
 
+            // Detach the user entity to avoid tracking conflicts
+            r_DbContext.Entry(user).State = EntityState.Detached;
+
             var mentor = new Mentor
             {
                 UserId = userId,
@@ -1259,6 +1265,9 @@ namespace GainIt.API.Services.Users.Implementations
             {
                 throw new KeyNotFoundException($"User with ID {userId} not found");
             }
+
+            // Detach the user entity to avoid tracking conflicts
+            r_DbContext.Entry(user).State = EntityState.Detached;
 
             var nonprofit = new NonprofitOrganization
             {
