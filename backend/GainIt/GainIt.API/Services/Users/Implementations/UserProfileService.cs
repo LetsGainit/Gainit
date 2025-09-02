@@ -478,7 +478,8 @@ namespace GainIt.API.Services.Users.Implementations
                     CreatedAt = userData.CreatedAt,
                     LastLoginAt = DateTimeOffset.UtcNow,
                     EducationStatus = i_updateDto.EducationStatus,
-                    AreasOfInterest = i_updateDto.AreasOfInterest
+                    AreasOfInterest = i_updateDto.AreasOfInterest,
+                    TechExpertise = null  // Initialize as null to avoid FK constraint violation
                 };
 
                 r_DbContext.Gainers.Add(gainer);
@@ -1286,7 +1287,8 @@ namespace GainIt.API.Services.Users.Implementations
                     CreatedAt = userData.CreatedAt,
                     LastLoginAt = DateTimeOffset.UtcNow,
                     YearsOfExperience = updateDto.YearsOfExperience,
-                    AreaOfExpertise = updateDto.AreaOfExpertise
+                    AreaOfExpertise = updateDto.AreaOfExpertise,
+                    TechExpertise = null  // Initialize as null to avoid FK constraint violation
                 };
 
                 r_DbContext.Mentors.Add(mentor);
@@ -1352,7 +1354,8 @@ namespace GainIt.API.Services.Users.Implementations
                     Country = userData.Country,
                     CreatedAt = userData.CreatedAt,
                     LastLoginAt = DateTimeOffset.UtcNow,
-                    WebsiteUrl = updateDto.WebsiteUrl
+                    WebsiteUrl = updateDto.WebsiteUrl,
+                    NonprofitExpertise = null  // Initialize as null to avoid FK constraint violation
                 };
 
                 r_DbContext.Nonprofits.Add(nonprofit);
