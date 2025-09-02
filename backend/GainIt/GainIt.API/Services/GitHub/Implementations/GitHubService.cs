@@ -678,9 +678,10 @@ namespace GainIt.API.Services.GitHub.Implementations
                     repository = await GetRepositoryAsync(projectId); // reload
                 }
 
-                // Filter contributions by the specified period
+                // Filter contributions by the specified period (handle possible null after reload)
                 var cutoffDate = DateTime.UtcNow.AddDays(-daysPeriod);
-                return repository.Contributions
+                var contributionsList = repository?.Contributions ?? new List<GitHubContribution>();
+                return contributionsList
                     .Where(c => c.CalculatedAtUtc >= cutoffDate)
                     .ToList();
             }
