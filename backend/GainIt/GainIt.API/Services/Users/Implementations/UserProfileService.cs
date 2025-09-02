@@ -441,29 +441,40 @@ namespace GainIt.API.Services.Users.Implementations
                     throw new KeyNotFoundException($"User with ID {i_userId} not found");
                 }
 
+                // Update the existing User record
+                user.FullName = i_updateDto.FullName ?? user.FullName;
+                user.Biography = i_updateDto.Biography;
+                user.FacebookPageURL = i_updateDto.FacebookPageURL;
+                user.LinkedInURL = i_updateDto.LinkedInURL;
+                user.GitHubURL = i_updateDto.GitHubURL;
+                user.GitHubUsername = i_updateDto.GitHubUsername;
+                user.ProfilePictureURL = i_updateDto.ProfilePictureURL;
+                user.LastLoginAt = DateTimeOffset.UtcNow;
+
                 // Detach the user entity to avoid tracking conflicts
                 r_DbContext.Entry(user).State = EntityState.Detached;
 
-                // Create new Gainer record
+                // Create new Gainer record in the Gainers table
                 var gainer = new Gainer
                 {
                     UserId = i_userId,
                     ExternalId = user.ExternalId,
                     EmailAddress = user.EmailAddress,
-                    FullName = i_updateDto.FullName ?? user.FullName,
-                    Biography = i_updateDto.Biography,
-                    FacebookPageURL = i_updateDto.FacebookPageURL,
-                    LinkedInURL = i_updateDto.LinkedInURL,
-                    GitHubURL = i_updateDto.GitHubURL,
-                    GitHubUsername = i_updateDto.GitHubUsername,
-                    ProfilePictureURL = i_updateDto.ProfilePictureURL,
+                    FullName = user.FullName,
+                    Biography = user.Biography,
+                    FacebookPageURL = user.FacebookPageURL,
+                    LinkedInURL = user.LinkedInURL,
+                    GitHubURL = user.GitHubURL,
+                    GitHubUsername = user.GitHubUsername,
+                    ProfilePictureURL = user.ProfilePictureURL,
                     Country = user.Country,
+                    CreatedAt = user.CreatedAt,
+                    LastLoginAt = user.LastLoginAt,
                     EducationStatus = i_updateDto.EducationStatus,
-                    AreasOfInterest = i_updateDto.AreasOfInterest,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    LastLoginAt = user.LastLoginAt
+                    AreasOfInterest = i_updateDto.AreasOfInterest
                 };
 
+                // Add the Gainer to the Gainers table
                 r_DbContext.Gainers.Add(gainer);
                 await r_DbContext.SaveChangesAsync();
 
@@ -1228,28 +1239,41 @@ namespace GainIt.API.Services.Users.Implementations
                 throw new KeyNotFoundException($"User with ID {userId} not found");
             }
 
+            // Update the existing User record
+            user.FullName = updateDto.FullName ?? user.FullName;
+            user.Biography = updateDto.Biography;
+            user.FacebookPageURL = updateDto.FacebookPageURL;
+            user.LinkedInURL = updateDto.LinkedInURL;
+            user.GitHubURL = updateDto.GitHubURL;
+            user.GitHubUsername = updateDto.GitHubUsername;
+            user.ProfilePictureURL = updateDto.ProfilePictureURL;
+            user.LastLoginAt = DateTimeOffset.UtcNow;
+
             // Detach the user entity to avoid tracking conflicts
             r_DbContext.Entry(user).State = EntityState.Detached;
 
+            // Create new Mentor record in the Mentors table
             var mentor = new Mentor
             {
                 UserId = userId,
                 ExternalId = user.ExternalId,
                 EmailAddress = user.EmailAddress,
-                FullName = updateDto.FullName ?? user.FullName,
-                Biography = updateDto.Biography,
-                FacebookPageURL = updateDto.FacebookPageURL,
-                LinkedInURL = updateDto.LinkedInURL,
-                GitHubURL = updateDto.GitHubURL,
-                GitHubUsername = updateDto.GitHubUsername,
-                ProfilePictureURL = updateDto.ProfilePictureURL,
+                FullName = user.FullName,
+                Biography = user.Biography,
+                FacebookPageURL = user.FacebookPageURL,
+                LinkedInURL = user.LinkedInURL,
+                GitHubURL = user.GitHubURL,
+                GitHubUsername = user.GitHubUsername,
+                ProfilePictureURL = user.ProfilePictureURL,
+                Country = user.Country,
+                CreatedAt = user.CreatedAt,
+                LastLoginAt = user.LastLoginAt,
                 YearsOfExperience = updateDto.YearsOfExperience,
-                AreaOfExpertise = updateDto.AreaOfExpertise,
-                CreatedAt = DateTimeOffset.UtcNow,
-                LastLoginAt = user.LastLoginAt
+                AreaOfExpertise = updateDto.AreaOfExpertise
             };
 
-            await r_DbContext.Mentors.AddAsync(mentor);
+            // Add the Mentor to the Mentors table
+            r_DbContext.Mentors.Add(mentor);
             await r_DbContext.SaveChangesAsync();
 
             r_logger.LogInformation("Successfully created Mentor from User: UserId={UserId}", userId);
@@ -1266,27 +1290,40 @@ namespace GainIt.API.Services.Users.Implementations
                 throw new KeyNotFoundException($"User with ID {userId} not found");
             }
 
+            // Update the existing User record
+            user.FullName = updateDto.FullName ?? user.FullName;
+            user.Biography = updateDto.Biography;
+            user.FacebookPageURL = updateDto.FacebookPageURL;
+            user.LinkedInURL = updateDto.LinkedInURL;
+            user.GitHubURL = updateDto.GitHubURL;
+            user.GitHubUsername = updateDto.GitHubUsername;
+            user.ProfilePictureURL = updateDto.ProfilePictureURL;
+            user.LastLoginAt = DateTimeOffset.UtcNow;
+
             // Detach the user entity to avoid tracking conflicts
             r_DbContext.Entry(user).State = EntityState.Detached;
 
+            // Create new Nonprofit record in the Nonprofits table
             var nonprofit = new NonprofitOrganization
             {
                 UserId = userId,
                 ExternalId = user.ExternalId,
                 EmailAddress = user.EmailAddress,
-                FullName = updateDto.FullName ?? user.FullName,
-                Biography = updateDto.Biography,
-                FacebookPageURL = updateDto.FacebookPageURL,
-                LinkedInURL = updateDto.LinkedInURL,
-                GitHubURL = updateDto.GitHubURL,
-                GitHubUsername = updateDto.GitHubUsername,
-                ProfilePictureURL = updateDto.ProfilePictureURL,
-                WebsiteUrl = updateDto.WebsiteUrl,
-                CreatedAt = DateTimeOffset.UtcNow,
-                LastLoginAt = user.LastLoginAt
+                FullName = user.FullName,
+                Biography = user.Biography,
+                FacebookPageURL = user.FacebookPageURL,
+                LinkedInURL = user.LinkedInURL,
+                GitHubURL = user.GitHubURL,
+                GitHubUsername = user.GitHubUsername,
+                ProfilePictureURL = user.ProfilePictureURL,
+                Country = user.Country,
+                CreatedAt = user.CreatedAt,
+                LastLoginAt = user.LastLoginAt,
+                WebsiteUrl = updateDto.WebsiteUrl
             };
 
-            await r_DbContext.Nonprofits.AddAsync(nonprofit);
+            // Add the Nonprofit to the Nonprofits table
+            r_DbContext.Nonprofits.Add(nonprofit);
             await r_DbContext.SaveChangesAsync();
 
             r_logger.LogInformation("Successfully created Nonprofit from User: UserId={UserId}", userId);
