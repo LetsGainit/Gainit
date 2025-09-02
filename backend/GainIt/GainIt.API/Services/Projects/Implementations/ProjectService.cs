@@ -677,14 +677,6 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         /// <summary>
-        /// Simple fallback searchable text generation
-        /// </summary>
-        private string GenerateSearchableText(UserProject project)
-        {
-            return $"{project.ProjectName} - {project.ProjectDescription}";
-        }
-
-        /// <summary>
         /// Generates RAG context using AI for better accuracy
         /// </summary>
         private async Task<RagContext> GenerateRagContextWithAIAsync(UserProject project)

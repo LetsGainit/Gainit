@@ -49,13 +49,14 @@ namespace GainIt.API.Data
         #region Project Hierarchy
         /// <summary>
         /// User projects table - actual projects created by users
-        /// Uses TPC (Table Per Concrete Type) inheritance strategy
+        /// Uses TPH (Table Per Hierarchy) inheritance strategy
         /// </summary>
         public DbSet<UserProject> Projects { get; set; }
 
         /// <summary>
         /// Template projects table - project templates that can be used as a base
-        /// Uses TPC (Table Per Concrete Type) inheritance strategy
+        /// Uses TPH (Table Per Hierarchy) inheritance strategy
+        /// Both DbSets map to the same "Projects" table
         /// </summary>
         public DbSet<TemplateProject> TemplateProjects { get; set; }
         #endregion
@@ -232,8 +233,8 @@ namespace GainIt.API.Data
                 // Configure TPT inheritance for User hierarchy
                 modelBuilder.Entity<User>().UseTptMappingStrategy();
 
-                // Configure TPC inheritance for Project hierarchy
-                modelBuilder.Entity<TemplateProject>().UseTpcMappingStrategy();
+                // Configure TPH inheritance for Project hierarchy (required for JSON properties)
+                modelBuilder.Entity<TemplateProject>().UseTphMappingStrategy();
 
                 // Configure TPT inheritance for UserExpertise hierarchy
                 modelBuilder.Entity<UserExpertise>().UseTptMappingStrategy();
@@ -254,31 +255,19 @@ namespace GainIt.API.Data
                 #endregion
 
                 #region Project Configuration
-                // Configure UserProject
-                modelBuilder.Entity<UserProject>(entity =>
-                {
-                  
-                    
 
-                    // One nonprofit → many projects
-                    entity.HasOne<NonprofitOrganization>(p => p.OwningOrganization)
-                        .WithMany(n => n.OwnedProjects)
-                        .HasForeignKey("OwningOrganizationUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
 
-                    // Configure required fields
-                    entity.Property(e => e.ProjectName)
-                        .IsRequired()
-                        .HasMaxLength(200);
-
-                    entity.Property(e => e.ProjectDescription)
-                        .IsRequired()
-                        .HasMaxLength(1000);
-                });
-
-                // Configure TemplateProject
+                // Configure base TemplateProject (base entity for TPH inheritance)
                 modelBuilder.Entity<TemplateProject>(entity =>
                 {
+                    // Set the table name to "Projects" (instead of default "TemplateProjects")
+                    entity.ToTable("Projects");
+
+                    // Configure discriminator for TPH inheritance (avoiding conflict with RagContext.ProjectType)
+                    entity.HasDiscriminator<string>("ProjectKind")
+                        .HasValue<TemplateProject>("TemplateProject")
+                        .HasValue<UserProject>("UserProject");
+
                     entity.Property(e => e.ProjectName)
                         .IsRequired()
                         .HasMaxLength(200);
@@ -286,6 +275,8 @@ namespace GainIt.API.Data
                     entity.Property(e => e.ProjectDescription)
                         .IsRequired()
                         .HasMaxLength(1000);
+
+
 
                     // Configure RagContext as owned entity (stored as JSON in same table)
                     entity.OwnsOne(tp => tp.RagContext, rag =>
@@ -302,31 +293,57 @@ namespace GainIt.API.Data
                         rag.Property(r => r.Domain)
                             .HasMaxLength(100);
 
-                        // Configure JSON serialization for List<string> properties
-                        rag.Property(r => r.Tags)
-                            .HasConversion(
-                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
-                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
-                            );
-
-                        rag.Property(r => r.SkillLevels)
-                            .HasConversion(
-                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
-                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
-                            );
-
-                        rag.Property(r => r.LearningOutcomes)
-                            .HasConversion(
-                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
-                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
-                            );
-
-                        rag.Property(r => r.ComplexityFactors)
-                            .HasConversion(
-                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
-                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
-                            );
+                        // No need for HasConversion - JSON handles List<string> automatically
+                        // Tags, SkillLevels, LearningOutcomes, ComplexityFactors will be arrays in JSON
                     });
+                });
+
+                // Configure UserProject (inherits from TemplateProject)
+                modelBuilder.Entity<UserProject>(entity =>
+                {
+                    // Configure UserProject-specific properties
+                    entity.Property(e => e.ProjectStatus)
+                        .IsRequired();
+
+                    entity.Property(e => e.ProjectSource)
+                        .IsRequired();
+
+                    entity.Property(e => e.CreatedAtUtc)
+                        .IsRequired();
+
+                    entity.Property(e => e.RepositoryLink)
+                        .HasMaxLength(2048); // URL max length
+
+                    entity.Property(e => e.OwningOrganizationUserId);
+
+                    // Configure ProgrammingLanguages as JSON
+                    entity.Property(e => e.ProgrammingLanguages)
+                        .HasConversion(
+                            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                            v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>()
+                        );
+
+                    // Configure relationships
+                    entity.HasOne<NonprofitOrganization>(p => p.OwningOrganization)
+                        .WithMany(n => n.OwnedProjects)
+                        .HasForeignKey("OwningOrganizationUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    // Configure collections
+                    entity.HasMany(p => p.ProjectMembers)
+                        .WithOne(pm => pm.Project)
+                        .HasForeignKey(pm => pm.ProjectId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.HasMany(p => p.Tasks)
+                        .WithOne(t => t.Project)
+                        .HasForeignKey(t => t.ProjectId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.HasMany(p => p.Milestones)
+                        .WithOne(m => m.Project)
+                        .HasForeignKey(m => m.ProjectId)
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
                 #endregion
 
@@ -1390,7 +1407,17 @@ namespace GainIt.API.Data
                                 "Enhance donation tracking capabilities"
                             },
                             Technologies = new List<string> { "React", "Node.js", "MongoDB", "Express" },
-                            RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" }
+                            RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" },
+                            RagContext = new RagContext
+                            {
+                                SearchableText = "Community Food Bank Management System - A web application for managing food bank operations, volunteer coordination, and donation tracking.",
+                                Tags = new List<string> { "food-bank", "volunteer-management", "donation-tracking", "inventory-management", "community-service", "web-application", "react", "nodejs", "mongodb" },
+                                SkillLevels = new List<string> { "intermediate" },
+                                ProjectType = "web-app",
+                                Domain = "social-impact",
+                                LearningOutcomes = new List<string> { "Full-stack web development", "Database design", "User management systems", "Volunteer coordination workflows" },
+                                ComplexityFactors = new List<string> { "Multi-user roles and permissions", "Real-time inventory tracking", "Volunteer scheduling algorithms", "Reporting and analytics" }
+                            }
                         }
                     };
 
@@ -1425,7 +1452,17 @@ namespace GainIt.API.Data
                     },
                     Technologies = new List<string> { "HTML", "CSS", "JavaScript", "Firebase" },
                     RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" },
-                    ProgrammingLanguages = new List<string> { "JavaScript", "HTML", "CSS" }
+                    ProgrammingLanguages = new List<string> { "JavaScript", "HTML", "CSS" },
+                    RagContext = new RagContext
+                    {
+                        SearchableText = "TechForGood Learning Platform - An online learning platform providing free coding courses to underprivileged communities with course management and progress tracking.",
+                        Tags = new List<string> { "learning-platform", "coding-courses", "education", "tech-for-good", "course-management", "progress-tracking", "interactive-exercises", "web-development", "html", "css", "javascript", "firebase" },
+                        SkillLevels = new List<string> { "beginner", "intermediate" },
+                        ProjectType = "web-app",
+                        Domain = "education",
+                        LearningOutcomes = new List<string> { "Web development fundamentals", "Course management systems", "User authentication", "Progress tracking implementation" },
+                        ComplexityFactors = new List<string> { "Multi-course content management", "User progress tracking", "Interactive coding exercises", "Responsive design requirements" }
+                    }
                 };
 
                 var project2 = new UserProject
@@ -1448,7 +1485,17 @@ namespace GainIt.API.Data
                         "Coordinate volunteer schedules and activities.",
                         "Promote sustainable urban agriculture practices."
                     },
-                    RequiredRoles = new List<string> { "Full Stack Developer", "UI/UX Designer", "DevOps Engineer" }
+                    RequiredRoles = new List<string> { "Full Stack Developer", "UI/UX Designer", "DevOps Engineer" },
+                    RagContext = new RagContext
+                    {
+                        SearchableText = "Community Garden Management System - A comprehensive system for managing community gardens, tracking plant growth, and coordinating volunteer schedules with weather integration.",
+                        Tags = new List<string> { "community-garden", "plant-management", "volunteer-coordination", "weather-integration", "plant-care", "sustainable-agriculture", "vuejs", "python", "postgresql", "docker" },
+                        SkillLevels = new List<string> { "intermediate", "advanced" },
+                        ProjectType = "web-app",
+                        Domain = "environment",
+                        LearningOutcomes = new List<string> { "Full-stack development", "Weather API integration", "Plant care algorithms", "Volunteer management systems" },
+                        ComplexityFactors = new List<string> { "Weather data integration", "Plant growth tracking algorithms", "Volunteer scheduling optimization", "Multi-garden management" }
+                    }
                 };
 
                 var project3 = new UserProject
@@ -1470,7 +1517,17 @@ namespace GainIt.API.Data
                         "Connect students with local business opportunities.",
                         "Provide a platform for student reviews and feedback."
                     },
-                    RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" }
+                    RequiredRoles = new List<string> { "Web Developer", "UI Designer", "Content Writer" },
+                    RagContext = new RagContext
+                    {
+                        SearchableText = "Local Business Directory - A platform for small businesses to create profiles, manage information, and connect with local customers with review and feedback systems.",
+                        Tags = new List<string> { "business-directory", "local-business", "customer-reviews", "business-profiles", "local-commerce", "web-development", "html", "css", "javascript", "firebase" },
+                        SkillLevels = new List<string> { "beginner" },
+                        ProjectType = "web-app",
+                        Domain = "business",
+                        LearningOutcomes = new List<string> { "Basic web development", "User authentication", "Review systems", "Business profile management" },
+                        ComplexityFactors = new List<string> { "User-generated content", "Review moderation", "Business verification", "Search and filtering" }
+                    }
                 };
 
                 var project4 = new UserProject
@@ -1493,7 +1550,17 @@ namespace GainIt.API.Data
                         "Promote environmental awareness and data-driven decision making."
                     },
                     Technologies = new List<string> { "Python", "Django", "PostgreSQL", "D3.js" },
-                    RequiredRoles = new List<string> { "Full Stack Developer", "Data Scientist", "UI/UX Designer", "DevOps Engineer" }
+                    RequiredRoles = new List<string> { "Full Stack Developer", "Data Scientist", "UI/UX Designer", "DevOps Engineer" },
+                    RagContext = new RagContext
+                    {
+                        SearchableText = "Environmental Data Tracker - An application to track and visualize environmental data including air quality, water quality, and waste management metrics with data visualization and reporting.",
+                        Tags = new List<string> { "environmental-data", "data-visualization", "air-quality", "water-quality", "waste-management", "data-science", "python", "django", "postgresql", "d3js", "environmental-monitoring" },
+                        SkillLevels = new List<string> { "advanced" },
+                        ProjectType = "data-project",
+                        Domain = "environment",
+                        LearningOutcomes = new List<string> { "Data visualization", "Environmental data analysis", "Real-time monitoring systems", "Reporting and analytics" },
+                        ComplexityFactors = new List<string> { "Real-time data processing", "Complex data visualization", "Environmental sensor integration", "Multi-metric analysis" }
+                    }
                 };
 
                 var project5 = new UserProject
@@ -1517,7 +1584,17 @@ namespace GainIt.API.Data
                         "Implement real-time inventory management"
                     },
                     Technologies = new List<string> { "React", "Node.js", "MongoDB", "Express" },
-                    RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" }
+                    RequiredRoles = new List<string> { "Frontend Developer", "Backend Developer", "UI/UX Designer", "Project Manager" },
+                    RagContext = new RagContext
+                    {
+                        SearchableText = "Community Food Bank Management System - A web application to help food banks manage inventory, track donations, and coordinate volunteers with real-time inventory management.",
+                        Tags = new List<string> { "food-bank", "inventory-management", "donation-tracking", "volunteer-coordination", "community-service", "web-application", "react", "nodejs", "mongodb", "express", "real-time" },
+                        SkillLevels = new List<string> { "intermediate" },
+                        ProjectType = "web-app",
+                        Domain = "social-impact",
+                        LearningOutcomes = new List<string> { "Full-stack development", "Real-time systems", "Inventory management", "Volunteer coordination" },
+                        ComplexityFactors = new List<string> { "Real-time inventory updates", "Multi-user coordination", "Donation tracking workflows", "Reporting and analytics" }
+                    }
                 };
 
                 // Add ProjectMembers to each project
