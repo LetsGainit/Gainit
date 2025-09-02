@@ -72,7 +72,9 @@ namespace GainIt.API.Controllers.Users
                 var externalId =
                     tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
                  ?? tryGetClaim(User, "sub")
-                 ?? tryGetClaim(User, ClaimTypes.NameIdentifier);
+                 ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                 ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                 ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
 
                 if (string.IsNullOrEmpty(externalId))
                 {
@@ -150,11 +152,20 @@ namespace GainIt.API.Controllers.Users
             
             try
             {
+                // Debug: Log all available claims
+                var allClaims = User.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
+                r_logger.LogDebug("All available claims for GetCurrentUser: CorrelationId={CorrelationId}, Claims={Claims}", 
+                    correlationId, string.Join(", ", allClaims));
+
                 // Use the same robust claim extraction as provisioning endpoint
                 var externalId =
                     tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
                  ?? tryGetClaim(User, "sub")
-                 ?? tryGetClaim(User, ClaimTypes.NameIdentifier);
+                 ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                 ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                 ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+                
 
                 if (string.IsNullOrEmpty(externalId))
                 {
@@ -192,7 +203,7 @@ namespace GainIt.API.Controllers.Users
 
                 var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
                 r_logger.LogInformation("Successfully retrieved current user profile. CorrelationId={CorrelationId}, UserId={UserId}, ExternalId={ExternalId}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
-                    correlationId, profileDto.UserId, profileDto.ExternalId, profileDto.EmailAddress, processingTime, HttpContext.Connection.RemoteIpAddress);
+                    correlationId, profileDto.UserId, profileDto.ExternalId, processingTime, HttpContext.Connection.RemoteIpAddress);
                 
                 return Ok(profileDto);
             }
