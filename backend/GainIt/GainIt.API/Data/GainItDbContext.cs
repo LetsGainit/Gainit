@@ -49,13 +49,13 @@ namespace GainIt.API.Data
         #region Project Hierarchy
         /// <summary>
         /// User projects table - actual projects created by users
-        /// Uses TPC (Table Per Concrete Type) inheritance strategy
+        /// Uses TPH (Table Per Hierarchy) inheritance strategy
         /// </summary>
         public DbSet<UserProject> Projects { get; set; }
 
         /// <summary>
         /// Template projects table - project templates that can be used as a base
-        /// Uses TPC (Table Per Concrete Type) inheritance strategy
+        /// Uses TPH (Table Per Hierarchy) inheritance strategy
         /// </summary>
         public DbSet<TemplateProject> TemplateProjects { get; set; }
         #endregion
@@ -232,8 +232,8 @@ namespace GainIt.API.Data
                 // Configure TPT inheritance for User hierarchy
                 modelBuilder.Entity<User>().UseTptMappingStrategy();
 
-                // Configure TPC inheritance for Project hierarchy
-                modelBuilder.Entity<TemplateProject>().UseTpcMappingStrategy();
+                // Configure TPH inheritance for Project hierarchy (required for JSON properties)
+                modelBuilder.Entity<TemplateProject>().UseTphMappingStrategy();
 
                 // Configure TPT inheritance for UserExpertise hierarchy
                 modelBuilder.Entity<UserExpertise>().UseTptMappingStrategy();
@@ -254,31 +254,16 @@ namespace GainIt.API.Data
                 #endregion
 
                 #region Project Configuration
-                // Configure UserProject
-                modelBuilder.Entity<UserProject>(entity =>
-                {
-                  
-                    
 
-                    // One nonprofit → many projects
-                    entity.HasOne<NonprofitOrganization>(p => p.OwningOrganization)
-                        .WithMany(n => n.OwnedProjects)
-                        .HasForeignKey("OwningOrganizationUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
 
-                    // Configure required fields
-                    entity.Property(e => e.ProjectName)
-                        .IsRequired()
-                        .HasMaxLength(200);
-
-                    entity.Property(e => e.ProjectDescription)
-                        .IsRequired()
-                        .HasMaxLength(1000);
-                });
-
-                // Configure TemplateProject
+                // Configure base TemplateProject (base entity for TPH inheritance)
                 modelBuilder.Entity<TemplateProject>(entity =>
                 {
+                    // Configure discriminator for TPH inheritance (avoiding conflict with RagContext.ProjectType)
+                    entity.HasDiscriminator<string>("ProjectKind")
+                        .HasValue<TemplateProject>("TemplateProject")
+                        .HasValue<UserProject>("UserProject");
+
                     entity.Property(e => e.ProjectName)
                         .IsRequired()
                         .HasMaxLength(200);
@@ -286,6 +271,8 @@ namespace GainIt.API.Data
                     entity.Property(e => e.ProjectDescription)
                         .IsRequired()
                         .HasMaxLength(1000);
+
+
 
                     // Configure RagContext as owned entity (stored as JSON in same table)
                     entity.OwnsOne(tp => tp.RagContext, rag =>
@@ -302,31 +289,57 @@ namespace GainIt.API.Data
                         rag.Property(r => r.Domain)
                             .HasMaxLength(100);
 
-                        // Configure JSON serialization for List<string> properties
-                        rag.Property(r => r.Tags)
-                            .HasConversion(
-                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
-                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
-                            );
-
-                        rag.Property(r => r.SkillLevels)
-                            .HasConversion(
-                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
-                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
-                            );
-
-                        rag.Property(r => r.LearningOutcomes)
-                            .HasConversion(
-                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
-                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
-                            );
-
-                        rag.Property(r => r.ComplexityFactors)
-                            .HasConversion(
-                                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
-                                v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>()
-                            );
+                        // No need for HasConversion - JSON handles List<string> automatically
+                        // Tags, SkillLevels, LearningOutcomes, ComplexityFactors will be arrays in JSON
                     });
+                });
+
+                // Configure UserProject (inherits from TemplateProject)
+                modelBuilder.Entity<UserProject>(entity =>
+                {
+                    // Configure UserProject-specific properties
+                    entity.Property(e => e.ProjectStatus)
+                        .IsRequired();
+
+                    entity.Property(e => e.ProjectSource)
+                        .IsRequired();
+
+                    entity.Property(e => e.CreatedAtUtc)
+                        .IsRequired();
+
+                    entity.Property(e => e.RepositoryLink)
+                        .HasMaxLength(2048); // URL max length
+
+                    entity.Property(e => e.OwningOrganizationUserId);
+
+                    // Configure ProgrammingLanguages as JSON
+                    entity.Property(e => e.ProgrammingLanguages)
+                        .HasConversion(
+                            v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                            v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>()
+                        );
+
+                    // Configure relationships
+                    entity.HasOne<NonprofitOrganization>(p => p.OwningOrganization)
+                        .WithMany(n => n.OwnedProjects)
+                        .HasForeignKey("OwningOrganizationUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    // Configure collections
+                    entity.HasMany(p => p.ProjectMembers)
+                        .WithOne(pm => pm.Project)
+                        .HasForeignKey(pm => pm.ProjectId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.HasMany(p => p.Tasks)
+                        .WithOne(t => t.Project)
+                        .HasForeignKey(t => t.ProjectId)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    entity.HasMany(p => p.Milestones)
+                        .WithOne(m => m.Project)
+                        .HasForeignKey(m => m.ProjectId)
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
                 #endregion
 
