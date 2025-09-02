@@ -56,6 +56,7 @@ namespace GainIt.API.Data
         /// <summary>
         /// Template projects table - project templates that can be used as a base
         /// Uses TPH (Table Per Hierarchy) inheritance strategy
+        /// Both DbSets map to the same "Projects" table
         /// </summary>
         public DbSet<TemplateProject> TemplateProjects { get; set; }
         #endregion
@@ -259,6 +260,9 @@ namespace GainIt.API.Data
                 // Configure base TemplateProject (base entity for TPH inheritance)
                 modelBuilder.Entity<TemplateProject>(entity =>
                 {
+                    // Set the table name to "Projects" (instead of default "TemplateProjects")
+                    entity.ToTable("Projects");
+
                     // Configure discriminator for TPH inheritance (avoiding conflict with RagContext.ProjectType)
                     entity.HasDiscriminator<string>("ProjectKind")
                         .HasValue<TemplateProject>("TemplateProject")
