@@ -691,13 +691,13 @@ namespace GainIt.API.Services.Projects.Implementations
                  ProjectName = p.ProjectName,
                  ProjectDescription = p.ProjectDescription,
                  DifficultyLevel = p.DifficultyLevel.ToString(),
-                 DurationDays = (int)(p.Duration.HasValue ? p.Duration.Value.TotalDays : 30),
-                 Goals = p.Goals?.ToArray() ?? new string[0],
-                 Technologies = p.Technologies?.ToArray() ?? new string[0],
-                 RequiredRoles = p.RequiredRoles?.ToArray() ?? new string[0],
+                 DurationDays = (int)(p.Duration.TotalDays > 0 ? p.Duration.TotalDays : 30),
+                 Goals = p.Goals?.ToArray() ?? Array.Empty<string>(),
+                 Technologies = p.Technologies?.ToArray() ?? Array.Empty<string>(),
+                 RequiredRoles = p.RequiredRoles?.ToArray() ?? Array.Empty<string>(),
                  
                                    // UserProject-specific fields (if available) - ensure consistent types
-                  ProgrammingLanguages = p is UserProject userProject ? userProject.ProgrammingLanguages?.ToArray() ?? new string[0] : new string[0],
+                  ProgrammingLanguages = p is UserProject userProject ? userProject.ProgrammingLanguages?.ToArray() ?? Array.Empty<string>() : Array.Empty<string>(),
                   ProjectSource = p is UserProject userProject2 ? userProject2.ProjectSource.ToString() : "Template",
                   ProjectStatus = p is UserProject userProject3 ? userProject3.ProjectStatus.ToString() : "NotActive",
 
@@ -705,12 +705,12 @@ namespace GainIt.API.Services.Projects.Implementations
                  RagContext = new RagContextViewModel
                  {
                      SearchableText = p.RagContext?.SearchableText ?? $"{p.ProjectName} - {p.ProjectDescription}",
-                     Tags = p.RagContext?.Tags?.ToArray() ?? new string[0],
-                     SkillLevels = p.RagContext?.SkillLevels?.ToArray() ?? new string[0],
+                     Tags = p.RagContext?.Tags?.ToArray() ?? Array.Empty<string>(),
+                     SkillLevels = p.RagContext?.SkillLevels?.ToArray() ?? Array.Empty<string>(),
                      ProjectType = p.RagContext?.ProjectType ?? "general-project",
                      Domain = p.RagContext?.Domain ?? "general",
-                     LearningOutcomes = p.RagContext?.LearningOutcomes?.ToArray() ?? new string[0],
-                     ComplexityFactors = p.RagContext?.ComplexityFactors?.ToArray() ?? new string[0]
+                     LearningOutcomes = p.RagContext?.LearningOutcomes?.ToArray() ?? Array.Empty<string>(),
+                     ComplexityFactors = p.RagContext?.ComplexityFactors?.ToArray() ?? Array.Empty<string>()
                  }
              }).ToList();
         }

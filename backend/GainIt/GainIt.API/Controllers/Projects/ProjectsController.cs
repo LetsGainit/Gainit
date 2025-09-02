@@ -806,7 +806,7 @@ namespace GainIt.API.Controllers.Projects
         {
             try
             {
-                var azureVectorProjects = await _projectService.ExportProjectsForAzureVectorSearchAsync();
+                var azureVectorProjects = await r_ProjectService.ExportProjectsForAzureVectorSearchAsync();
                 
                 // Convert to JSONL format (one JSON object per line)
                 var jsonlContent = new System.Text.StringBuilder();
@@ -830,7 +830,7 @@ namespace GainIt.API.Controllers.Projects
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error exporting projects for Azure vector search");
+                r_logger.LogError(ex, "Error exporting projects for Azure vector search");
                 return StatusCode(500, new { error = "Failed to export projects", details = ex.Message });
             }
         }
