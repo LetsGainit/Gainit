@@ -68,5 +68,12 @@ namespace GainIt.API.Services.Projects.Interfaces
 
         // Create a new project for a nonprofit organization and assign the organization as the owner
         Task<UserProject> CreateProjectForNonprofitAsync(UserProjectViewModel i_Project, Guid i_NonprofitOrgId);
+
+        /// <summary>
+        /// Export all projects for Azure Cognitive Search vector indexing
+        /// Creates the exact JSON structure needed for the projects-rag index
+        /// </summary>
+        /// <returns>List of projects formatted for Azure Cognitive Search</returns>
+        Task<List<AzureVectorSearchProjectViewModel>> ExportProjectsForAzureVectorSearchAsync();
     }
 }
