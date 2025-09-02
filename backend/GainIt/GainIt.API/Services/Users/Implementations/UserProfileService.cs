@@ -433,7 +433,7 @@ namespace GainIt.API.Services.Users.Implementations
 
             try
             {
-                // Get the base User record
+                // 1. Get the User and copy all data we need
                 var user = await r_DbContext.Users.FirstOrDefaultAsync(u => u.UserId == i_userId);
                 if (user == null)
                 {
@@ -441,40 +441,46 @@ namespace GainIt.API.Services.Users.Implementations
                     throw new KeyNotFoundException($"User with ID {i_userId} not found");
                 }
 
-                // Update the existing User record
-                user.FullName = i_updateDto.FullName ?? user.FullName;
-                user.Biography = i_updateDto.Biography;
-                user.FacebookPageURL = i_updateDto.FacebookPageURL;
-                user.LinkedInURL = i_updateDto.LinkedInURL;
-                user.GitHubURL = i_updateDto.GitHubURL;
-                user.GitHubUsername = i_updateDto.GitHubUsername;
-                user.ProfilePictureURL = i_updateDto.ProfilePictureURL;
-                user.LastLoginAt = DateTimeOffset.UtcNow;
+                // 2. Copy all the data we need
+                var userData = new
+                {
+                    user.ExternalId,
+                    user.EmailAddress,
+                    FullName = i_updateDto.FullName ?? user.FullName,
+                    Biography = i_updateDto.Biography ?? user.Biography,
+                    FacebookPageURL = i_updateDto.FacebookPageURL ?? user.FacebookPageURL,
+                    LinkedInURL = i_updateDto.LinkedInURL ?? user.LinkedInURL,
+                    GitHubURL = i_updateDto.GitHubURL ?? user.GitHubURL,
+                    GitHubUsername = i_updateDto.GitHubUsername ?? user.GitHubUsername,
+                    ProfilePictureURL = i_updateDto.ProfilePictureURL ?? user.ProfilePictureURL,
+                    user.Country,
+                    user.CreatedAt
+                };
 
-                // Detach the user entity to avoid tracking conflicts
-                r_DbContext.Entry(user).State = EntityState.Detached;
+                // 3. Delete the User
+                r_DbContext.Users.Remove(user);
+                await r_DbContext.SaveChangesAsync();
 
-                // Create new Gainer record in the Gainers table
+                // 4. Create the Gainer with the copied data
                 var gainer = new Gainer
                 {
                     UserId = i_userId,
-                    ExternalId = user.ExternalId,
-                    EmailAddress = user.EmailAddress,
-                    FullName = user.FullName,
-                    Biography = user.Biography,
-                    FacebookPageURL = user.FacebookPageURL,
-                    LinkedInURL = user.LinkedInURL,
-                    GitHubURL = user.GitHubURL,
-                    GitHubUsername = user.GitHubUsername,
-                    ProfilePictureURL = user.ProfilePictureURL,
-                    Country = user.Country,
-                    CreatedAt = user.CreatedAt,
-                    LastLoginAt = user.LastLoginAt,
+                    ExternalId = userData.ExternalId,
+                    EmailAddress = userData.EmailAddress,
+                    FullName = userData.FullName,
+                    Biography = userData.Biography,
+                    FacebookPageURL = userData.FacebookPageURL,
+                    LinkedInURL = userData.LinkedInURL,
+                    GitHubURL = userData.GitHubURL,
+                    GitHubUsername = userData.GitHubUsername,
+                    ProfilePictureURL = userData.ProfilePictureURL,
+                    Country = userData.Country,
+                    CreatedAt = userData.CreatedAt,
+                    LastLoginAt = DateTimeOffset.UtcNow,
                     EducationStatus = i_updateDto.EducationStatus,
                     AreasOfInterest = i_updateDto.AreasOfInterest
                 };
 
-                // Add the Gainer to the Gainers table
                 r_DbContext.Gainers.Add(gainer);
                 await r_DbContext.SaveChangesAsync();
 
@@ -1233,101 +1239,133 @@ namespace GainIt.API.Services.Users.Implementations
         {
             r_logger.LogInformation("Creating Mentor from User: UserId={UserId}", userId);
 
-            var user = await r_DbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
-            if (user == null)
+            try
             {
-                throw new KeyNotFoundException($"User with ID {userId} not found");
+                // 1. Get the User and copy all data we need
+                var user = await r_DbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+                if (user == null)
+                {
+                    r_logger.LogError("Base User not found when creating Mentor: UserId={UserId}", userId);
+                    throw new KeyNotFoundException($"User with ID {userId} not found");
+                }
+
+                // 2. Copy all the data we need
+                var userData = new
+                {
+                    user.ExternalId,
+                    user.EmailAddress,
+                    FullName = updateDto.FullName ?? user.FullName,
+                    Biography = updateDto.Biography ?? user.Biography,
+                    FacebookPageURL = updateDto.FacebookPageURL ?? user.FacebookPageURL,
+                    LinkedInURL = updateDto.LinkedInURL ?? user.LinkedInURL,
+                    GitHubURL = updateDto.GitHubURL ?? user.GitHubURL,
+                    GitHubUsername = updateDto.GitHubUsername ?? user.GitHubUsername,
+                    ProfilePictureURL = updateDto.ProfilePictureURL ?? user.ProfilePictureURL,
+                    user.Country,
+                    user.CreatedAt
+                };
+
+                // 3. Delete the User
+                r_DbContext.Users.Remove(user);
+                await r_DbContext.SaveChangesAsync();
+
+                // 4. Create the Mentor with the copied data
+                var mentor = new Mentor
+                {
+                    UserId = userId,
+                    ExternalId = userData.ExternalId,
+                    EmailAddress = userData.EmailAddress,
+                    FullName = userData.FullName,
+                    Biography = userData.Biography,
+                    FacebookPageURL = userData.FacebookPageURL,
+                    LinkedInURL = userData.LinkedInURL,
+                    GitHubURL = userData.GitHubURL,
+                    GitHubUsername = userData.GitHubUsername,
+                    ProfilePictureURL = userData.ProfilePictureURL,
+                    Country = userData.Country,
+                    CreatedAt = userData.CreatedAt,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    YearsOfExperience = updateDto.YearsOfExperience,
+                    AreaOfExpertise = updateDto.AreaOfExpertise
+                };
+
+                r_DbContext.Mentors.Add(mentor);
+                await r_DbContext.SaveChangesAsync();
+
+                r_logger.LogInformation("Successfully created Mentor from User: UserId={UserId}", userId);
+                return mentor;
             }
-
-            // Update the existing User record
-            user.FullName = updateDto.FullName ?? user.FullName;
-            user.Biography = updateDto.Biography;
-            user.FacebookPageURL = updateDto.FacebookPageURL;
-            user.LinkedInURL = updateDto.LinkedInURL;
-            user.GitHubURL = updateDto.GitHubURL;
-            user.GitHubUsername = updateDto.GitHubUsername;
-            user.ProfilePictureURL = updateDto.ProfilePictureURL;
-            user.LastLoginAt = DateTimeOffset.UtcNow;
-
-            // Detach the user entity to avoid tracking conflicts
-            r_DbContext.Entry(user).State = EntityState.Detached;
-
-            // Create new Mentor record in the Mentors table
-            var mentor = new Mentor
+            catch (Exception ex)
             {
-                UserId = userId,
-                ExternalId = user.ExternalId,
-                EmailAddress = user.EmailAddress,
-                FullName = user.FullName,
-                Biography = user.Biography,
-                FacebookPageURL = user.FacebookPageURL,
-                LinkedInURL = user.LinkedInURL,
-                GitHubURL = user.GitHubURL,
-                GitHubUsername = user.GitHubUsername,
-                ProfilePictureURL = user.ProfilePictureURL,
-                Country = user.Country,
-                CreatedAt = user.CreatedAt,
-                LastLoginAt = user.LastLoginAt,
-                YearsOfExperience = updateDto.YearsOfExperience,
-                AreaOfExpertise = updateDto.AreaOfExpertise
-            };
-
-            // Add the Mentor to the Mentors table
-            r_DbContext.Mentors.Add(mentor);
-            await r_DbContext.SaveChangesAsync();
-
-            r_logger.LogInformation("Successfully created Mentor from User: UserId={UserId}", userId);
-            return mentor;
+                r_logger.LogError(ex, "Error creating Mentor from User: UserId={UserId}", userId);
+                throw;
+            }
         }
 
         private async Task<NonprofitOrganization> CreateNonprofitFromUserAsync(Guid userId, NonprofitProfileUpdateDTO updateDto)
         {
             r_logger.LogInformation("Creating Nonprofit from User: UserId={UserId}", userId);
 
-            var user = await r_DbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
-            if (user == null)
+            try
             {
-                throw new KeyNotFoundException($"User with ID {userId} not found");
+                // 1. Get the User and copy all data we need
+                var user = await r_DbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+                if (user == null)
+                {
+                    r_logger.LogError("Base User not found when creating Nonprofit: UserId={UserId}", userId);
+                    throw new KeyNotFoundException($"User with ID {userId} not found");
+                }
+
+                // 2. Copy all the data we need
+                var userData = new
+                {
+                    user.ExternalId,
+                    user.EmailAddress,
+                    FullName = updateDto.FullName ?? user.FullName,
+                    Biography = updateDto.Biography ?? user.Biography,
+                    FacebookPageURL = updateDto.FacebookPageURL ?? user.FacebookPageURL,
+                    LinkedInURL = updateDto.LinkedInURL ?? user.LinkedInURL,
+                    GitHubURL = updateDto.GitHubURL ?? user.GitHubURL,
+                    GitHubUsername = updateDto.GitHubUsername ?? user.GitHubUsername,
+                    ProfilePictureURL = updateDto.ProfilePictureURL ?? user.ProfilePictureURL,
+                    user.Country,
+                    user.CreatedAt
+                };
+
+                // 3. Delete the User
+                r_DbContext.Users.Remove(user);
+                await r_DbContext.SaveChangesAsync();
+
+                // 4. Create the Nonprofit with the copied data
+                var nonprofit = new NonprofitOrganization
+                {
+                    UserId = userId,
+                    ExternalId = userData.ExternalId,
+                    EmailAddress = userData.EmailAddress,
+                    FullName = userData.FullName,
+                    Biography = userData.Biography,
+                    FacebookPageURL = userData.FacebookPageURL,
+                    LinkedInURL = userData.LinkedInURL,
+                    GitHubURL = userData.GitHubURL,
+                    GitHubUsername = userData.GitHubUsername,
+                    ProfilePictureURL = userData.ProfilePictureURL,
+                    Country = userData.Country,
+                    CreatedAt = userData.CreatedAt,
+                    LastLoginAt = DateTimeOffset.UtcNow,
+                    WebsiteUrl = updateDto.WebsiteUrl
+                };
+
+                r_DbContext.Nonprofits.Add(nonprofit);
+                await r_DbContext.SaveChangesAsync();
+
+                r_logger.LogInformation("Successfully created Nonprofit from User: UserId={UserId}", userId);
+                return nonprofit;
             }
-
-            // Update the existing User record
-            user.FullName = updateDto.FullName ?? user.FullName;
-            user.Biography = updateDto.Biography;
-            user.FacebookPageURL = updateDto.FacebookPageURL;
-            user.LinkedInURL = updateDto.LinkedInURL;
-            user.GitHubURL = updateDto.GitHubURL;
-            user.GitHubUsername = updateDto.GitHubUsername;
-            user.ProfilePictureURL = updateDto.ProfilePictureURL;
-            user.LastLoginAt = DateTimeOffset.UtcNow;
-
-            // Detach the user entity to avoid tracking conflicts
-            r_DbContext.Entry(user).State = EntityState.Detached;
-
-            // Create new Nonprofit record in the Nonprofits table
-            var nonprofit = new NonprofitOrganization
+            catch (Exception ex)
             {
-                UserId = userId,
-                ExternalId = user.ExternalId,
-                EmailAddress = user.EmailAddress,
-                FullName = user.FullName,
-                Biography = user.Biography,
-                FacebookPageURL = user.FacebookPageURL,
-                LinkedInURL = user.LinkedInURL,
-                GitHubURL = user.GitHubURL,
-                GitHubUsername = user.GitHubUsername,
-                ProfilePictureURL = user.ProfilePictureURL,
-                Country = user.Country,
-                CreatedAt = user.CreatedAt,
-                LastLoginAt = user.LastLoginAt,
-                WebsiteUrl = updateDto.WebsiteUrl
-            };
-
-            // Add the Nonprofit to the Nonprofits table
-            r_DbContext.Nonprofits.Add(nonprofit);
-            await r_DbContext.SaveChangesAsync();
-
-            r_logger.LogInformation("Successfully created Nonprofit from User: UserId={UserId}", userId);
-            return nonprofit;
+                r_logger.LogError(ex, "Error creating Nonprofit from User: UserId={UserId}", userId);
+                throw;
+            }
         }
 
         
