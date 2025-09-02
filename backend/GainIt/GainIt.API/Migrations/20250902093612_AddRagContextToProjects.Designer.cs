@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GainIt.API.Migrations
 {
     [DbContext(typeof(GainItDbContext))]
-    [Migration("20250901231110_TestWithoutTPC")]
-    partial class TestWithoutTPC
+    [Migration("20250902093612_AddRagContextToProjects")]
+    partial class AddRagContextToProjects
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -650,6 +650,11 @@ namespace GainIt.API.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<string>("ProjectKind")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("character varying(21)");
+
                     b.Property<string>("ProjectName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -670,9 +675,11 @@ namespace GainIt.API.Migrations
 
                     b.HasKey("ProjectId");
 
-                    b.ToTable("TemplateProjects");
+                    b.ToTable("Projects", (string)null);
 
-                    b.UseTpcMappingStrategy();
+                    b.HasDiscriminator<string>("ProjectKind").HasValue("TemplateProject");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectMilestone", b =>
@@ -1029,9 +1036,9 @@ namespace GainIt.API.Migrations
                     b.Property<Guid?>("OwningOrganizationUserId")
                         .HasColumnType("uuid");
 
-                    b.PrimitiveCollection<List<string>>("ProgrammingLanguages")
+                    b.Property<string>("ProgrammingLanguages")
                         .IsRequired()
-                        .HasColumnType("text[]");
+                        .HasColumnType("text");
 
                     b.Property<int>("ProjectSource")
                         .HasColumnType("integer");
@@ -1040,7 +1047,8 @@ namespace GainIt.API.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("RepositoryLink")
-                        .HasColumnType("text");
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.HasIndex("GainerUserId");
 
@@ -1048,7 +1056,7 @@ namespace GainIt.API.Migrations
 
                     b.HasIndex("OwningOrganizationUserId");
 
-                    b.ToTable("Projects");
+                    b.HasDiscriminator().HasValue("UserProject");
                 });
 
             modelBuilder.Entity("GainIt.API.Models.Users.Expertise.NonprofitExpertise", b =>
@@ -1308,6 +1316,57 @@ namespace GainIt.API.Migrations
                     b.Navigation("Project");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GainIt.API.Models.Projects.TemplateProject", b =>
+                {
+                    b.OwnsOne("GainIt.API.Models.Projects.RagContext", "RagContext", b1 =>
+                        {
+                            b1.Property<Guid>("TemplateProjectProjectId")
+                                .HasColumnType("uuid");
+
+                            b1.PrimitiveCollection<List<string>>("ComplexityFactors")
+                                .IsRequired()
+                                .HasColumnType("text[]");
+
+                            b1.Property<string>("Domain")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)");
+
+                            b1.PrimitiveCollection<List<string>>("LearningOutcomes")
+                                .IsRequired()
+                                .HasColumnType("text[]");
+
+                            b1.Property<string>("ProjectType")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)");
+
+                            b1.Property<string>("SearchableText")
+                                .IsRequired()
+                                .HasMaxLength(5000)
+                                .HasColumnType("character varying(5000)");
+
+                            b1.PrimitiveCollection<List<string>>("SkillLevels")
+                                .IsRequired()
+                                .HasColumnType("text[]");
+
+                            b1.PrimitiveCollection<List<string>>("Tags")
+                                .IsRequired()
+                                .HasColumnType("text[]");
+
+                            b1.HasKey("TemplateProjectProjectId");
+
+                            b1.ToTable("Projects");
+
+                            b1.ToJson("RagContext");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TemplateProjectProjectId");
+                        });
+
+                    b.Navigation("RagContext");
                 });
 
             modelBuilder.Entity("GainIt.API.Models.Tasks.ProjectMilestone", b =>

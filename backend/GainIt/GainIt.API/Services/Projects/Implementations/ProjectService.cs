@@ -31,93 +31,7 @@ namespace GainIt.API.Services.Projects.Implementations
             r_azureOpenAIClient = i_azureOpenAIClient;
             r_chatClient = i_azureOpenAIClient.GetChatClient(i_openAIOptions.Value.ChatDeploymentName);
         }
-        public async Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId, string i_Role)
-        {
-            r_logger.LogInformation("Adding team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
-                i_ProjectId, i_UserId, i_Role);
-
-            try
-            {
-                var project = await r_DbContext.Projects
-                    .Include(p => p.ProjectMembers)
-                    .ThenInclude(pm => pm.User)
-                    .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId);
-
-                if (project == null)
-                {
-                    r_logger.LogWarning("Project not found: ProjectId={ProjectId}", i_ProjectId);
-                    throw new KeyNotFoundException("Project not found.");
-                }
-
-                var gainer = await r_DbContext.Gainers.FindAsync(i_UserId);
-                if (gainer == null)
-                {
-                    r_logger.LogWarning("User not found or is not a Gainer: UserId={UserId}", i_UserId);
-                    throw new KeyNotFoundException("User not found or is not a Gainer.");
-                }
-
-                // Check if the role is open in the project
-                if (!project.RequiredRoles.Contains(i_Role))
-                {
-                    r_logger.LogWarning("Role is not open in project: ProjectId={ProjectId}, Role={Role}", i_ProjectId, i_Role);
-                    throw new InvalidOperationException($"Role '{i_Role}' is not an open role in this project.");
-                }
-
-                // Check if the role is already filled
-                if (project.ProjectMembers.Any(pm =>
-                    pm.UserRole == i_Role &&
-                    pm.LeftAtUtc == null))
-                {
-                    r_logger.LogWarning("Role already filled: ProjectId={ProjectId}, Role={Role}", i_ProjectId, i_Role);
-                    throw new InvalidOperationException($"Role '{i_Role}' is already filled in this project.");
-                }
-
-                // Check if user is already a member
-                if (project.ProjectMembers.Any(pm =>
-                    pm.UserId == i_UserId &&
-                    pm.LeftAtUtc == null))
-                {
-                    r_logger.LogWarning("User already a team member: ProjectId={ProjectId}, UserId={UserId}", i_ProjectId, i_UserId);
-                    throw new InvalidOperationException("User is already a team member in this project.");
-                }
-
-                project.ProjectMembers.Add(new ProjectMember
-                {
-                    ProjectId = i_ProjectId,
-                    UserId = i_UserId,
-                    UserRole = i_Role,
-                    IsAdmin = false,
-                    Project = project,
-                    User = gainer,
-                    JoinedAtUtc = DateTime.UtcNow
-                });
-
-                await r_DbContext.SaveChangesAsync();
-                
-                r_logger.LogInformation("Successfully added team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
-                    i_ProjectId, i_UserId, i_Role);
-                return project;
-            }
-            catch (KeyNotFoundException ex)
-            {
-                r_logger.LogWarning("Key not found while adding team member: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", 
-                    i_ProjectId, i_UserId, ex.Message);
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                r_logger.LogWarning("Invalid operation while adding team member: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", 
-                    i_ProjectId, i_UserId, ex.Message);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                r_logger.LogError(ex, "Error adding team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", 
-                    i_ProjectId, i_UserId, i_Role);
-                throw;
-            }
-        }
-
+        
         public async Task<UserProject> AssignMentorAsync(Guid i_ProjectId, Guid i_MentorId)
         {
             r_logger.LogInformation("Assigning mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", 
@@ -677,14 +591,6 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         /// <summary>
-        /// Simple fallback searchable text generation
-        /// </summary>
-        private string GenerateSearchableText(UserProject project)
-        {
-            return $"{project.ProjectName} - {project.ProjectDescription}";
-        }
-
-        /// <summary>
         /// Generates RAG context using AI for better accuracy
         /// </summary>
         private async Task<RagContext> GenerateRagContextWithAIAsync(UserProject project)
@@ -763,6 +669,53 @@ namespace GainIt.API.Services.Projects.Implementations
                 throw;
             }
         }
+
+        /// <summary>
+        /// Export all projects for Azure Cognitive Search vector indexing
+        /// Creates the exact JSON structure needed for the projects-rag index
+        /// </summary>
+        /// <returns>List of projects formatted for Azure Cognitive Search</returns>
+        public async Task<List<AzureVectorSearchProjectViewModel>> ExportProjectsForAzureVectorSearchAsync()
+        {
+            // Get all projects from both tables
+            var templateProjects = await r_DbContext.TemplateProjects.ToListAsync();
+            var userProjects = await r_DbContext.Projects.ToListAsync();
+            
+            var allProjects = new List<TemplateProject>();
+            allProjects.AddRange(templateProjects);
+            allProjects.AddRange(userProjects);
+            
+                                       return allProjects.Select(p => new AzureVectorSearchProjectViewModel
+             {
+                 ProjectId = p.ProjectId.ToString(),
+                 ProjectName = p.ProjectName,
+                 ProjectDescription = p.ProjectDescription,
+                 DifficultyLevel = p.DifficultyLevel.ToString(),
+                 DurationDays = (int)(p.Duration.TotalDays > 0 ? p.Duration.TotalDays : 30),
+                 Goals = p.Goals?.ToArray() ?? Array.Empty<string>(),
+                 Technologies = p.Technologies?.ToArray() ?? Array.Empty<string>(),
+                 RequiredRoles = p.RequiredRoles?.ToArray() ?? Array.Empty<string>(),
+                 
+                                   // UserProject-specific fields (if available) - ensure consistent types
+                  ProgrammingLanguages = p is UserProject userProject ? userProject.ProgrammingLanguages?.ToArray() ?? Array.Empty<string>() : Array.Empty<string>(),
+                  ProjectSource = p is UserProject userProject2 ? userProject2.ProjectSource.ToString() : "Template",
+                  ProjectStatus = p is UserProject userProject3 ? userProject3.ProjectStatus.ToString() : "NotActive",
+
+                 // RAG context - CRITICAL for vector search
+                 RagContext = new RagContextViewModel
+                 {
+                     SearchableText = p.RagContext?.SearchableText ?? $"{p.ProjectName} - {p.ProjectDescription}",
+                     Tags = p.RagContext?.Tags?.ToArray() ?? Array.Empty<string>(),
+                     SkillLevels = p.RagContext?.SkillLevels?.ToArray() ?? Array.Empty<string>(),
+                     ProjectType = p.RagContext?.ProjectType ?? "general-project",
+                     Domain = p.RagContext?.Domain ?? "general",
+                     LearningOutcomes = p.RagContext?.LearningOutcomes?.ToArray() ?? Array.Empty<string>(),
+                     ComplexityFactors = p.RagContext?.ComplexityFactors?.ToArray() ?? Array.Empty<string>()
+                 }
+             }).ToList();
+        }
+
+
 
 
     }
