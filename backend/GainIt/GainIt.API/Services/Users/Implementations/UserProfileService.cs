@@ -383,6 +383,97 @@ namespace GainIt.API.Services.Users.Implementations
             }
         }
 
+        public async Task<Gainer> CreateOrUpdateGainerProfileAsync(Guid i_userId, GainerProfileUpdateDTO i_updateDto)
+        {
+            r_logger.LogInformation("Creating or updating Gainer profile: UserId={UserId}", i_userId);
+
+            try
+            {
+                // First, try to get existing gainer
+                Gainer gainer;
+                try
+                {
+                    gainer = await GetGainerByIdAsync(i_userId);
+                    r_logger.LogInformation("Found existing Gainer, updating: UserId={UserId}", i_userId);
+                }
+                catch (KeyNotFoundException)
+                {
+                    // Gainer doesn't exist, create it from the base User
+                    r_logger.LogInformation("Gainer not found, creating from User: UserId={UserId}", i_userId);
+                    gainer = await CreateGainerFromUserAsync(i_userId, i_updateDto);
+                    return gainer;
+                }
+
+                // Update existing gainer
+                gainer.FullName = i_updateDto.FullName;
+                gainer.Biography = i_updateDto.Biography;
+                gainer.FacebookPageURL = i_updateDto.FacebookPageURL;
+                gainer.LinkedInURL = i_updateDto.LinkedInURL;
+                gainer.GitHubURL = i_updateDto.GitHubURL;
+                gainer.GitHubUsername = i_updateDto.GitHubUsername;
+                gainer.ProfilePictureURL = i_updateDto.ProfilePictureURL;
+                gainer.EducationStatus = i_updateDto.EducationStatus;
+                gainer.AreasOfInterest = i_updateDto.AreasOfInterest;
+
+                await r_DbContext.SaveChangesAsync();
+                
+                r_logger.LogInformation("Successfully updated existing Gainer profile: UserId={UserId}", i_userId);
+                return gainer;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error creating or updating Gainer profile: UserId={UserId}", i_userId);
+                throw;
+            }
+        }
+
+        private async Task<Gainer> CreateGainerFromUserAsync(Guid i_userId, GainerProfileUpdateDTO i_updateDto)
+        {
+            r_logger.LogInformation("Creating Gainer from User: UserId={UserId}", i_userId);
+
+            try
+            {
+                // Get the base User record
+                var user = await r_DbContext.Users.FirstOrDefaultAsync(u => u.UserId == i_userId);
+                if (user == null)
+                {
+                    r_logger.LogError("Base User not found when creating Gainer: UserId={UserId}", i_userId);
+                    throw new KeyNotFoundException($"User with ID {i_userId} not found");
+                }
+
+                // Create new Gainer record
+                var gainer = new Gainer
+                {
+                    UserId = i_userId,
+                    ExternalId = user.ExternalId,
+                    EmailAddress = user.EmailAddress,
+                    FullName = i_updateDto.FullName ?? user.FullName,
+                    Biography = i_updateDto.Biography,
+                    FacebookPageURL = i_updateDto.FacebookPageURL,
+                    LinkedInURL = i_updateDto.LinkedInURL,
+                    GitHubURL = i_updateDto.GitHubURL,
+                    GitHubUsername = i_updateDto.GitHubUsername,
+                    ProfilePictureURL = i_updateDto.ProfilePictureURL,
+                    Country = user.Country,
+                    EducationStatus = i_updateDto.EducationStatus,
+                    AreasOfInterest = i_updateDto.AreasOfInterest,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    LastLoginAt = user.LastLoginAt
+                };
+
+                r_DbContext.Gainers.Add(gainer);
+                await r_DbContext.SaveChangesAsync();
+
+                r_logger.LogInformation("Successfully created Gainer from User: UserId={UserId}", i_userId);
+                return gainer;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error creating Gainer from User: UserId={UserId}", i_userId);
+                throw;
+            }
+        }
+
         public async Task<Mentor> UpdateMentorProfileAsync(Guid userId, MentorProfileUpdateDTO i_updateDto)
         {
             r_logger.LogInformation("Updating Mentor profile: UserId={UserId}", userId);
@@ -1072,6 +1163,125 @@ namespace GainIt.API.Services.Users.Implementations
                 r_logger.LogError(ex, "Error searching Nonprofits: SearchTerm={SearchTerm}", searchTerm);
                 throw;
             }
+        }
+
+        public async Task<Mentor> CreateOrUpdateMentorProfileAsync(Guid userId, MentorProfileUpdateDTO updateDto)
+        {
+            r_logger.LogInformation("Creating or updating Mentor profile: UserId={UserId}", userId);
+
+            try
+            {
+                // First try to get existing mentor
+                var existingMentor = await GetMentorByIdAsync(userId);
+                if (existingMentor != null)
+                {
+                    r_logger.LogInformation("Mentor exists, updating: UserId={UserId}", userId);
+                    return await UpdateMentorProfileAsync(userId, updateDto);
+                }
+
+                // Mentor doesn't exist, create from user
+                r_logger.LogInformation("Mentor doesn't exist, creating from User: UserId={UserId}", userId);
+                return await CreateMentorFromUserAsync(userId, updateDto);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Failed to create or update Mentor profile: UserId={UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<NonprofitOrganization> CreateOrUpdateNonprofitProfileAsync(Guid userId, NonprofitProfileUpdateDTO updateDto)
+        {
+            r_logger.LogInformation("Creating or updating Nonprofit profile: UserId={UserId}", userId);
+
+            try
+            {
+                // First try to get existing nonprofit
+                var existingNonprofit = await GetNonprofitByIdAsync(userId);
+                if (existingNonprofit != null)
+                {
+                    r_logger.LogInformation("Nonprofit exists, updating: UserId={UserId}", userId);
+                    return await UpdateNonprofitProfileAsync(userId, updateDto);
+                }
+
+                // Nonprofit doesn't exist, create from user
+                r_logger.LogInformation("Nonprofit doesn't exist, creating from User: UserId={UserId}", userId);
+                return await CreateNonprofitFromUserAsync(userId, updateDto);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Failed to create or update Nonprofit profile: UserId={UserId}", userId);
+                throw;
+            }
+        }
+
+        private async Task<Mentor> CreateMentorFromUserAsync(Guid userId, MentorProfileUpdateDTO updateDto)
+        {
+            r_logger.LogInformation("Creating Mentor from User: UserId={UserId}", userId);
+
+            var user = await r_DbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"User with ID {userId} not found");
+            }
+
+            var mentor = new Mentor
+            {
+                UserId = userId,
+                ExternalId = user.ExternalId,
+                EmailAddress = user.EmailAddress,
+                FullName = updateDto.FullName ?? user.FullName,
+                Biography = updateDto.Biography,
+                FacebookPageURL = updateDto.FacebookPageURL,
+                LinkedInURL = updateDto.LinkedInURL,
+                GitHubURL = updateDto.GitHubURL,
+                GitHubUsername = updateDto.GitHubUsername,
+                ProfilePictureURL = updateDto.ProfilePictureURL,
+                YearsOfExperience = updateDto.YearsOfExperience,
+                AreaOfExpertise = updateDto.AreaOfExpertise,
+                CreatedAt = DateTimeOffset.UtcNow,
+                LastLoginAt = user.LastLoginAt
+            };
+
+            await r_DbContext.Mentors.AddAsync(mentor);
+            await r_DbContext.SaveChangesAsync();
+
+            r_logger.LogInformation("Successfully created Mentor from User: UserId={UserId}", userId);
+            return mentor;
+        }
+
+        private async Task<NonprofitOrganization> CreateNonprofitFromUserAsync(Guid userId, NonprofitProfileUpdateDTO updateDto)
+        {
+            r_logger.LogInformation("Creating Nonprofit from User: UserId={UserId}", userId);
+
+            var user = await r_DbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"User with ID {userId} not found");
+            }
+
+            var nonprofit = new NonprofitOrganization
+            {
+                UserId = userId,
+                ExternalId = user.ExternalId,
+                EmailAddress = user.EmailAddress,
+                FullName = updateDto.FullName ?? user.FullName,
+                Biography = updateDto.Biography,
+                FacebookPageURL = updateDto.FacebookPageURL,
+                LinkedInURL = updateDto.LinkedInURL,
+                GitHubURL = updateDto.GitHubURL,
+                GitHubUsername = updateDto.GitHubUsername,
+                ProfilePictureURL = updateDto.ProfilePictureURL,
+                WebsiteUrl = updateDto.WebsiteUrl,
+                CreatedAt = DateTimeOffset.UtcNow,
+                LastLoginAt = user.LastLoginAt
+            };
+
+            await r_DbContext.Nonprofits.AddAsync(nonprofit);
+            await r_DbContext.SaveChangesAsync();
+
+            r_logger.LogInformation("Successfully created Nonprofit from User: UserId={UserId}", userId);
+            return nonprofit;
         }
 
         

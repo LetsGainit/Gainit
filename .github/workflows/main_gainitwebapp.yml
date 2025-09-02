@@ -24,7 +24,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Build with dotnet
-        run: dotnet build backend/GainIt/GainIt.API/GainIt.API.csproj --configuration Release
+        run: dotnet build backend/GainIt/GainIt.API/GainIt.API.csproj --configuration Release --no-restore --force
 
 
       - name: dotnet publish
@@ -44,8 +44,8 @@ jobs:
           $out = Join-Path $env:RUNNER_TEMP "ilspy-out"
           if (Test-Path $out) { Remove-Item -Recurse -Force $out }
           ilspycmd --project "$dll" --outputdir "$out"
-          $found = Get-ChildItem -Recurse -Path $out -Include *.cs | Select-String -Pattern "AUTH CONFIG VERSION v9.5" -Quiet
-          if (-not $found) { Write-Error "AUTH CONFIG VERSION v9.5 marker NOT found in decompiled sources"; exit 1 }
+          $found = Get-ChildItem -Recurse -Path $out -Include *.cs | Select-String -Pattern "AUTH CONFIG VERSION v9.51" -Quiet
+          if (-not $found) { Write-Error "AUTH CONFIG VERSION v9.51 marker NOT found in decompiled sources"; exit 1 }
           Write-Host "Marker found. Proceeding."
 
       # Removed Swagger export and TypeScript generation per request
@@ -85,5 +85,50 @@ jobs:
           slot-name: 'Production'
           package: ./artifact
           clean: true
+
+      - name: Health Check - Verify deployment and database connectivity
+        shell: pwsh
+        run: |
+          $appUrl = "https://gainitwebapp-dvhfcxbkezgyfwf6.israelcentral-01.azurewebsites.net"
+          $healthEndpoint = "$appUrl/health"
+          $maxAttempts = 10
+          $success = $false
           
+          Write-Host "Checking health endpoint: $healthEndpoint"
+          
+          for ($i = 0; $i -lt $maxAttempts; $i++) {
+            try {
+              Write-Host "Health check attempt $($i+1)/$maxAttempts"
+              $response = Invoke-WebRequest -Uri $healthEndpoint -UseBasicParsing -TimeoutSec 10
+              
+              if ($response.StatusCode -eq 200) {
+                $healthData = $response.Content | ConvertFrom-Json
+                Write-Host "Health check response: $($response.Content)"
+                
+                if ($healthData.status -eq "Healthy") {
+                  Write-Host "✅ Health check passed - App is healthy and database is connected"
+                  $success = $true
+                  break
+                } else {
+                  Write-Host "⚠️ Health check returned status: $($healthData.status)"
+                }
+              } else {
+                Write-Host "❌ Health check returned status code: $($response.StatusCode)"
+              }
+            } catch {
+              Write-Host "❌ Health check attempt $($i+1) failed: $($_.Exception.Message)"
+            }
+            
+            if ($i -lt $maxAttempts - 1) {
+              Write-Host "Waiting 15 seconds before next attempt..."
+              Start-Sleep -Seconds 15
+            }
+          }
+          
+          if (-not $success) {
+            Write-Error "❌ Health check failed after $maxAttempts attempts. App may not be running correctly or database connection failed."
+            exit 1
+          }
+          
+          Write-Host "🎉 Deployment verification completed successfully!"
 

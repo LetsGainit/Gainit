@@ -702,7 +702,8 @@ namespace GainIt.API.Controllers.Users
 
             try
             {
-                var result = await r_userProfileService.UpdateGainerProfileAsync(id, updateDto);
+                // Use the new create-or-update method
+                var result = await r_userProfileService.CreateOrUpdateGainerProfileAsync(id, updateDto);
                 
                 // Check if any expertise strings were provided and add expertise
                 if (updateDto.ProgrammingLanguages?.Any() == true || updateDto.Technologies?.Any() == true || updateDto.Tools?.Any() == true)
@@ -716,7 +717,7 @@ namespace GainIt.API.Controllers.Users
                     };
                     await r_userProfileService.AddExpertiseToGainerAsync(id, expertiseDto);
                 }
-                r_logger.LogInformation("Successfully updated Gainer profile: UserId={UserId}", id);
+                r_logger.LogInformation("Successfully created or updated Gainer profile: UserId={UserId}", id);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -760,7 +761,7 @@ namespace GainIt.API.Controllers.Users
 
             try
             {
-                var result = await r_userProfileService.UpdateMentorProfileAsync(id, updateDto);
+                var result = await r_userProfileService.CreateOrUpdateMentorProfileAsync(id, updateDto);
                 
                 // Check if any expertise strings were provided and add expertise
                 if (updateDto.ProgrammingLanguages?.Any() == true || updateDto.Technologies?.Any() == true || updateDto.Tools?.Any() == true)
@@ -818,7 +819,7 @@ namespace GainIt.API.Controllers.Users
 
             try
             {
-                var result = await r_userProfileService.UpdateNonprofitProfileAsync(id, updateDto);
+                var result = await r_userProfileService.CreateOrUpdateNonprofitProfileAsync(id, updateDto);
                 
                 // Check if any expertise strings were provided and add expertise
                 if (!string.IsNullOrWhiteSpace(updateDto.FieldOfWork) || !string.IsNullOrWhiteSpace(updateDto.MissionStatement))
