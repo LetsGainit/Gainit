@@ -150,9 +150,11 @@ namespace GainIt.API.Controllers.Users
             
             try
             {
-                // Use the exact same pattern as ForumController
-                var externalId = User.FindFirst("oid")?.Value
-                      ?? User.FindFirst("sub")?.Value;
+                // Use the same robust claim extraction as provisioning endpoint
+                var externalId =
+                    tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                 ?? tryGetClaim(User, "sub")
+                 ?? tryGetClaim(User, ClaimTypes.NameIdentifier);
 
                 if (string.IsNullOrEmpty(externalId))
                 {
