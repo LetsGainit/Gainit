@@ -31,14 +31,14 @@ namespace GainIt.API.Services.GitHub.Interfaces
         Task<GitHubAnalytics?> GetProjectAnalyticsAsync(Guid projectId, int daysPeriod = 30, bool force = false);
 
         /// <summary>
-        /// Gets user-level contribution analytics for a repository
+        /// Lists contribution analytics for all members in a project repository.
         /// </summary>
-        Task<List<GitHubContribution>> GetUserContributionsAsync(Guid projectId, int daysPeriod = 30, bool force = false);
+        Task<List<GitHubContribution>> ListProjectMembersContributionsAsync(Guid projectId, int daysPeriod = 30, bool force = false);
 
         /// <summary>
-        /// Gets contribution analytics for a specific user in a repository
+        /// Gets contribution analytics for a specific member in a project repository.
         /// </summary>
-        Task<GitHubContribution?> GetUserContributionAsync(Guid projectId, Guid userId, int daysPeriod = 30, bool force = false);
+        Task<GitHubContribution?> GetProjectMemberContributionAsync(Guid projectId, Guid userId, int daysPeriod = 30, bool force = false);
 
         /// <summary>
         /// Syncs all analytics data for a repository

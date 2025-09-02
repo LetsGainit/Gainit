@@ -652,7 +652,7 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<List<GitHubContribution>> GetUserContributionsAsync(Guid projectId, int daysPeriod = 30, bool force = false)
+        public async Task<List<GitHubContribution>> ListProjectMembersContributionsAsync(Guid projectId, int daysPeriod = 30, bool force = false)
         {
             try
             {
@@ -691,11 +691,11 @@ namespace GainIt.API.Services.GitHub.Implementations
             }
         }
 
-        public async Task<GitHubContribution?> GetUserContributionAsync(Guid projectId, Guid userId, int daysPeriod = 30, bool force = false)
+        public async Task<GitHubContribution?> GetProjectMemberContributionAsync(Guid projectId, Guid userId, int daysPeriod = 30, bool force = false)
         {
             try
             {
-                var contributions = await GetUserContributionsAsync(projectId, daysPeriod, force);
+                var contributions = await ListProjectMembersContributionsAsync(projectId, daysPeriod, force);
                 return contributions.FirstOrDefault(c => c.UserId == userId);
             }
             catch (Exception ex)
@@ -874,7 +874,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                     InMemoryGitHubCache.Set(cacheKey, repoStats, TimeSpan.FromMinutes(10));
                 }
                 var analytics = await GetProjectAnalyticsAsync(projectId);
-                var contributions = await GetUserContributionsAsync(projectId);
+                var contributions = await ListProjectMembersContributionsAsync(projectId);
 
                 _logger.LogDebug("Repository stats for project {ProjectId}: Found {ContributionCount} contributions", 
                     projectId, contributions.Count);
@@ -939,7 +939,7 @@ namespace GainIt.API.Services.GitHub.Implementations
         {
             try
             {
-                var contribution = await GetUserContributionAsync(projectId, userId, daysPeriod);
+                var contribution = await GetProjectMemberContributionAsync(projectId, userId, daysPeriod);
                 if (contribution == null)
                 {
                     return "No contribution data available for this user.";
@@ -1023,7 +1023,7 @@ namespace GainIt.API.Services.GitHub.Implementations
             try
             {
                 var analytics = await GetProjectAnalyticsAsync(projectId, daysPeriod);
-                var contributions = await GetUserContributionsAsync(projectId, daysPeriod);
+                var contributions = await ListProjectMembersContributionsAsync(projectId, daysPeriod);
 
                 if (analytics == null)
                 {
@@ -1082,7 +1082,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                 }
 
                 var analytics = await GetProjectAnalyticsAsync(projectId, daysPeriod);
-                var contributions = await GetUserContributionsAsync(projectId, daysPeriod);
+                var contributions = await ListProjectMembersContributionsAsync(projectId, daysPeriod);
 
                 if (analytics == null)
                 {
