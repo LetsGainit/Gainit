@@ -798,9 +798,9 @@ namespace GainIt.API.Controllers.Projects
 
         /// <summary>
         /// Export all projects for Azure Cognitive Search vector indexing
-        /// Creates the exact JSON structure needed for the projects-rag index
+        /// Creates JSONL format (one JSON object per line) for Azure Cognitive Search
         /// </summary>
-        /// <returns>JSON file formatted for Azure Cognitive Search</returns>
+        /// <returns>JSONL file formatted for Azure Cognitive Search</returns>
         [HttpGet("export-for-azure-vector-search")]
         public async Task<IActionResult> ExportProjectsForAzureVectorSearch()
         {
@@ -808,17 +808,23 @@ namespace GainIt.API.Controllers.Projects
             {
                 var azureVectorProjects = await _projectService.ExportProjectsForAzureVectorSearchAsync();
                 
-                var fileName = $"projects-azure-vector-search-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json";
-                
-                return File(
-                    System.Text.Encoding.UTF8.GetBytes(
-                        System.Text.Json.JsonSerializer.Serialize(azureVectorProjects, new System.Text.Json.JsonSerializerOptions 
+                // Convert to JSONL format (one JSON object per line)
+                var jsonlContent = new System.Text.StringBuilder();
+                foreach (var project in azureVectorProjects)
+                {
+                    jsonlContent.AppendLine(
+                        System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions 
                         { 
-                            WriteIndented = true,
                             PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
                         })
-                    ),
-                    "application/json",
+                    );
+                }
+                
+                var fileName = $"projects-azure-vector-search-{DateTime.UtcNow:yyyyMMdd-HHmmss}.jsonl";
+                
+                return File(
+                    System.Text.Encoding.UTF8.GetBytes(jsonlContent.ToString()),
+                    "application/jsonl",
                     fileName
                 );
             }
