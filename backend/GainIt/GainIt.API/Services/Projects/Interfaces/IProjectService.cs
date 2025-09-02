@@ -42,9 +42,6 @@ namespace GainIt.API.Services.Projects.Interfaces
         // Update project repository link
         Task<UserProject> UpdateRepositoryLinkAsync(Guid i_ProjectId, string i_RepositoryLink);
 
-        // Add team member to project
-        Task<UserProject> AddTeamMemberAsync(Guid i_ProjectId, Guid i_UserId, string i_Role);
-
         // Remove team member from project
         Task<UserProject> RemoveTeamMemberAsync(Guid i_ProjectId, Guid i_UserId);
 
@@ -68,5 +65,12 @@ namespace GainIt.API.Services.Projects.Interfaces
 
         // Create a new project for a nonprofit organization and assign the organization as the owner
         Task<UserProject> CreateProjectForNonprofitAsync(UserProjectViewModel i_Project, Guid i_NonprofitOrgId);
+
+        /// <summary>
+        /// Export all projects for Azure Cognitive Search vector indexing
+        /// Creates the exact JSON structure needed for the projects-rag index
+        /// </summary>
+        /// <returns>List of projects formatted for Azure Cognitive Search</returns>
+        Task<List<AzureVectorSearchProjectViewModel>> ExportProjectsForAzureVectorSearchAsync();
     }
 }

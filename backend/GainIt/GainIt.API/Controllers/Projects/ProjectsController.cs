@@ -408,52 +408,6 @@ namespace GainIt.API.Controllers.Projects
         #region Team Members Management
 
         /// <summary>
-        /// Adds a team member to a project.
-        /// </summary>
-        /// <param name="projectId">The ID of the project.</param>
-        /// <param name="userId">The ID of the user to add as a team member.</param>
-        /// <param name="userRole"> The Role of the user</param>
-        /// 
-        /// <returns>The updated project details.</returns>
-        [HttpPost("{projectId}/team-members")]
-        public async Task<ActionResult<UserProjectViewModel>> AddTeamMember(Guid projectId, [FromQuery] Guid userId, [FromQuery] string userRole)
-        {
-            r_logger.LogInformation("Adding team member to project: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", projectId, userId, userRole);
-            
-            if (projectId == Guid.Empty || userId == Guid.Empty || userRole == string.Empty)
-            {
-                r_logger.LogWarning("Invalid parameters provided: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", projectId, userId, userRole);
-                return BadRequest(new { Message = "Project ID ot User ID or User role cannot be empty." });
-            }
-
-            try
-            {
-                UserProject updatedProject = await r_ProjectService.AddTeamMemberAsync(projectId, userId, userRole);
-
-                UserProjectViewModel updatedProjectViewModel = new UserProjectViewModel(updatedProject);
-                
-                r_logger.LogInformation("Successfully added team member to project: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", projectId, userId, userRole);
-
-                return Ok(updatedProjectViewModel);
-            }
-            catch (KeyNotFoundException e)
-            {
-                r_logger.LogWarning("Project or user not found: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", projectId, userId, e.Message);
-                return NotFound(new { Message = e.Message });
-            }
-            catch (InvalidOperationException e)
-            {
-                r_logger.LogWarning("Invalid operation: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", projectId, userId, e.Message);
-                return BadRequest(new { Message = e.Message });
-            }
-            catch (Exception ex)
-            {
-                r_logger.LogError(ex, "Error adding team member to project: ProjectId={ProjectId}, UserId={UserId}, Role={Role}", projectId, userId, userRole);
-                throw;
-            }
-        }
-
-        /// <summary>
         /// Removes a team member from a project.
         /// </summary>
         /// <param name="projectId">The ID of the project.</param>
@@ -841,5 +795,46 @@ namespace GainIt.API.Controllers.Projects
             }
         }
         #endregion
+
+        /// <summary>
+        /// Export all projects for Azure Cognitive Search vector indexing
+        /// Creates JSONL format (one JSON object per line) for Azure Cognitive Search
+        /// </summary>
+        /// <returns>JSONL file formatted for Azure Cognitive Search</returns>
+        [HttpGet("export-for-azure-vector-search")]
+        public async Task<IActionResult> ExportProjectsForAzureVectorSearch()
+        {
+            try
+            {
+                var azureVectorProjects = await r_ProjectService.ExportProjectsForAzureVectorSearchAsync();
+                
+                // Convert to JSONL format (one JSON object per line)
+                var jsonlContent = new System.Text.StringBuilder();
+                foreach (var project in azureVectorProjects)
+                {
+                    jsonlContent.AppendLine(
+                        System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions 
+                        { 
+                            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+                        })
+                    );
+                }
+                
+                var fileName = $"projects-azure-vector-search-{DateTime.UtcNow:yyyyMMdd-HHmmss}.jsonl";
+                
+                return File(
+                    System.Text.Encoding.UTF8.GetBytes(jsonlContent.ToString()),
+                    "application/jsonl",
+                    fileName
+                );
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error exporting projects for Azure vector search");
+                return StatusCode(500, new { error = "Failed to export projects", details = ex.Message });
+            }
+        }
+
+
     }
 }
