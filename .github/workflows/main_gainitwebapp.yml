@@ -24,7 +24,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Build with dotnet
-        run: dotnet build backend/GainIt/GainIt.API/GainIt.API.csproj --configuration Release --no-restore --force
+        run: dotnet build backend/GainIt/GainIt.API/GainIt.API.csproj --configuration Release 
 
 
       - name: dotnet publish
@@ -131,4 +131,5 @@ jobs:
           }
           
           Write-Host "🎉 Deployment verification completed successfully!"
+
 
