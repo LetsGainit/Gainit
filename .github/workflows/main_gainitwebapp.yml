@@ -44,21 +44,43 @@ jobs:
           $out = Join-Path $env:RUNNER_TEMP "ilspy-out"
           if (Test-Path $out) { Remove-Item -Recurse -Force $out }
           ilspycmd --project "$dll" --outputdir "$out"
-          $found = Get-ChildItem -Recurse -Path $out -Include *.cs | Select-String -Pattern "AUTH CONFIG VERSION v9.1" -Quiet
-          if (-not $found) { Write-Error "AUTH CONFIG VERSION v9.1 marker NOT found in decompiled sources"; exit 1 }
+          $found = Get-ChildItem -Recurse -Path $out -Include *.cs | Select-String -Pattern "AUTH CONFIG VERSION v9.2" -Quiet
+          if (-not $found) { Write-Error "AUTH CONFIG VERSION v9.2 marker NOT found in decompiled sources"; exit 1 }
           Write-Host "Marker found. Proceeding."
 
       - name: Export OpenAPI (Swagger) JSON
         shell: pwsh
         run: |
-          dotnet tool install -g Swashbuckle.AspNetCore.Cli
-          $toolsPath = "C:\\Users\\runneradmin\\.dotnet\\tools"
-          $env:PATH = "$toolsPath;$env:PATH"
-          $asm = "backend/GainIt/GainIt.API/bin/Release/net8.0/GainIt.API.dll"
           $out = Join-Path $env:RUNNER_TEMP "openapi.json"
-          Write-Host "Generating OpenAPI spec from: $asm"
-          swagger tofile --output "$out" "$asm" v1
-          if (-not (Test-Path $out)) { Write-Error "Failed to generate OpenAPI JSON"; exit 1 }
+          $port = 5010
+          $url = "http://localhost:$port/swagger/v1/swagger.json"
+
+          # Run the published app to serve Swagger (force Development to enable Swagger UI)
+          $env:ASPNETCORE_ENVIRONMENT = "Development"
+          $env:ASPNETCORE_URLS = "http://localhost:$port"
+          $appPath = "${{env.DOTNET_ROOT}}/myapp/GainIt.API.dll"
+          Write-Host "Starting API to export Swagger from: $appPath on $($env:ASPNETCORE_URLS)"
+          $proc = Start-Process -FilePath "dotnet" -ArgumentList "`"$appPath`"" -PassThru
+
+          # Wait for the app to be ready and fetch swagger.json
+          $maxAttempts = 30
+          for ($i = 0; $i -lt $maxAttempts; $i++) {
+            try {
+              Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing -TimeoutSec 5
+              break
+            } catch {
+              Start-Sleep -Seconds 2
+            }
+          }
+
+          if (-not (Test-Path $out)) {
+            Write-Error "Failed to generate OpenAPI JSON by requesting $url"; 
+            if ($proc -and !$proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+            exit 1
+          }
+
+          Write-Host "Swagger JSON saved to: $out"
+          if ($proc -and !$proc.HasExited) { Stop-Process -Id $proc.Id -Force }
 
       - name: Generate TypeScript types from OpenAPI
         shell: pwsh
