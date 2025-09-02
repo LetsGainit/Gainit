@@ -547,7 +547,7 @@ namespace GainIt.API.Services.Projects.Implementations
                             }
                         }
                     },
-                    Select = { "ProjectId" }
+                    Select = { "projectId" }
                 };
 
                 var results = await r_searchClient.SearchAsync<ProjectSearchResult>(null, searchOptions);
