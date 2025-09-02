@@ -998,7 +998,8 @@ namespace GainIt.API.Services.GitHub.Implementations
                     var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
                         rawSummary,
                         null,
-                        Services.Projects.Interfaces.GitHubInsightsMode.UserSummary
+                        Services.Projects.Interfaces.GitHubInsightsMode.UserSummary,
+                        daysPeriod
                     );
                     
                     _logger.LogInformation("Successfully generated AI-enhanced user activity summary for user {UserId} in project {ProjectId}", userId, projectId);
@@ -1038,7 +1039,8 @@ namespace GainIt.API.Services.GitHub.Implementations
                     var enhancedSummary = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
                         rawSummary,
                         null,
-                        Services.Projects.Interfaces.GitHubInsightsMode.ProjectSummary
+                        Services.Projects.Interfaces.GitHubInsightsMode.ProjectSummary,
+                        daysPeriod
                     );
                     
                     _logger.LogInformation("Successfully generated AI-enhanced project activity summary for project {ProjectId}", projectId);
@@ -1095,7 +1097,9 @@ namespace GainIt.API.Services.GitHub.Implementations
                 {
                     var personalizedInsights = await _projectMatchingService.GetGitHubAnalyticsExplanationAsync(
                         rawSummary, 
-                        userQuery
+                        userQuery,
+                        Services.Projects.Interfaces.GitHubInsightsMode.QA,
+                        daysPeriod
                     );
                     
                     _logger.LogInformation("Successfully generated personalized analytics insights for project {ProjectId} with query: {UserQuery}", projectId, userQuery);
