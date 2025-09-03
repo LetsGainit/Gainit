@@ -495,7 +495,7 @@ namespace GainIt.API.Data
 
 
                 #region Expertise Configuration
-                // Configure TechExpertise
+                // Configure TechExpertise - One-to-One with User
                 modelBuilder.Entity<TechExpertise>(entity =>
                 {
                     entity.HasOne(e => e.User)
@@ -504,7 +504,7 @@ namespace GainIt.API.Data
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-                // Configure NonprofitExpertise
+                // Configure NonprofitExpertise - One-to-One with User
                 modelBuilder.Entity<NonprofitExpertise>(entity =>
                 {
                     entity.HasOne(e => e.User)
@@ -512,6 +512,13 @@ namespace GainIt.API.Data
                         .HasForeignKey<NonprofitExpertise>("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
+
+                // Prevent shadow FK creation on Gainer/Mentor for TechExpertise
+                modelBuilder.Entity<Gainer>()
+                    .Ignore(g => g.TechExpertise);
+
+                modelBuilder.Entity<Mentor>()
+                    .Ignore(m => m.TechExpertise);
                 #endregion
 
                 #region Achievement Configuration

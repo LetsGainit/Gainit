@@ -18,7 +18,7 @@ namespace GainIt.API.Models.Users.Nonprofits
         public string WebsiteUrl { get; set; }
 
         [JsonIgnore]
-        public NonprofitExpertise NonprofitExpertise { get; set; }
+        public NonprofitExpertise? NonprofitExpertise { get; set; }
 
         [JsonIgnore]
         public List<UserProject> OwnedProjects { get; set; } = new();

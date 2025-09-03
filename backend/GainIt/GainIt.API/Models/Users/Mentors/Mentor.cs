@@ -21,7 +21,7 @@ namespace GainIt.API.Models.Users.Mentors
         public string AreaOfExpertise { get; set; }
 
         [JsonIgnore]
-        public TechExpertise TechExpertise { get; set; }
+        public TechExpertise? TechExpertise { get; set; }
 
         [JsonIgnore]
         public List<UserProject> MentoredProjects { get; set; } = new();
