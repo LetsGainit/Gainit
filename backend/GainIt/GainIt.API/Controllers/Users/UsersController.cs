@@ -8,6 +8,8 @@ using GainIt.API.Models.Users.Expertise;
 using GainIt.API.Models.Users;
 using GainIt.API.Models.Projects;
 using GainIt.API.Services.Users.Interfaces;
+using GainIt.API.Services.FileUpload.Interfaces;
+using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -27,12 +29,14 @@ namespace GainIt.API.Controllers.Users
         private readonly IUserProfileService r_userProfileService;
         private readonly ILogger<UsersController> r_logger;
         private readonly GainItDbContext r_DbContext;
+        private readonly IFileUploadService r_FileUploadService;
 
-        public UsersController(IUserProfileService i_userProfileService, ILogger<UsersController> i_logger, GainItDbContext i_DbContext)
+        public UsersController(IUserProfileService i_userProfileService, ILogger<UsersController> i_logger, GainItDbContext i_DbContext, IFileUploadService i_FileUploadService)
         {
             r_userProfileService = i_userProfileService;
             r_logger = i_logger;
             r_DbContext = i_DbContext;
+            r_FileUploadService = i_FileUploadService;
         }
         private static string? tryGetClaim(ClaimsPrincipal user, params string[] types)
         {
@@ -43,6 +47,8 @@ namespace GainIt.API.Controllers.Users
             }
             return null;
         }
+
+
 
         /// <summary>
         /// Ensure a local user exists for the current external identity (OID).
@@ -965,6 +971,364 @@ namespace GainIt.API.Controllers.Users
             {
                 r_logger.LogError(ex, "Error retrieving Nonprofit project history: NonprofitId={NonprofitId}", id);
                 return StatusCode(500, new { Message = "An error occurred while retrieving the Nonprofit project history" });
+            }
+        }
+
+        #endregion
+
+        #region Profile Picture Management
+
+        /// <summary>
+        /// Upload a new profile picture for the current user
+        /// </summary>
+        [HttpPost("me/profile-picture")]
+        [Authorize(Policy = "RequireAccessAsUser")]
+        [ProducesResponseType(typeof(ProfilePictureResponseViewModel), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ProfilePictureResponseViewModel>> UploadProfilePicture([FromForm] ProfilePictureRequestDto request)
+        {
+            try
+            {
+                // Use the existing GetCurrentUser method to get the user profile
+                var userProfileResult = await GetCurrentUser();
+                if (userProfileResult.Result is NotFoundObjectResult || userProfileResult.Result is UnauthorizedObjectResult)
+                {
+                    return userProfileResult.Result;
+                }
+
+                var userProfile = userProfileResult.Value as UserProfileDto;
+                if (userProfile == null)
+                {
+                    return Unauthorized("User not authenticated");
+                }
+
+                var userId = userProfile.UserId;
+                r_logger.LogInformation("Profile picture upload requested: UserId={UserId}, FileName={FileName}, Size={Size}KB",
+                    userId, request.ProfilePicture.FileName, request.ProfilePicture.Length / 1024);
+
+                // Validate file using image-specific validation (includes MIME type checking)
+                if (!r_FileUploadService.IsValidImageFile(request.ProfilePicture))
+                {
+                    return BadRequest("Invalid image file. Please ensure the file is a valid image format and under 10MB.");
+                }
+
+                // Upload to blob storage using generic method
+                var blobUrl = await r_FileUploadService.UploadFileAsync(
+                    request.ProfilePicture,
+                    "profile-pictures",
+                    userId.ToString());
+
+                // Update user's profile picture URL in database
+                var user = await r_DbContext.Users.FindAsync(userId);
+                if (user != null)
+                {
+                    user.ProfilePictureURL = blobUrl;
+                    await r_DbContext.SaveChangesAsync();
+                    r_logger.LogInformation("Updated user profile picture URL in database: UserId={UserId}, NewUrl={NewUrl}", userId, blobUrl);
+                }
+
+                // Create response
+                var response = new ProfilePictureResponseViewModel
+                {
+                    ProfilePictureUrl = blobUrl,
+                    Description = request.Description,
+                    UploadedAt = DateTimeOffset.UtcNow,
+                    FileSizeInBytes = request.ProfilePicture.Length,
+                    FileName = request.ProfilePicture.FileName,
+                    ContentType = request.ProfilePicture.ContentType
+                };
+
+                r_logger.LogInformation("Profile picture uploaded successfully: UserId={UserId}, BlobUrl={BlobUrl}",
+                    userId, blobUrl);
+
+                return Ok(response);
+            }
+            catch (ArgumentException ex)
+            {
+                r_logger.LogWarning("Invalid profile picture upload request: {Message}", ex.Message);
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error uploading profile picture");
+                return StatusCode(500, "An error occurred while uploading the profile picture");
+            }
+        }
+
+        /// <summary>
+        /// Update the current user's profile picture
+        /// </summary>
+        [HttpPut("me/profile-picture")]
+        [Authorize(Policy = "RequireAccessAsUser")]
+        [ProducesResponseType(typeof(ProfilePictureResponseViewModel), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ProfilePictureResponseViewModel>> UpdateProfilePicture([FromForm] ProfilePictureRequestDto request)
+        {
+            try
+            {
+                // Use the existing GetCurrentUser method to get the user profile
+                var userProfileResult = await GetCurrentUser();
+                if (userProfileResult.Result is NotFoundObjectResult || userProfileResult.Result is UnauthorizedObjectResult)
+                {
+                    return userProfileResult.Result;
+                }
+
+                var userProfile = userProfileResult.Value as UserProfileDto;
+                if (userProfile == null)
+                {
+                    return Unauthorized("User not authenticated");
+                }
+
+                var userId = userProfile.UserId;
+                // Get current user to find existing profile picture URL
+                var currentUser = await r_DbContext.Users.FindAsync(userId);
+                if (currentUser == null)
+                {
+                    return NotFound("User not found");
+                }
+
+                r_logger.LogInformation("Profile picture update requested: UserId={UserId}, FileName={FileName}, Size={Size}KB",
+                    userId, request.ProfilePicture.FileName, request.ProfilePicture.Length / 1024);
+
+                // Validate file using image-specific validation (includes MIME type checking)
+                if (!r_FileUploadService.IsValidImageFile(request.ProfilePicture))
+                {
+                    return BadRequest("Invalid image file. Please ensure the file is a valid image format and under 10MB.");
+                }
+
+                // Update profile picture (delete old, upload new) using generic method
+                var success = await r_FileUploadService.UpdateFileAsync(
+                    request.ProfilePicture,
+                    currentUser.ProfilePictureURL,
+                    "profile-pictures",
+                    userId.ToString());
+
+                if (!success)
+                {
+                    return StatusCode(500, "Failed to update profile picture");
+                }
+
+                // Get the new blob URL (we need to re-upload to get the new URL)
+                var newBlobUrl = await r_FileUploadService.UploadFileAsync(
+                    request.ProfilePicture,
+                    "profile-pictures",
+                    userId.ToString());
+
+                // Update user's profile picture URL in database
+                var user = await r_DbContext.Users.FindAsync(userId);
+                if (user != null)
+                {
+                    user.ProfilePictureURL = newBlobUrl;
+                    await r_DbContext.SaveChangesAsync();
+                    r_logger.LogInformation("Updated user profile picture URL in database: UserId={UserId}, NewUrl={NewUrl}", userId, newBlobUrl);
+                }
+
+                var response = new ProfilePictureResponseViewModel
+                {
+                    ProfilePictureUrl = newBlobUrl,
+                    Description = request.Description,
+                    UploadedAt = DateTimeOffset.UtcNow,
+                    FileSizeInBytes = request.ProfilePicture.Length,
+                    FileName = request.ProfilePicture.FileName,
+                    ContentType = request.ProfilePicture.ContentType
+                };
+
+                r_logger.LogInformation("Profile picture updated successfully: UserId={UserId}, NewBlobUrl={BlobUrl}",
+                    userId, newBlobUrl);
+
+                return Ok(response);
+            }
+            catch (ArgumentException ex)
+            {
+                r_logger.LogWarning("Invalid profile picture update request: {Message}", ex.Message);
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error updating profile picture");
+                return StatusCode(500, "An error occurred while updating the profile picture");
+            }
+        }
+
+        /// <summary>
+        /// Delete the current user's profile picture
+        /// </summary>
+        [HttpDelete("me/profile-picture")]
+        [Authorize(Policy = "RequireAccessAsUser")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult> DeleteProfilePicture()
+        {
+            try
+            {
+                // Use the existing GetCurrentUser method to get the user profile
+                var userProfileResult = await GetCurrentUser();
+                if (userProfileResult.Result is NotFoundObjectResult || userProfileResult.Result is UnauthorizedObjectResult)
+                {
+                    return userProfileResult.Result;
+                }
+
+                var userProfile = userProfileResult.Value as UserProfileDto;
+                if (userProfile == null)
+                {
+                    return Unauthorized("User not authenticated");
+                }
+
+                var userId = userProfile.UserId;
+                // Get current user to find existing profile picture URL
+                var currentUser = await r_DbContext.Users.FindAsync(userId);
+                if (currentUser == null)
+                {
+                    return NotFound("User not found");
+                }
+
+                if (string.IsNullOrEmpty(currentUser.ProfilePictureURL))
+                {
+                    return NotFound("No profile picture found to delete");
+                }
+
+                r_logger.LogInformation("Profile picture deletion requested: UserId={UserId}, CurrentUrl={CurrentUrl}",
+                    userId, currentUser.ProfilePictureURL);
+
+                // Delete from blob storage using generic method
+                var success = await r_FileUploadService.DeleteFileAsync(currentUser.ProfilePictureURL, "profile-pictures");
+
+                if (success)
+                {
+                    // Clear the profile picture URL from database
+                    currentUser.ProfilePictureURL = null;
+                    await r_DbContext.SaveChangesAsync();
+                    r_logger.LogInformation("Profile picture deleted successfully and URL cleared from database: UserId={UserId}", userId);
+                    return Ok("Profile picture deleted successfully");
+                }
+                else
+                {
+                    r_logger.LogWarning("Profile picture deletion failed: UserId={UserId}", userId);
+                    return StatusCode(500, "Failed to delete profile picture");
+                }
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error deleting profile picture");
+                return StatusCode(500, "An error occurred while deleting the profile picture");
+            }
+        }
+
+        /// <summary>
+        /// Get the current user's profile picture
+        /// Requires authentication
+        /// </summary>
+        [HttpGet("me/profile-picture")]
+        [Authorize(Policy = "RequireAccessAsUser")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetMyProfilePicture()
+        {
+            try
+            {
+                // Use the existing GetCurrentUser method to get the user profile
+                var userProfileResult = await GetCurrentUser();
+                if (userProfileResult.Result is NotFoundObjectResult || userProfileResult.Result is UnauthorizedObjectResult)
+                {
+                    return userProfileResult.Result;
+                }
+
+                var userProfile = userProfileResult.Value as UserProfileDto;
+                if (userProfile == null)
+                {
+                    return Unauthorized("User not authenticated");
+                }
+
+                // Get the full user entity to access ProfilePictureURL
+                var user = await r_DbContext.Users.FindAsync(userProfile.UserId);
+                if (user == null)
+                {
+                    return NotFound("User not found");
+                }
+
+                if (string.IsNullOrEmpty(user.ProfilePictureURL))
+                {
+                    return NotFound("No profile picture found");
+                }
+
+                // Fetch image from private blob storage using generic method
+                var blobResult = await r_FileUploadService.GetFileAsync(user.ProfilePictureURL, "profile-pictures");
+                if (blobResult == null)
+                {
+                    return NotFound("Profile picture not found");
+                }
+
+                // Set cache headers
+                Response.Headers.Add("Cache-Control", "public, max-age=3600");
+                Response.Headers.Add("ETag", $"\"{blobResult.Details.ETag}\"");
+
+                // Stream the image
+                return File(blobResult.Content, blobResult.ContentType);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving current user's profile picture");
+                return StatusCode(500, "An error occurred while retrieving the profile picture");
+            }
+        }
+
+        /// <summary>
+        /// Get a user's profile picture by user ID
+        /// This endpoint acts as a proxy to serve images from private blob storage
+        /// </summary>
+        [HttpGet("{userId}/profile-picture")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetProfilePicture(Guid userId)
+        {
+            try
+            {
+                // Get user to find profile picture URL
+                var user = await r_DbContext.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    r_logger.LogWarning("User not found when requesting profile picture: UserId={UserId}", userId);
+                    return NotFound("User not found");
+                }
+
+                if (string.IsNullOrEmpty(user.ProfilePictureURL))
+                {
+                    r_logger.LogDebug("User has no profile picture: UserId={UserId}", userId);
+                    return NotFound("No profile picture found");
+                }
+
+                r_logger.LogDebug("Retrieving profile picture: UserId={UserId}, BlobUrl={BlobUrl}",
+                    userId, user.ProfilePictureURL);
+
+                // Fetch image from private blob storage using generic method
+                var blobResult = await r_FileUploadService.GetFileAsync(user.ProfilePictureURL, "profile-pictures");
+                if (blobResult == null)
+                {
+                    r_logger.LogWarning("Profile picture blob not found: UserId={UserId}, BlobUrl={BlobUrl}",
+                        userId, user.ProfilePictureURL);
+                    return NotFound("Profile picture not found");
+                }
+
+                // Set cache headers for better performance
+                Response.Headers.Add("Cache-Control", "public, max-age=3600"); // 1 hour cache
+                Response.Headers.Add("ETag", $"\"{blobResult.Details.ETag}\"");
+
+                // Stream the image to the browser
+                return File(blobResult.Content, blobResult.ContentType);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving profile picture: UserId={UserId}", userId);
+                return StatusCode(500, "An error occurred while retrieving the profile picture");
             }
         }
 

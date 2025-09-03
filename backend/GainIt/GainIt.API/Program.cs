@@ -1,6 +1,7 @@
 using Azure;
 using Azure.AI.OpenAI;
 using Azure.Search.Documents;
+using Azure.Storage.Blobs;
 using GainIt.API.Data;
 using GainIt.API.HealthChecks;
 using GainIt.API.Middleware;
@@ -18,6 +19,8 @@ using GainIt.API.Services.Users.Implementations;
 using GainIt.API.Services.Users.Interfaces;
 using GainIt.API.Services.Forum.Implementations;
 using GainIt.API.Services.Forum.Interfaces;
+using GainIt.API.Services.FileUpload.Implementations;
+using GainIt.API.Services.FileUpload.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.SignalR;
@@ -198,6 +201,20 @@ try
     builder.Services.Configure<JoinRequestOptions>(
         builder.Configuration.GetSection("JoinRequests"));
 
+    // Add Azure Storage configuration
+    builder.Services.Configure<AzureStorageOptions>(
+        builder.Configuration.GetSection(AzureStorageOptions.SectionName));
+
+    // Add BlobServiceClient
+    builder.Services.AddSingleton<BlobServiceClient>(sp =>
+    {
+        var options = sp.GetRequiredService<IOptions<AzureStorageOptions>>().Value;
+        return new BlobServiceClient(options.ConnectionString);
+    });
+
+    // Add File Upload Service
+    builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+
     builder.Services.AddSingleton(sp =>
     {
         var opts = sp.GetRequiredService<IOptions<AzureSearchOptions>>().Value;
@@ -293,7 +310,7 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v9.8 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v9.81 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
