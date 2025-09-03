@@ -435,20 +435,20 @@ namespace GainIt.API.Services.GitHub.Implementations
         /// Placeholder for long-term trend analysis (time-series) across the specified period.
         /// Currently returns a simple anonymous object.
         /// </summary>
-        /// <param name="repositoryId">Repository ID to analyze.</param>
-        /// <param name="daysPeriod">Period window for trends (default 365).</param>
+        /// <param name="i_repositoryId">Repository ID to analyze.</param>
+        /// <param name="i_daysPeriod">Period window for trends (default 365).</param>
         /// <returns>Placeholder trends payload.</returns>
-        public async Task<object> GetAnalyticsTrendsAsync(Guid repositoryId, int daysPeriod = 365)
+        public async Task<object> GetAnalyticsTrendsAsync(Guid i_repositoryId, int i_daysPeriod = 365)
         {
             _logger.LogInformation("Getting analytics trends for repository {RepositoryId} over {DaysPeriod} days", 
-                repositoryId, daysPeriod);
+                i_repositoryId, i_daysPeriod);
 
             // This would analyze trends over time
             // For now, return a placeholder object
             return new
             {
-                RepositoryId = repositoryId,
-                Period = daysPeriod,
+                RepositoryId = i_repositoryId,
+                Period = i_daysPeriod,
                 Trends = new object()
             };
         }
@@ -457,42 +457,42 @@ namespace GainIt.API.Services.GitHub.Implementations
         /// Heuristic repository health score based on activity, engagement, issue/PR handling, and recency.
         /// Not a scientific metric; useful for relative comparisons in the UI.
         /// </summary>
-        /// <param name="analytics">Computed analytics snapshot.</param>
+        /// <param name="i_analytics">Computed analytics snapshot.</param>
         /// <returns>Health score in the range [0, 100].</returns>
-        public async Task<double> CalculateRepositoryHealthScoreAsync(GitHubAnalytics analytics)
+        public async Task<double> CalculateRepositoryHealthScoreAsync(GitHubAnalytics i_analytics)
         {
             try
             {
                 var score = 0.0;
 
                 // Activity score (30 points)
-                var activityScore = Math.Min(30.0, (analytics.TotalCommits / 100.0) * 30);
+                var activityScore = Math.Min(30.0, (i_analytics.TotalCommits / 100.0) * 30);
                 score += activityScore;
 
                 // Engagement score (25 points)
-                var engagementScore = Math.Min(25.0, ((analytics.TotalStars + analytics.TotalForks) / 50.0) * 25);
+                var engagementScore = Math.Min(25.0, ((i_analytics.TotalStars + i_analytics.TotalForks) / 50.0) * 25);
                 score += engagementScore;
 
                 // Issue management score (20 points)
                 var issueScore = 0.0;
-                if (analytics.TotalIssues > 0)
+                if (i_analytics.TotalIssues > 0)
                 {
-                    var closedRatio = (double)analytics.ClosedIssues / analytics.TotalIssues;
+                    var closedRatio = (double)i_analytics.ClosedIssues / i_analytics.TotalIssues;
                     issueScore = closedRatio * 20;
                 }
                 score += issueScore;
 
                 // PR management score (15 points)
                 var prScore = 0.0;
-                if (analytics.TotalPullRequests > 0)
+                if (i_analytics.TotalPullRequests > 0)
                 {
-                    var mergedRatio = (double)analytics.MergedPullRequests / analytics.TotalPullRequests;
+                    var mergedRatio = (double)i_analytics.MergedPullRequests / i_analytics.TotalPullRequests;
                     prScore = mergedRatio * 15;
                 }
                 score += prScore;
 
                 // Recency score (10 points)
-                var daysSinceLastActivity = (DateTime.UtcNow - analytics.LastCommitDate)?.TotalDays ?? 0;
+                var daysSinceLastActivity = (DateTime.UtcNow - i_analytics.LastCommitDate)?.TotalDays ?? 0;
                 var recencyScore = Math.Max(0, 10 - (daysSinceLastActivity / 30.0) * 10);
                 score += recencyScore;
 
