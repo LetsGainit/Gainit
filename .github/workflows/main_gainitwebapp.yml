@@ -44,8 +44,8 @@ jobs:
           $out = Join-Path $env:RUNNER_TEMP "ilspy-out"
           if (Test-Path $out) { Remove-Item -Recurse -Force $out }
           ilspycmd --project "$dll" --outputdir "$out"
-          $found = Get-ChildItem -Recurse -Path $out -Include *.cs | Select-String -Pattern "AUTH CONFIG VERSION v9.7" -Quiet
-          if (-not $found) { Write-Error "AUTH CONFIG VERSION v9.7 marker NOT found in decompiled sources"; exit 1 }
+          $found = Get-ChildItem -Recurse -Path $out -Include *.cs | Select-String -Pattern "AUTH CONFIG VERSION v9.8" -Quiet
+          if (-not $found) { Write-Error "AUTH CONFIG VERSION v9.8 marker NOT found in decompiled sources"; exit 1 }
           Write-Host "Marker found. Proceeding."
 
       # Removed Swagger export and TypeScript generation per request

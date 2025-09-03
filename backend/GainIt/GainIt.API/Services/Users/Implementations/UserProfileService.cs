@@ -222,7 +222,6 @@ namespace GainIt.API.Services.Users.Implementations
             try
             {
                 var gainer = await r_DbContext.Gainers
-                    .Include(g => g.TechExpertise)
                     .Include(g => g.Achievements)
                     .FirstOrDefaultAsync(g => g.UserId == i_userId);
 
@@ -284,9 +283,7 @@ namespace GainIt.API.Services.Users.Implementations
                 }
 
                 // Load collections separately to avoid the warning
-                await r_DbContext.Entry(mentor)
-                    .Reference(m => m.TechExpertise)
-                    .LoadAsync();
+                // TechExpertise navigation is ignored in the model; skip loading it here
 
                 await r_DbContext.Entry(mentor)
                     .Collection(m => m.MentoredProjects)
@@ -1110,15 +1107,10 @@ namespace GainIt.API.Services.Users.Implementations
             try
             {
                 var results = await r_DbContext.Gainers
-                    .Include(g => g.TechExpertise)
                     .Include(g => g.Achievements)
                     .Where(g => (g.FullName != null && g.FullName.Contains(searchTerm)) || 
                                (g.Biography != null && g.Biography.Contains(searchTerm)) ||
-                               (g.AreasOfInterest != null && g.AreasOfInterest.Any(area => area.Contains(searchTerm))) ||
-                               (g.TechExpertise != null && 
-                                (g.TechExpertise.ProgrammingLanguages != null && g.TechExpertise.ProgrammingLanguages.Any(lang => lang.Contains(searchTerm)) ||
-                                 g.TechExpertise.Technologies != null && g.TechExpertise.Technologies.Any(tech => tech.Contains(searchTerm)) ||
-                                 g.TechExpertise.Tools != null && g.TechExpertise.Tools.Any(tool => tool.Contains(searchTerm)))))
+                               (g.AreasOfInterest != null && g.AreasOfInterest.Any(area => area.Contains(searchTerm))))
                     .ToListAsync();
 
                 r_logger.LogInformation("Successfully searched Gainers: SearchTerm={SearchTerm}, ResultsCount={ResultsCount}", searchTerm, results.Count);
@@ -1138,15 +1130,10 @@ namespace GainIt.API.Services.Users.Implementations
             try
             {
                 var results = await r_DbContext.Mentors
-                    .Include(m => m.TechExpertise)
                     .Include(m => m.Achievements)
                     .Where(m => (m.FullName != null && m.FullName.Contains(searchTerm)) || 
                                (m.Biography != null && m.Biography.Contains(searchTerm)) ||
-                               (m.AreaOfExpertise != null && m.AreaOfExpertise.Contains(searchTerm)) ||
-                               (m.TechExpertise != null && 
-                                (m.TechExpertise.ProgrammingLanguages != null && m.TechExpertise.ProgrammingLanguages.Any(lang => lang.Contains(searchTerm)) ||
-                                 m.TechExpertise.Technologies != null && m.TechExpertise.Technologies.Any(tech => tech.Contains(searchTerm)) ||
-                                 m.TechExpertise.Tools != null && m.TechExpertise.Tools.Any(tool => tool.Contains(searchTerm)))))
+                               (m.AreaOfExpertise != null && m.AreaOfExpertise.Contains(searchTerm)))
                     .ToListAsync();
 
                 r_logger.LogInformation("Successfully searched Mentors: SearchTerm={SearchTerm}, ResultsCount={ResultsCount}", searchTerm, results.Count);
