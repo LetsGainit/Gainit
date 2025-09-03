@@ -677,42 +677,128 @@ namespace GainIt.API.Services.Projects.Implementations
         /// <returns>List of projects formatted for Azure Cognitive Search</returns>
         public async Task<List<AzureVectorSearchProjectViewModel>> ExportProjectsForAzureVectorSearchAsync()
         {
-            // Get all projects from both tables
-            var templateProjects = await r_DbContext.TemplateProjects.ToListAsync();
-            var userProjects = await r_DbContext.Projects.ToListAsync();
+            r_logger.LogInformation("Starting project export for Azure vector search");
             
-            var allProjects = new List<TemplateProject>();
-            allProjects.AddRange(templateProjects);
-            allProjects.AddRange(userProjects);
-            
-                                       return allProjects.Select(p => new AzureVectorSearchProjectViewModel
-             {
-                 ProjectId = p.ProjectId.ToString(),
-                 ProjectName = p.ProjectName,
-                 ProjectDescription = p.ProjectDescription,
-                 DifficultyLevel = p.DifficultyLevel.ToString(),
-                 DurationDays = (int)(p.Duration.TotalDays > 0 ? p.Duration.TotalDays : 30),
-                 Goals = p.Goals?.ToArray() ?? Array.Empty<string>(),
-                 Technologies = p.Technologies?.ToArray() ?? Array.Empty<string>(),
-                 RequiredRoles = p.RequiredRoles?.ToArray() ?? Array.Empty<string>(),
-                 
-                                   // UserProject-specific fields (if available) - ensure consistent types
-                  ProgrammingLanguages = p is UserProject userProject ? userProject.ProgrammingLanguages?.ToArray() ?? Array.Empty<string>() : Array.Empty<string>(),
-                  ProjectSource = p is UserProject userProject2 ? userProject2.ProjectSource.ToString() : "Template",
-                  ProjectStatus = p is UserProject userProject3 ? userProject3.ProjectStatus.ToString() : "NotActive",
-
-                 // RAG context - CRITICAL for vector search
-                 RagContext = new RagContextViewModel
-                 {
-                     SearchableText = p.RagContext?.SearchableText ?? $"{p.ProjectName} - {p.ProjectDescription}",
-                     Tags = p.RagContext?.Tags?.ToArray() ?? Array.Empty<string>(),
-                     SkillLevels = p.RagContext?.SkillLevels?.ToArray() ?? Array.Empty<string>(),
-                     ProjectType = p.RagContext?.ProjectType ?? "general-project",
-                     Domain = p.RagContext?.Domain ?? "general",
-                     LearningOutcomes = p.RagContext?.LearningOutcomes?.ToArray() ?? Array.Empty<string>(),
-                     ComplexityFactors = p.RagContext?.ComplexityFactors?.ToArray() ?? Array.Empty<string>()
-                 }
-             }).ToList();
+            try
+            {
+                // Get all projects from both tables with proper includes
+                var templateProjects = await r_DbContext.TemplateProjects
+                    .Include(p => p.RagContext)
+                    .ToListAsync();
+                    
+                var userProjects = await r_DbContext.Projects
+                    .Include(p => p.RagContext)
+                    .ToListAsync();
+                
+                r_logger.LogInformation("Retrieved projects: Template={TemplateCount}, User={UserCount}", 
+                    templateProjects.Count, userProjects.Count);
+                
+                var allProjects = new List<AzureVectorSearchProjectViewModel>();
+                var processedProjectIds = new HashSet<string>();
+                var processedProjectNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                
+                // Process template projects first
+                foreach (var project in templateProjects)
+                {
+                    var projectId = project.ProjectId.ToString();
+                    var projectName = project.ProjectName?.Trim();
+                    
+                    // Skip if we've already processed this project ID or name
+                    if (string.IsNullOrEmpty(projectName) || 
+                        processedProjectIds.Contains(projectId) || 
+                        processedProjectNames.Contains(projectName))
+                    {
+                        r_logger.LogWarning("Skipping duplicate template project: ID={ProjectId}, Name={ProjectName}", projectId, projectName);
+                        continue;
+                    }
+                    
+                    var exportProject = new AzureVectorSearchProjectViewModel
+                    {
+                        ProjectId = projectId,
+                        ProjectName = projectName,
+                        ProjectDescription = project.ProjectDescription,
+                        DifficultyLevel = project.DifficultyLevel.ToString(),
+                        DurationDays = (int)(project.Duration.TotalDays > 0 ? project.Duration.TotalDays : 30),
+                        Goals = project.Goals?.ToArray() ?? Array.Empty<string>(),
+                        Technologies = project.Technologies?.ToArray() ?? Array.Empty<string>(),
+                        RequiredRoles = project.RequiredRoles?.ToArray() ?? Array.Empty<string>(),
+                        ProgrammingLanguages = Array.Empty<string>(), // Template projects don't have this
+                        ProjectSource = "Template",
+                        ProjectStatus = "NotActive",
+                        
+                        // RAG context - ensure it exists
+                        RagContext = new RagContextViewModel
+                        {
+                            SearchableText = project.RagContext?.SearchableText ?? $"{project.ProjectName} - {project.ProjectDescription}",
+                            Tags = project.RagContext?.Tags?.ToArray() ?? Array.Empty<string>(),
+                            SkillLevels = project.RagContext?.SkillLevels?.ToArray() ?? Array.Empty<string>(),
+                            ProjectType = project.RagContext?.ProjectType ?? "general-project",
+                            Domain = project.RagContext?.Domain ?? "general",
+                            LearningOutcomes = project.RagContext?.LearningOutcomes?.ToArray() ?? Array.Empty<string>(),
+                            ComplexityFactors = project.RagContext?.ComplexityFactors?.ToArray() ?? Array.Empty<string>()
+                        }
+                    };
+                    
+                    allProjects.Add(exportProject);
+                    processedProjectIds.Add(projectId);
+                    processedProjectNames.Add(projectName);
+                }
+                
+                // Process user projects (skip if already processed)
+                foreach (var userProject in userProjects)
+                {
+                    var projectId = userProject.ProjectId.ToString();
+                    var projectName = userProject.ProjectName?.Trim();
+                    
+                    // Skip if we've already processed this project ID or name
+                    if (string.IsNullOrEmpty(projectName) || 
+                        processedProjectIds.Contains(projectId) || 
+                        processedProjectNames.Contains(projectName))
+                    {
+                        r_logger.LogWarning("Skipping duplicate user project: ID={ProjectId}, Name={ProjectName}", projectId, projectName);
+                        continue;
+                    }
+                    
+                    var exportProject = new AzureVectorSearchProjectViewModel
+                    {
+                        ProjectId = projectId,
+                        ProjectName = projectName,
+                        ProjectDescription = userProject.ProjectDescription,
+                        DifficultyLevel = userProject.DifficultyLevel.ToString(),
+                        DurationDays = (int)(userProject.Duration.TotalDays > 0 ? userProject.Duration.TotalDays : 30),
+                        Goals = userProject.Goals?.ToArray() ?? Array.Empty<string>(),
+                        Technologies = userProject.Technologies?.ToArray() ?? Array.Empty<string>(),
+                        RequiredRoles = userProject.RequiredRoles?.ToArray() ?? Array.Empty<string>(),
+                        ProgrammingLanguages = userProject.ProgrammingLanguages?.ToArray() ?? Array.Empty<string>(),
+                        ProjectSource = userProject.ProjectSource.ToString(),
+                        ProjectStatus = userProject.ProjectStatus.ToString(),
+                        
+                        // RAG context - ensure it exists
+                        RagContext = new RagContextViewModel
+                        {
+                            SearchableText = userProject.RagContext?.SearchableText ?? $"{userProject.ProjectName} - {userProject.ProjectDescription}",
+                            Tags = userProject.RagContext?.Tags?.ToArray() ?? Array.Empty<string>(),
+                            SkillLevels = userProject.RagContext?.SkillLevels?.ToArray() ?? Array.Empty<string>(),
+                            ProjectType = userProject.RagContext?.ProjectType ?? "general-project",
+                            Domain = userProject.RagContext?.Domain ?? "general",
+                            LearningOutcomes = userProject.RagContext?.LearningOutcomes?.ToArray() ?? Array.Empty<string>(),
+                            ComplexityFactors = userProject.RagContext?.ComplexityFactors?.ToArray() ?? Array.Empty<string>()
+                        }
+                    };
+                    
+                    allProjects.Add(exportProject);
+                    processedProjectIds.Add(projectId);
+                    processedProjectNames.Add(projectName);
+                }
+                
+                r_logger.LogInformation("Successfully exported {Count} unique projects for Azure vector search", allProjects.Count);
+                return allProjects;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error exporting projects for Azure vector search");
+                throw;
+            }
         }
 
 

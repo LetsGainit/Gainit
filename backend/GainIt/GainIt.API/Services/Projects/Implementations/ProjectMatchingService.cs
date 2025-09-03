@@ -557,7 +557,19 @@ namespace GainIt.API.Services.Projects.Implementations
                 {
                     if (result.Score.HasValue && result.Score.Value >= r_similarityThreshold)
                     {
-                        matchedProjectIds.Add(result.Document.ProjectId);
+                        // Log what we're getting for projectId
+                        r_logger.LogInformation("Found search result with score {Score}, ProjectId: '{ProjectId}'", 
+                            result.Score.Value, result.Document.projectId ?? "NULL");
+                        
+                        // Parse the string ProjectId to Guid
+                        if (Guid.TryParse(result.Document.projectId, out Guid projectId))
+                        {
+                            matchedProjectIds.Add(projectId);
+                        }
+                        else
+                        {
+                            r_logger.LogWarning("Failed to parse ProjectId: '{ProjectId}'", result.Document.projectId ?? "NULL");
+                        }
                     }
                 }
 
