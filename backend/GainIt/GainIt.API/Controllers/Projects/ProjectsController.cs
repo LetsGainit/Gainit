@@ -6,10 +6,13 @@ using GainIt.API.Models.Users;
 using GainIt.API.Services.Projects.Implementations;
 using GainIt.API.Services.GitHub.Interfaces;
 using GainIt.API.Services.Projects.Interfaces;
+using GainIt.API.Services.FileUpload.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using GainIt.API.DTOs.Requests.Projects;
+using System.Text;
+using Microsoft.AspNetCore.Http;
 
 namespace GainIt.API.Controllers.Projects
 {
@@ -18,20 +21,22 @@ namespace GainIt.API.Controllers.Projects
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectService r_ProjectService;
-        
         private readonly IProjectMatchingService r_ProjectMatchingService;
         private readonly IGitHubService r_GitHubService;
+        private readonly IFileUploadService r_FileUploadService;
         private readonly ILogger<ProjectsController> r_logger;
 
         public ProjectsController(
             IProjectService i_ProjectService, 
             IProjectMatchingService r_ProjectMatchingService,
             IGitHubService gitHubService,
+            IFileUploadService fileUploadService,
             ILogger<ProjectsController> logger)
         {
             r_ProjectService = i_ProjectService;
             this.r_ProjectMatchingService = r_ProjectMatchingService;
             r_GitHubService = gitHubService;
+            r_FileUploadService = fileUploadService;
             r_logger = logger;
         }
 
@@ -797,41 +802,31 @@ namespace GainIt.API.Controllers.Projects
         #endregion
 
         /// <summary>
-        /// Export all projects for Azure Cognitive Search vector indexing
-        /// Creates JSONL format (one JSON object per line) for Azure Cognitive Search
+        /// Export all projects for Azure Cognitive Search vector indexing and upload to blob storage
+        /// This endpoint updates the projects file in the blob container
         /// </summary>
-        /// <returns>JSONL file formatted for Azure Cognitive Search</returns>
-        [HttpGet("export-for-azure-vector-search")]
+        /// <returns>Blob URL where the file was uploaded</returns>
+        [HttpPost("export-for-azure-vector-search")]
         public async Task<IActionResult> ExportProjectsForAzureVectorSearch()
         {
             try
             {
-                var azureVectorProjects = await r_ProjectService.ExportProjectsForAzureVectorSearchAsync();
+                r_logger.LogInformation("Starting project export for Azure vector search and blob upload");
                 
-                // Convert to JSONL format (one JSON object per line)
-                var jsonlContent = new System.Text.StringBuilder();
-                foreach (var project in azureVectorProjects)
-                {
-                    jsonlContent.AppendLine(
-                        System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions 
-                        { 
-                            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
-                        })
-                    );
-                }
+                var blobUrl = await r_ProjectService.ExportAndUploadProjectsAsync();
                 
-                var fileName = $"projects-azure-vector-search-{DateTime.UtcNow:yyyyMMdd-HHmmss}.jsonl";
+                r_logger.LogInformation("Successfully exported and uploaded projects to blob storage: BlobUrl={BlobUrl}", blobUrl);
                 
-                return File(
-                    System.Text.Encoding.UTF8.GetBytes(jsonlContent.ToString()),
-                    "application/jsonl",
-                    fileName
-                );
+                return Ok(new { 
+                    message = "Projects exported and uploaded successfully",
+                    blobUrl = blobUrl,
+                    uploadedAt = DateTime.UtcNow
+                });
             }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error exporting projects for Azure vector search");
-                return StatusCode(500, new { error = "Failed to export projects", details = ex.Message });
+                r_logger.LogError(ex, "Error exporting projects for Azure vector search and blob upload");
+                return StatusCode(500, new { error = "Failed to export and upload projects", details = ex.Message });
             }
         }
 

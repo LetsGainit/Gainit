@@ -1,4 +1,6 @@
 ﻿using Azure.AI.OpenAI;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using GainIt.API.Data;
 using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.Models.Enums.Projects;
@@ -6,6 +8,7 @@ using GainIt.API.Models.Projects;
 using GainIt.API.Options;
 using GainIt.API.Services.GitHub.Interfaces;
 using GainIt.API.Services.Projects.Interfaces;
+using GainIt.API.Services.FileUpload.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,16 +23,22 @@ namespace GainIt.API.Services.Projects.Implementations
         private readonly GainItDbContext r_DbContext;
         private readonly ILogger<ProjectService> r_logger;
         private readonly IGitHubService r_gitHubService;
+        private readonly IFileUploadService r_FileUploadService;
         private readonly AzureOpenAIClient r_azureOpenAIClient;
         private readonly ChatClient r_chatClient;
+        private readonly BlobServiceClient r_BlobServiceClient;
+        private readonly AzureStorageOptions r_AzureStorageOptions;
 
-        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, AzureOpenAIClient i_azureOpenAIClient, IOptions<OpenAIOptions> i_openAIOptions)
+        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, IFileUploadService i_FileUploadService, AzureOpenAIClient i_azureOpenAIClient, IOptions<OpenAIOptions> i_openAIOptions, BlobServiceClient i_BlobServiceClient, IOptions<AzureStorageOptions> i_azureStorageOptions)
         {
             r_DbContext = i_DbContext;
             r_logger = i_logger;
             r_gitHubService = i_gitHubService;
+            r_FileUploadService = i_FileUploadService;
             r_azureOpenAIClient = i_azureOpenAIClient;
             r_chatClient = i_azureOpenAIClient.GetChatClient(i_openAIOptions.Value.ChatDeploymentName);
+            r_BlobServiceClient = i_BlobServiceClient;
+            r_AzureStorageOptions = i_azureStorageOptions.Value;
         }
         
         public async Task<UserProject> AssignMentorAsync(Guid i_ProjectId, Guid i_MentorId)
@@ -671,6 +680,101 @@ namespace GainIt.API.Services.Projects.Implementations
         }
 
         /// <summary>
+        /// Export all projects for Azure Cognitive Search vector indexing and upload to blob storage
+        /// Deletes all previous export files to keep only the latest export
+        /// </summary>
+        /// <returns>Blob URL where the file was uploaded</returns>
+        public async Task<string> ExportAndUploadProjectsAsync()
+        {
+            r_logger.LogInformation("Starting project export for Azure vector search and blob upload");
+            
+            try
+            {
+                // First, delete all existing export files to keep only the latest
+                await DeleteAllExistingExportFilesAsync();
+                
+                var azureVectorProjects = await ExportProjectsForAzureVectorSearchAsync();
+                
+                // Convert to JSONL format (one JSON object per line)
+                var jsonlContent = new System.Text.StringBuilder();
+                foreach (var project in azureVectorProjects)
+                {
+                    jsonlContent.AppendLine(
+                        System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions 
+                        { 
+                            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+                        })
+                    );
+                }
+                
+                var fileName = $"projects-azure-vector-search-{DateTime.UtcNow:yyyyMMdd-HHmmss}.jsonl";
+                var fileContent = jsonlContent.ToString();
+                var fileBytes = System.Text.Encoding.UTF8.GetBytes(fileContent);
+                
+                // Create a memory stream from the file content
+                using var memoryStream = new System.IO.MemoryStream(fileBytes);
+                
+                // Create a FormFile from the memory stream
+                var formFile = new Microsoft.AspNetCore.Http.FormFile(memoryStream, 0, fileBytes.Length, fileName, fileName)
+                {
+                    Headers = new Microsoft.AspNetCore.Http.HeaderDictionary(),
+                    ContentType = "application/jsonl"
+                };
+                
+                // Upload to blob storage in projects container
+                var blobUrl = await r_FileUploadService.UploadFileAsync(
+                    formFile, 
+                    r_AzureStorageOptions.ProjectsContainerName);
+                
+                r_logger.LogInformation("Successfully exported and uploaded projects to blob storage: FileName={FileName}, BlobUrl={BlobUrl}", 
+                    fileName, blobUrl);
+                
+                return blobUrl;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error exporting projects for Azure vector search and blob upload");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Deletes all existing export files from the projects container
+        /// </summary>
+        private async Task DeleteAllExistingExportFilesAsync()
+        {
+            r_logger.LogInformation("Deleting all existing export files from blob storage");
+            
+            try
+            {
+                var containerClient = r_BlobServiceClient.GetBlobContainerClient(r_AzureStorageOptions.ProjectsContainerName);
+                var deletedCount = 0;
+                
+                // List all blobs that match our export pattern
+                // Note: FileUploadService generates GUID names, so we look for .jsonl files
+                await foreach (var blob in containerClient.GetBlobsAsync())
+                {
+                    if (blob.Name.EndsWith(".jsonl"))
+                    {
+                        var blobClient = containerClient.GetBlobClient(blob.Name);
+                        await blobClient.DeleteIfExistsAsync();
+                        deletedCount++;
+                        r_logger.LogDebug("Deleted old export file: {BlobName}", blob.Name);
+                    }
+                }
+                
+                r_logger.LogInformation("Successfully deleted {DeletedCount} old export files", deletedCount);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error deleting old export files");
+                // Don't throw - we want to continue with the export even if cleanup fails
+            }
+        }
+
+
+
+                /// <summary>
         /// Export all projects for Azure Cognitive Search vector indexing
         /// Creates the exact JSON structure needed for the projects-rag index
         /// </summary>
@@ -694,8 +798,9 @@ namespace GainIt.API.Services.Projects.Implementations
                     templateProjects.Count, userProjects.Count);
                 
                 var allProjects = new List<AzureVectorSearchProjectViewModel>();
-                var processedProjectIds = new HashSet<string>();
-                var processedProjectNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                
+                // Use a single HashSet to track ALL processed project IDs across both collections
+                var processedAllIds = new HashSet<string>();
                 
                 // Process template projects first
                 foreach (var project in templateProjects)
@@ -703,14 +808,16 @@ namespace GainIt.API.Services.Projects.Implementations
                     var projectId = project.ProjectId.ToString();
                     var projectName = project.ProjectName?.Trim();
                     
-                    // Skip if we've already processed this project ID or name
-                    if (string.IsNullOrEmpty(projectName) || 
-                        processedProjectIds.Contains(projectId) || 
-                        processedProjectNames.Contains(projectName))
+                    // Skip if project name is empty or if we've already processed this ID anywhere
+                    if (string.IsNullOrEmpty(projectName) || processedAllIds.Contains(projectId))
                     {
-                        r_logger.LogWarning("Skipping duplicate template project: ID={ProjectId}, Name={ProjectName}", projectId, projectName);
+                        r_logger.LogWarning("Skipping template project: ID={ProjectId}, Name={ProjectName}, Reason={Reason}", 
+                            projectId, projectName, 
+                            string.IsNullOrEmpty(projectName) ? "Empty name" : "Duplicate ID across all projects");
                         continue;
                     }
+                    
+                    processedAllIds.Add(projectId);
                     
                     var exportProject = new AzureVectorSearchProjectViewModel
                     {
@@ -740,24 +847,24 @@ namespace GainIt.API.Services.Projects.Implementations
                     };
                     
                     allProjects.Add(exportProject);
-                    processedProjectIds.Add(projectId);
-                    processedProjectNames.Add(projectName);
                 }
                 
-                // Process user projects (skip if already processed)
+                // Process user projects - now checking against ALL previously processed IDs
                 foreach (var userProject in userProjects)
                 {
                     var projectId = userProject.ProjectId.ToString();
                     var projectName = userProject.ProjectName?.Trim();
                     
-                    // Skip if we've already processed this project ID or name
-                    if (string.IsNullOrEmpty(projectName) || 
-                        processedProjectIds.Contains(projectId) || 
-                        processedProjectNames.Contains(projectName))
+                    // Skip if project name is empty or if we've already processed this ID anywhere
+                    if (string.IsNullOrEmpty(projectName) || processedAllIds.Contains(projectId))
                     {
-                        r_logger.LogWarning("Skipping duplicate user project: ID={ProjectId}, Name={ProjectName}", projectId, projectName);
+                        r_logger.LogWarning("Skipping user project: ID={ProjectId}, Name={ProjectName}, Reason={Reason}", 
+                            projectId, projectName, 
+                            string.IsNullOrEmpty(projectName) ? "Empty name" : "Duplicate ID across all projects");
                         continue;
                     }
+                    
+                    processedAllIds.Add(projectId);
                     
                     var exportProject = new AzureVectorSearchProjectViewModel
                     {
@@ -787,8 +894,6 @@ namespace GainIt.API.Services.Projects.Implementations
                     };
                     
                     allProjects.Add(exportProject);
-                    processedProjectIds.Add(projectId);
-                    processedProjectNames.Add(projectName);
                 }
                 
                 r_logger.LogInformation("Successfully exported {Count} unique projects for Azure vector search", allProjects.Count);

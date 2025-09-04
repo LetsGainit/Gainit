@@ -72,5 +72,8 @@ namespace GainIt.API.Services.Projects.Interfaces
         /// </summary>
         /// <returns>List of projects formatted for Azure Cognitive Search</returns>
         Task<List<AzureVectorSearchProjectViewModel>> ExportProjectsForAzureVectorSearchAsync();
+
+        // New methods for blob storage integration
+        Task<string> ExportAndUploadProjectsAsync();
     }
 }
