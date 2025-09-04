@@ -82,7 +82,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     ProjectId = i_ProjectId,
                     UserId = i_MentorId,
                     UserRole = "Mentor",
-                    IsAdmin = false,
+                    IsAdmin = true,
                     Project = project,
                     User = mentor,
                     JoinedAtUtc = DateTime.UtcNow

@@ -170,6 +170,223 @@ namespace GainIt.API.Services.Users.Implementations
             return bullets;
         }
 
+        public async Task<object> GetUserDashboardAsync(Guid userId)
+        {
+            // Get the user
+            var user = await r_DbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"User {userId} not found");
+            }
+
+            // Base platform metrics
+            var tasksStarted = await r_DbContext.ProjectTasks.CountAsync(t => t.AssignedUserId == userId);
+            var tasksCompleted = await r_DbContext.ProjectTasks.CountAsync(t => t.AssignedUserId == userId && t.Status == Models.Enums.Tasks.eTaskStatus.Done);
+            var completionRatePct = tasksStarted > 0 ? (int)Math.Round((double)tasksCompleted * 100 / tasksStarted) : 0;
+
+            // Community & collaboration
+            var forumPostsCount = await r_DbContext.ForumPosts.CountAsync(p => p.AuthorId == userId);
+            var forumRepliesCount = await r_DbContext.ForumReplies.CountAsync(r => r.AuthorId == userId);
+            var likesOnPosts = await r_DbContext.ForumPostLikes
+                .Join(r_DbContext.ForumPosts, l => l.PostId, p => p.PostId, (l, p) => new { l, p })
+                .Where(x => x.p.AuthorId == userId)
+                .CountAsync();
+            var likesOnReplies = await r_DbContext.ForumReplyLikes
+                .Join(r_DbContext.ForumReplies, l => l.ReplyId, r => r.ReplyId, (l, r) => new { l, r })
+                .Where(x => x.r.AuthorId == userId)
+                .CountAsync();
+            var likesReceived = likesOnPosts + likesOnReplies;
+
+            var repliersToMyPosts = await r_DbContext.ForumReplies
+                .Join(r_DbContext.ForumPosts, r => r.PostId, p => p.PostId, (r, p) => new { ReplyAuthorId = r.AuthorId, PostAuthorId = p.AuthorId })
+                .Where(x => x.PostAuthorId == userId && x.ReplyAuthorId != userId)
+                .Select(x => x.ReplyAuthorId)
+                .Distinct()
+                .ToListAsync();
+
+            var repliedToAuthors = await r_DbContext.ForumReplies
+                .Where(r => r.AuthorId == userId)
+                .Join(r_DbContext.ForumPosts, r => r.PostId, p => p.PostId, (r, p) => p.AuthorId)
+                .Where(aid => aid != userId)
+                .Distinct()
+                .ToListAsync();
+
+            var likersOnMyPosts = await r_DbContext.ForumPostLikes
+                .Join(r_DbContext.ForumPosts, l => l.PostId, p => p.PostId, (l, p) => new { l.UserId, p.AuthorId })
+                .Where(x => x.AuthorId == userId)
+                .Select(x => x.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            var likersOnMyReplies = await r_DbContext.ForumReplyLikes
+                .Join(r_DbContext.ForumReplies, l => l.ReplyId, r => r.ReplyId, (l, r) => new { l.UserId, r.AuthorId })
+                .Where(x => x.AuthorId == userId)
+                .Select(x => x.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            var uniquePeersInteracted = repliersToMyPosts
+                .Union(repliedToAuthors)
+                .Union(likersOnMyPosts)
+                .Union(likersOnMyReplies)
+                .Where(uid => uid != userId)
+                .Distinct()
+                .Count();
+
+            // Skills and GitHub
+            var projTechData = await r_DbContext.Projects
+                .Where(p => p.ProjectMembers.Any(pm => pm.UserId == userId))
+                .Select(p => new { p.ProjectId, p.ProgrammingLanguages, p.Technologies, p.RepositoryLink })
+                .ToListAsync();
+            var languages = projTechData.Where(x => x.ProgrammingLanguages != null)
+                .SelectMany(x => x.ProgrammingLanguages!)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var technologies = projTechData.Where(x => x.Technologies != null)
+                .SelectMany(x => x.Technologies!)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var skillDistribution = CalculateSkillDistribution(languages, technologies);
+
+            var userProjectIds = projTechData.Select(p => p.ProjectId).ToList();
+            var repoProjectIds = await r_DbContext.Projects
+                .Where(p => userProjectIds.Contains(p.ProjectId) && !string.IsNullOrWhiteSpace(p.RepositoryLink))
+                .Select(p => p.ProjectId)
+                .ToListAsync();
+
+            var contributions = await r_DbContext.GitHubContributions
+                .Where(gc => gc.UserId == userId && repoProjectIds.Contains(gc.Repository.ProjectId))
+                .ToListAsync();
+
+            var totalCommits = contributions.Sum(c => c.TotalCommits);
+            var totalPRs = contributions.Sum(c => c.TotalPullRequestsCreated);
+            var totalReviews = contributions.Sum(c => c.TotalReviews);
+            var linesAdded = contributions.Sum(c => c.TotalAdditions);
+            var linesDeleted = contributions.Sum(c => c.TotalDeletions);
+
+            // Weekly aggregates from repo analytics
+            var repoAnalytics = await r_DbContext.GitHubAnalytics
+                .Where(a => repoProjectIds.Contains(a.Repository.ProjectId))
+                .Include(a => a.Repository)
+                .ToListAsync();
+
+            var weeklyCommitsMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var weeklyIssuesMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var weeklyPrsMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var a in repoAnalytics)
+            {
+                foreach (var kv in a.WeeklyCommits)
+                {
+                    if (!weeklyCommitsMap.ContainsKey(kv.Key)) weeklyCommitsMap[kv.Key] = 0;
+                    weeklyCommitsMap[kv.Key] += kv.Value;
+                }
+                foreach (var kv in a.WeeklyIssues)
+                {
+                    if (!weeklyIssuesMap.ContainsKey(kv.Key)) weeklyIssuesMap[kv.Key] = 0;
+                    weeklyIssuesMap[kv.Key] += kv.Value;
+                }
+                foreach (var kv in a.WeeklyPullRequests)
+                {
+                    if (!weeklyPrsMap.ContainsKey(kv.Key)) weeklyPrsMap[kv.Key] = 0;
+                    weeklyPrsMap[kv.Key] += kv.Value;
+                }
+            }
+
+            var commitsTimeline = weeklyCommitsMap
+                .OrderBy(k => k.Key)
+                .Select(kv => new { week = kv.Key, commits = kv.Value })
+                .ToList();
+
+            var collaborationActivity = weeklyPrsMap.Keys
+                .Union(weeklyIssuesMap.Keys)
+                .OrderBy(k => k)
+                .Select(week => new
+                {
+                    week = week,
+                    pullRequests = weeklyPrsMap.TryGetValue(week, out var pr) ? pr : 0,
+                    issues = weeklyIssuesMap.TryGetValue(week, out var iss) ? iss : 0,
+                    reviews = 0
+                })
+                .ToList();
+
+            var totalEvents = totalPRs + totalCommits;
+            var collaborationRatioPct = totalEvents > 0 ? (int)Math.Round((double)totalPRs * 100 / totalEvents) : 0;
+
+            var totalLinesChanged = linesAdded + linesDeleted;
+            var refactoringRatioPct = totalLinesChanged > 0 ? (int)Math.Round((double)linesDeleted * 100 / totalLinesChanged) : 0;
+
+            var achievements = new List<object>();
+            achievements.Add(new { title = "Task Master", description = "Completed 50+ tasks", earned = tasksCompleted >= 50, progressPercentage = Math.Min(100, (int)Math.Round((double)tasksCompleted * 100 / 50)) });
+            achievements.Add(new { title = "Code Reviewer", description = "Reviewed 25+ PRs", earned = totalReviews >= 25, progressPercentage = Math.Min(100, (int)Math.Round((double)totalReviews * 100 / 25)) });
+
+            var dashboardData = new
+            {
+                commitsTimeline = commitsTimeline,
+                collaborationIndex = new
+                {
+                    pullRequests = totalPRs,
+                    pushes = totalCommits,
+                    collaborationRatioPercentage = collaborationRatioPct
+                },
+                completionTracker = new
+                {
+                    tasksStarted = tasksStarted,
+                    tasksCompleted = tasksCompleted,
+                    completionRatePercentage = completionRatePct
+                },
+                refactoringRate = new
+                {
+                    linesAdded = linesAdded,
+                    linesDeleted = linesDeleted,
+                    refactoringRatioPercentage = refactoringRatioPct
+                },
+                skillDistribution = skillDistribution,
+                collaborationActivity = collaborationActivity,
+                achievements = achievements,
+                communityCollaboration = new
+                {
+                    posts = forumPostsCount,
+                    replies = forumRepliesCount,
+                    likesReceived = likesReceived,
+                    uniquePeersInteracted = uniquePeersInteracted
+                }
+            };
+
+            return dashboardData;
+        }
+
+        private static object CalculateSkillDistribution(List<string> languages, List<string> technologies)
+        {
+            var frontend = new[] { "javascript", "typescript", "react", "vue", "angular", "html", "css", "sass", "bootstrap", "tailwind" };
+            var backend = new[] { "python", "java", "c#", "node.js", "express", "django", "spring", "asp.net", "php", "ruby" };
+            var database = new[] { "sql", "postgresql", "mysql", "mongodb", "redis", "sqlite", "oracle", "sql server" };
+            var devops = new[] { "docker", "kubernetes", "aws", "azure", "jenkins", "git", "terraform", "ansible", "nginx", "apache" };
+
+            var allSkills = languages.Concat(technologies).Select(s => s.ToLower()).ToList();
+
+            int frontendCount = allSkills.Count(s => frontend.Any(f => s.Contains(f)));
+            int backendCount = allSkills.Count(s => backend.Any(b => s.Contains(b)));
+            int databaseCount = allSkills.Count(s => database.Any(d => s.Contains(d)));
+            int devopsCount = allSkills.Count(s => devops.Any(d => s.Contains(d)));
+
+            int total = frontendCount + backendCount + databaseCount + devopsCount;
+            if (total == 0) total = 1;
+
+            int pct(int c) => (int)Math.Round((double)c * 100 / total);
+
+            return new
+            {
+                frontend = new { count = frontendCount, percentage = pct(frontendCount) },
+                backend = new { count = backendCount, percentage = pct(backendCount) },
+                database = new { count = databaseCount, percentage = pct(databaseCount) },
+                devops = new { count = devopsCount, percentage = pct(devopsCount) }
+            };
+        }
+
         private async Task<string> generateRecruiterSummaryAsync(string facts)
         {
             // Guard against empty/whitespace facts
