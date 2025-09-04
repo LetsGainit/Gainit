@@ -254,7 +254,7 @@ try
                 }
 
                 // optional fallback for app roles (client credentials / roles tokens)
-                var roles = ctx.User.FindAll("roles").Select(c => c.Value);
+                var roles = ctx.User.FindAll("roles").Select(c => c.Value)
                 return roles.Contains("access_as_user", StringComparer.Ordinal);
             })
         );
@@ -385,7 +385,6 @@ try
     if (!app.Environment.IsDevelopment())
     {
         app.UseAuthentication(); //authenticates the request
-        app.UseAuthorization(); //authorizes the request
         Log.Information("Production environment: authentication and authorization middleware enabled");
     }
     else
