@@ -229,7 +229,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                         username, 
                         branch,           // ← Each branch individually
                         daysPeriod);
-                    
+                        
                     foreach (var c in branchCommits)
                     {
                         if (seenCommitShas.Add(c.Id))

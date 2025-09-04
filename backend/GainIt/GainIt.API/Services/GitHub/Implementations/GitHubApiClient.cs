@@ -334,14 +334,14 @@ namespace GainIt.API.Services.GitHub.Implementations
                 while (more)
                 {
                     // Check quota per page
-                    if (!await HasRateLimitQuotaAsync(1))
-                    {
-                        throw new InvalidOperationException("GitHub API rate limit exceeded");
-                    }
+                if (!await HasRateLimitQuotaAsync(1))
+                {
+                    throw new InvalidOperationException("GitHub API rate limit exceeded");
+                }
 
                     var endpoint = $"repos/{owner}/{name}/commits?since={sinceIso}&per_page=100&page={page}";
-                    var response = await _httpClient.GetAsync(endpoint);
-
+                var response = await _httpClient.GetAsync(endpoint);
+                
                     if (!response.IsSuccessStatusCode)
                     {
                         var errorContent = await response.Content.ReadAsStringAsync();
@@ -353,23 +353,23 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                     var content = await response.Content.ReadAsStringAsync();
                     var commits = JsonSerializer.Deserialize<List<GitHubRestApiCommit>>(content) ?? new List<GitHubRestApiCommit>();
-
+                    
                     await UpdateRateLimitAsync(response);
-
+                    
                     // Map and append
                     aggregate.AddRange(commits.Select(c => new GitHubAnalyticsCommitNode
-                    {
-                        Id = c.Sha,
-                        Message = c.Commit.Message,
-                        CommittedDate = c.Commit.Author.Date,
-                        Author = new GitHubCommitAuthor 
-                        { 
-                            Name = c.Commit.Author.Name, 
-                            Email = c.Commit.Author.Email 
-                        },
-                        Additions = c.Stats?.Additions ?? 0,
-                        Deletions = c.Stats?.Deletions ?? 0,
-                        ChangedFiles = c.Files?.Count ?? 0
+                        {
+                            Id = c.Sha,
+                            Message = c.Commit.Message,
+                            CommittedDate = c.Commit.Author.Date,
+                            Author = new GitHubCommitAuthor 
+                            { 
+                                Name = c.Commit.Author.Name, 
+                                Email = c.Commit.Author.Email 
+                            },
+                            Additions = c.Stats?.Additions ?? 0,
+                            Deletions = c.Stats?.Deletions ?? 0,
+                            ChangedFiles = c.Files?.Count ?? 0
                     }));
 
                     // Stop when fewer than page size returned
@@ -425,8 +425,8 @@ namespace GainIt.API.Services.GitHub.Implementations
                     var response = await _httpClient.GetAsync(endpoint);
 
                     if (!response.IsSuccessStatusCode)
-                    {
-                        var errorContent = await response.Content.ReadAsStringAsync();
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
                         _logger.LogError("GitHub REST API error for commit history {Owner}/{Name} branch {Branch} page {Page}: {StatusCode} - {Content}", 
                             owner, name, branch, page, response.StatusCode, errorContent);
                         await UpdateRateLimitAsync(response);
@@ -435,7 +435,7 @@ namespace GainIt.API.Services.GitHub.Implementations
 
                     var content = await response.Content.ReadAsStringAsync();
                     var commits = JsonSerializer.Deserialize<List<GitHubRestApiCommit>>(content) ?? new List<GitHubRestApiCommit>();
-
+                    
                     await UpdateRateLimitAsync(response);
 
                     aggregate.AddRange(commits.Select(c => new GitHubAnalyticsCommitNode
