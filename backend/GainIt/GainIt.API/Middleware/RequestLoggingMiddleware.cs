@@ -1,3 +1,5 @@
+// Ignore Spelling: Middleware
+
 using Microsoft.AspNetCore.Http;
 using Serilog;
 using System.Diagnostics;

@@ -31,7 +31,7 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Creates a new forum post in a project.
         /// </summary>
-        /// <param name="createDto">The post creation data.</param>
+        /// <param name="i_CreateDto">The post creation data.</param>
         /// <returns>The created post.</returns>
         [HttpPost("posts")]
         public async Task<ActionResult<ForumPostViewModel>> CreatePost([FromBody] CreateForumPostDto i_CreateDto)
@@ -61,7 +61,7 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Retrieves a forum post by its ID.
         /// </summary>
-        /// <param name="postId">The ID of the post to retrieve.</param>
+        /// <param name="i_PostId">The ID of the post to retrieve.</param>
         /// <returns>The forum post with replies.</returns>
         [HttpGet("posts/{postId}")]
         public async Task<ActionResult<ForumPostViewModel>> GetPost(Guid i_PostId)
@@ -91,7 +91,7 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Retrieves all forum posts for a project with pagination.
         /// </summary>
-        /// <param name="projectId">The ID of the project.</param>
+        /// <param name="i_ProjectId">The ID of the project.</param>
         /// <param name="page">The page number (default: 1).</param>
         /// <param name="pageSize">The number of posts per page (default: 10).</param>
         /// <returns>A list of forum posts.</returns>
@@ -118,8 +118,8 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Updates a forum post.
         /// </summary>
-        /// <param name="postId">The ID of the post to update.</param>
-        /// <param name="updateDto">The update data.</param>
+        /// <param name="i_PostId">The ID of the post to update.</param>
+        /// <param name="i_UpdateDto">The update data.</param>
         /// <returns>The updated post.</returns>
         [HttpPut("posts/{postId}")]
         public async Task<ActionResult<ForumPostViewModel>> UpdatePost(Guid i_PostId, [FromBody] UpdateForumPostDto i_UpdateDto)
@@ -154,7 +154,7 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Deletes a forum post.
         /// </summary>
-        /// <param name="postId">The ID of the post to delete.</param>
+        /// <param name="i_PostId">The ID of the post to delete.</param>
         /// <returns>No content on success.</returns>
         [HttpDelete("posts/{postId}")]
         public async Task<ActionResult> DeletePost(Guid i_PostId)
@@ -193,7 +193,7 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Creates a new reply to a forum post.
         /// </summary>
-        /// <param name="createDto">The reply creation data.</param>
+        /// <param name="i_CreateDto">The reply creation data.</param>
         /// <returns>The created reply.</returns>
         [HttpPost("replies")]
         public async Task<ActionResult<ForumReplyViewModel>> CreateReply([FromBody] CreateForumReplyDto i_CreateDto)
@@ -228,8 +228,8 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Updates a forum reply.
         /// </summary>
-        /// <param name="replyId">The ID of the reply to update.</param>
-        /// <param name="updateDto">The update data.</param>
+        /// <param name="i_ReplyId">The ID of the reply to update.</param>
+        /// <param name="i_UpdateDto">The update data.</param>
         /// <returns>The updated reply.</returns>
         [HttpPut("replies/{replyId}")]
         public async Task<ActionResult<ForumReplyViewModel>> UpdateReply(Guid i_ReplyId, [FromBody] UpdateForumReplyDto i_UpdateDto)
@@ -264,7 +264,7 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Deletes a forum reply.
         /// </summary>
-        /// <param name="replyId">The ID of the reply to delete.</param>
+        /// <param name="i_ReplyId">The ID of the reply to delete.</param>
         /// <returns>No content on success.</returns>
         [HttpDelete("replies/{replyId}")]
         public async Task<ActionResult> DeleteReply(Guid i_ReplyId)

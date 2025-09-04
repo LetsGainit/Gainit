@@ -94,9 +94,27 @@ namespace GainIt.API.Services.GitHub.Implementations
                     analytics.TotalPullRequests = openPr + mergedPr + closedPr;
                 }
 
-                // Populate commit-based metrics from REST API commit history
-                var commitHistory = await _gitHubApiClient.GetCommitHistoryAsync(repository.OwnerName, repository.RepositoryName, daysPeriod);
-                if (commitHistory != null && commitHistory.Any())
+                // Populate commit-based metrics across all branches (deduplicated by SHA)
+                var uniqueCommits = new Dictionary<string, GitHubAnalyticsCommitNode>(StringComparer.OrdinalIgnoreCase);
+                var branches = (repository.Branches ?? new List<string>()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                if (branches.Count == 0 && !string.IsNullOrWhiteSpace(repository.DefaultBranch))
+                {
+                    branches = new List<string> { repository.DefaultBranch! };
+                }
+                foreach (var branch in branches)
+                {
+                    var branchCommits = await _gitHubApiClient.GetCommitHistoryForBranchAsync(repository.OwnerName, repository.RepositoryName, branch, daysPeriod);
+                    foreach (var c in branchCommits)
+                    {
+                        if (!uniqueCommits.ContainsKey(c.Id))
+                        {
+                            uniqueCommits[c.Id] = c;
+                        }
+                    }
+                }
+
+                var commitHistory = uniqueCommits.Values.ToList();
+                if (commitHistory.Any())
                 {
                     analytics.TotalCommits = commitHistory.Count;
 
@@ -183,8 +201,9 @@ namespace GainIt.API.Services.GitHub.Implementations
                     DaysPeriod = daysPeriod
                 };
 
-                // Fetch real GitHub contribution data from ALL branches
+                // Fetch real GitHub contribution data from ALL branches (deduplicate by SHA across branches)
                 var allCommits = new List<GitHubAnalyticsCommitNode>();
+                var seenCommitShas = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 // Normalize and de-duplicate branch list before calling the API
                 var distinctBranches = (repository.Branches ?? new List<string>())
@@ -210,8 +229,14 @@ namespace GainIt.API.Services.GitHub.Implementations
                         username, 
                         branch,           // ← Each branch individually
                         daysPeriod);
-                        
-                    allCommits.AddRange(branchCommits);
+                    
+                    foreach (var c in branchCommits)
+                    {
+                        if (seenCommitShas.Add(c.Id))
+                        {
+                            allCommits.Add(c);
+                        }
+                    }
                     
                     _logger.LogDebug("Found {CommitCount} commits for {Username} on branch {Branch} in {Repository}", 
                         branchCommits.Count, username, branch, repository.FullName);
@@ -223,11 +248,7 @@ namespace GainIt.API.Services.GitHub.Implementations
                         allCommits.Count, username, distinctBranches.Count, repository.FullName);
 
                     // Log commits per branch for debugging
-                    foreach (var branch in distinctBranches)
-                    {
-                        var branchCommitCount = allCommits.Count(c => c.Id.StartsWith(branch) || c.Message.Contains(branch));
-                        _logger.LogDebug("Branch {Branch}: {CommitCount} commits for {Username}", branch, branchCommitCount, username);
-                    }
+                    // Optional branch-wise counts can be computed by re-querying sizes; skip noisy heuristic logging
 
                     // Optionally enrich with per-commit details to populate additions/deletions/files
                     // Cap detailed lookups to avoid rate limits

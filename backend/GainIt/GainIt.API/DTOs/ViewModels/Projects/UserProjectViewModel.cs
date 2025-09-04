@@ -18,7 +18,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         public FullNonprofitViewModel? OwningOrganization { get; set; }
         public FullMentorViewModel? AssignedMentor { get; set; }
         public string? ProjectPictureUrl { get; set; }
-        public TimeSpan? Duration { get; set; }
+        public int? Duration { get; set; }
         public List<string> OpenRoles { get; set; } = new List<string>();
         public List<string> ProgrammingLanguages { get; set; } = new List<string>();
         public List<string> Goals { get; set; } = new List<string>();
@@ -46,7 +46,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
                 : null;
 
             ProjectPictureUrl = i_Project.ProjectPictureUrl;
-            Duration = i_Project.Duration;
+            Duration = (int)Math.Round(i_Project.Duration.TotalDays);
             
             // Extract collection data before JsonIgnore takes effect
             OpenRoles = i_Project.RequiredRoles.ToList();

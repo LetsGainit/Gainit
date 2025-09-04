@@ -324,70 +324,156 @@ namespace GainIt.API.Services.GitHub.Implementations
         {
             _logger.LogInformation("Getting commit history for {Owner}/{Name} via REST API", owner, name);
             
+            var aggregate = new List<GitHubAnalyticsCommitNode>();
+            int page = 1;
+            bool more = true;
+            var sinceIso = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            
             try
             {
-                if (!await HasRateLimitQuotaAsync(1))
+                while (more)
                 {
-                    throw new InvalidOperationException("GitHub API rate limit exceeded");
-                }
-
-            var since = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
-                var endpoint = $"repos/{owner}/{name}/commits?since={since}&per_page=100";
-                
-                var response = await _httpClient.GetAsync(endpoint);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync();
-                    var commits = JsonSerializer.Deserialize<List<GitHubRestApiCommit>>(content);
-                    
-                    await UpdateRateLimitAsync(response);
-                    
-                    if (commits != null)
+                    // Check quota per page
+                    if (!await HasRateLimitQuotaAsync(1))
                     {
-                        var commitHistory = commits.Select(c => new GitHubAnalyticsCommitNode
-                        {
-                            Id = c.Sha,
-                            Message = c.Commit.Message,
-                            CommittedDate = c.Commit.Author.Date,
-                            Author = new GitHubCommitAuthor 
-                            { 
-                                Name = c.Commit.Author.Name, 
-                                Email = c.Commit.Author.Email 
-                            },
-                            Additions = c.Stats?.Additions ?? 0,
-                            Deletions = c.Stats?.Deletions ?? 0,
-                            ChangedFiles = c.Files?.Count ?? 0
-                        }).ToList();
-                        
-                        _logger.LogInformation("Commit history retrieved for {Owner}/{Name}: {CommitCount} commits", 
-                            owner, name, commitHistory.Count);
-                        
-                        return commitHistory;
+                        throw new InvalidOperationException("GitHub API rate limit exceeded");
                     }
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("GitHub REST API error for commit history {Owner}/{Name}: {StatusCode} - {Content}", 
-                        owner, name, response.StatusCode, errorContent);
-                    
+
+                    var endpoint = $"repos/{owner}/{name}/commits?since={sinceIso}&per_page=100&page={page}";
+                    var response = await _httpClient.GetAsync(endpoint);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        _logger.LogError("GitHub REST API error for commit history {Owner}/{Name} page {Page}: {StatusCode} - {Content}", 
+                            owner, name, page, response.StatusCode, errorContent);
+                        await UpdateRateLimitAsync(response);
+                        break;
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    var commits = JsonSerializer.Deserialize<List<GitHubRestApiCommit>>(content) ?? new List<GitHubRestApiCommit>();
+
                     await UpdateRateLimitAsync(response);
+
+                    // Map and append
+                    aggregate.AddRange(commits.Select(c => new GitHubAnalyticsCommitNode
+                    {
+                        Id = c.Sha,
+                        Message = c.Commit.Message,
+                        CommittedDate = c.Commit.Author.Date,
+                        Author = new GitHubCommitAuthor 
+                        { 
+                            Name = c.Commit.Author.Name, 
+                            Email = c.Commit.Author.Email 
+                        },
+                        Additions = c.Stats?.Additions ?? 0,
+                        Deletions = c.Stats?.Deletions ?? 0,
+                        ChangedFiles = c.Files?.Count ?? 0
+                    }));
+
+                    // Stop when fewer than page size returned
+                    more = commits.Count == 100;
+                    page++;
                 }
 
-                return new List<GitHubAnalyticsCommitNode>();
+                _logger.LogInformation("Commit history retrieved for {Owner}/{Name}: {CommitCount} commits over {Pages} page(s)", 
+                    owner, name, aggregate.Count, page - 1);
+
+                return aggregate;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting commit history for {Owner}/{Name}", owner, name);
-                return new List<GitHubAnalyticsCommitNode>();
+                return aggregate; // return whatever was accumulated
+            }
+            finally
+            {
+                // Approximate remaining requests decrement: one per page
+                await _rateLimitSemaphore.WaitAsync();
+                try
+                {
+                    var pagesUsed = Math.Max(0, page - 1);
+                    _remainingRequests = Math.Max(0, _remainingRequests - pagesUsed);
+                }
+                finally
+                {
+                    _rateLimitSemaphore.Release();
+                }
+            }
+        }
+
+        public async Task<List<GitHubAnalyticsCommitNode>> GetCommitHistoryForBranchAsync(string owner, string name, string branch, int daysPeriod = 30)
+        {
+            _logger.LogInformation("Getting commit history for {Owner}/{Name} on branch {Branch} via REST API", owner, name, branch);
+            
+            var aggregate = new List<GitHubAnalyticsCommitNode>();
+            int page = 1;
+            bool more = true;
+            var sinceIso = DateTime.UtcNow.AddDays(-daysPeriod).ToString("yyyy-MM-ddTHH:mm:ssZ");
+            
+            try
+            {
+                while (more)
+                {
+                    if (!await HasRateLimitQuotaAsync(1))
+                    {
+                        throw new InvalidOperationException("GitHub API rate limit exceeded");
+                    }
+
+                    var endpoint = $"repos/{owner}/{name}/commits?sha={branch}&since={sinceIso}&per_page=100&page={page}";
+                    var response = await _httpClient.GetAsync(endpoint);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        _logger.LogError("GitHub REST API error for commit history {Owner}/{Name} branch {Branch} page {Page}: {StatusCode} - {Content}", 
+                            owner, name, branch, page, response.StatusCode, errorContent);
+                        await UpdateRateLimitAsync(response);
+                        break;
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    var commits = JsonSerializer.Deserialize<List<GitHubRestApiCommit>>(content) ?? new List<GitHubRestApiCommit>();
+
+                    await UpdateRateLimitAsync(response);
+
+                    aggregate.AddRange(commits.Select(c => new GitHubAnalyticsCommitNode
+                    {
+                        Id = c.Sha,
+                        Message = c.Commit.Message,
+                        CommittedDate = c.Commit.Author.Date,
+                        Author = new GitHubCommitAuthor 
+                        { 
+                            Name = c.Commit.Author.Name, 
+                            Email = c.Commit.Author.Email 
+                        },
+                        Additions = c.Stats?.Additions ?? 0,
+                        Deletions = c.Stats?.Deletions ?? 0,
+                        ChangedFiles = c.Files?.Count ?? 0
+                    }));
+
+                    more = commits.Count == 100;
+                    page++;
+                }
+
+                _logger.LogInformation("Commit history retrieved for {Owner}/{Name} on branch {Branch}: {CommitCount} commits over {Pages} page(s)", 
+                    owner, name, branch, aggregate.Count, page - 1);
+
+                return aggregate;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting commit history for {Owner}/{Name} on branch {Branch}", owner, name, branch);
+                return aggregate;
             }
             finally
             {
                 await _rateLimitSemaphore.WaitAsync();
                 try
                 {
-                    _remainingRequests = Math.Max(0, _remainingRequests - 1);
+                    var pagesUsed = Math.Max(0, page - 1);
+                    _remainingRequests = Math.Max(0, _remainingRequests - pagesUsed);
                 }
                 finally
                 {

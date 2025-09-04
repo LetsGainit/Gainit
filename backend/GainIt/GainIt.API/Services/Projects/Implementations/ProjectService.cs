@@ -129,7 +129,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     CreatedAtUtc = DateTime.UtcNow,
                     DifficultyLevel = (eDifficultyLevel)Enum.Parse(typeof(eDifficultyLevel), i_Project.DifficultyLevel),
                     ProjectPictureUrl = i_Project.ProjectPictureUrl ?? "",  // what do you think ? is this mandatory ?
-                    Duration = i_Project.Duration ?? TimeSpan.Zero,
+                    Duration = TimeSpan.FromDays(i_Project.Duration ?? 0),
                     Goals = i_Project.Goals,
                     Technologies = i_Project.Technologies,
                     RequiredRoles = i_Project.OpenRoles,

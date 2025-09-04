@@ -177,27 +177,30 @@ namespace GainIt.API.Services.Users.Implementations
 
             var messages = new ChatMessage[]
             {
-                new SystemChatMessage(
-                    "You are an experienced recruiter with 20+ years in the industry writing a compelling candidate summary. " +
-                    "Use ONLY the provided facts; do NOT infer or assume. If a fact is absent, omit it.\n\n" +
-                    "STRUCTURE (8-12 bullets total):\n" +
-                    "• Platform Impact (2-3 bullets): Project leadership, team collaboration, task completion\n" +
-                    "• Technical Excellence (2-3 bullets): Languages, technologies, GitHub contributions\n" +
-                    "• Professional Growth (2-3 bullets): Achievements, forum engagement, skill development\n" +
-                    "• Leadership & Initiative (1-2 bullets): Project ownership, mentoring, community involvement\n" +
-                    "• Overall Assessment (1 bullet): Key differentiator or standout quality\n\n" +
-                    "PRIORITIZATION RULES:\n" +
-                    "- If HIGH platform activity: Emphasize leadership, project management, team collaboration\n" +
-                    "- If LOW platform activity but HIGH GitHub: Emphasize technical skills, code contributions\n" +
-                    "- Blend platform and GitHub data when both available\n" +
-                    "- Include specific metrics and timeframes when they add value\n" +
-                    "- Use narrative style with action verbs and quantify impact\n" +
-                    "- 15-25 words per bullet, professional tone"),
-                new UserChatMessage(
-                    $"Candidate activity data (all-time platform engagement):\n\n{safeFacts}\n\n" +
-                    "Generate a compelling 8-12 bullet summary following the structure above. " +
-                    "Focus on what makes this candidate stand out to recruiters and hiring managers.")
-            };
+            new SystemChatMessage(@"You are an experienced recruiter with 20+ years in the industry writing a compelling candidate summary. 
+            Use ONLY the provided facts; do NOT infer or assume. If a fact is absent, omit it.
+
+            STRUCTURE (8-12 bullets total):
+            • Platform Impact (2-3 bullets): Project leadership, team collaboration, task completion
+            • Technical Excellence (2-3 bullets): Languages, technologies, GitHub contributions
+            • Professional Growth (2-3 bullets): Achievements, forum engagement, skill development
+            • Leadership & Initiative (1-2 bullets): Project ownership, mentoring, community involvement
+            • Overall Assessment (1 bullet): Key differentiator or standout quality
+
+            PRIORITIZATION RULES:
+            - If HIGH platform activity: Emphasize leadership, project management, team collaboration
+            - If LOW platform activity but HIGH GitHub: Emphasize technical skills, code contributions
+            - Blend platform and GitHub data when both available
+            - Include specific metrics and timeframes when they add value
+            - Use narrative style with action verbs and quantify impact
+            - 15-25 words per bullet, professional tone"),
+            new UserChatMessage($@"Candidate activity data (all-time platform engagement):
+
+            {safeFacts}
+
+            Generate a compelling 8-12 bullet summary following the structure above.
+            Focus on what makes this candidate stand out to recruiters and hiring managers.")
+                        };
 
             var options = new ChatCompletionOptions { Temperature = 0.3f };
             ChatCompletion completion = await r_chatClient.CompleteChatAsync(messages, options);
