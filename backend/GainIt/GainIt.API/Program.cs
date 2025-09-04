@@ -17,6 +17,7 @@ using GainIt.API.Services.Tasks.Implementations;
 using GainIt.API.Services.Tasks.Interfaces;
 using GainIt.API.Services.Users.Implementations;
 using GainIt.API.Services.Users.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 using GainIt.API.Services.Forum.Implementations;
 using GainIt.API.Services.Forum.Interfaces;
 using GainIt.API.Services.FileUpload.Implementations;
@@ -66,8 +67,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
         cleanConnectionString,
         new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
     
-    Log.Information("Application Insights sink added using full connection string");
-    Log.Information($"Connection String: {cleanConnectionString.Substring(0, Math.Min(50, cleanConnectionString.Length))}...");
+    Log.Information("Application Insights sink added using connection string");
 }
 else if (!string.IsNullOrWhiteSpace(instrumentationKey))
 {
@@ -79,8 +79,7 @@ else if (!string.IsNullOrWhiteSpace(instrumentationKey))
         appInsightsConnectionString,
         new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
     
-    Log.Information("Application Insights sink added using instrumentation key only");
-    Log.Information($"Instrumentation Key: {cleanInstrumentationKey.Substring(0, Math.Min(10, cleanInstrumentationKey.Length))}...");
+    Log.Information("Application Insights sink added using instrumentation key");
 }
 else
 {
@@ -90,14 +89,7 @@ else
 // Create the logger only once after all configuration is complete
 Log.Logger = loggerConfig.CreateLogger();
 
-// Test the Application Insights sink immediately if it was configured
-if (!string.IsNullOrWhiteSpace(connectionString) || !string.IsNullOrWhiteSpace(instrumentationKey))
-{
-    Log.Information("=== IMMEDIATE TEST: Application Insights sink test ===");
-    Log.Warning("=== IMMEDIATE TEST: This warning should appear in Application Insights ===");
-    Log.Error("=== IMMEDIATE TEST: This error should appear in Application Insights ===");
-    
-}
+
 
 try
 {
@@ -111,77 +103,11 @@ try
     // Use the pre-configured Serilog
     builder.Host.UseSerilog();
 
-    // Debug: Check environment variables for Application Insights (reuse variables from above)
-    Log.Information("=== ENVIRONMENT VARIABLES DEBUG ===");
-    Log.Information($"APPINSIGHTS_INSTRUMENTATIONKEY: {(string.IsNullOrEmpty(instrumentationKey) ? "NOT SET" : "SET")}");
-    Log.Information($"APPLICATIONINSIGHTS_CONNECTION_STRING: {(string.IsNullOrEmpty(connectionString) ? "NOT SET" : "SET")}");
 
-    if (!string.IsNullOrEmpty(connectionString))
-    {
-        Log.Information("Will use APPLICATIONINSIGHTS_CONNECTION_STRING for Application Insights configuration");
-    }
-    else if (!string.IsNullOrEmpty(instrumentationKey))
-    {
-        Log.Information("Will use APPINSIGHTS_INSTRUMENTATIONKEY for Application Insights configuration");
-    }
-    else
-    {
-        Log.Warning("No Application Insights environment variables found - logging will be limited to console/file");
-    }
 
-    
 
-    // Check for other possible environment variable names
-    try
-    {
-        var allEnvVars = Environment.GetEnvironmentVariables();
-        if (allEnvVars?.Keys != null)
-        {
-            var appInsightsVars = allEnvVars.Keys.Cast<string>()
-                .Where(k => k != null && (k.Contains("APPINSIGHTS") || k.Contains("INSTRUMENTATION") || k.Contains("APPLICATIONINSIGHTS")))
-                .ToList();
-            
-            Log.Information($"Found {appInsightsVars.Count} Application Insights related environment variables: {string.Join(", ", appInsightsVars)}");
-        }
-        else
-        {
-            Log.Warning("Could not access environment variables");
-        }
-    }
-    catch (Exception ex)
-    {
-        Log.Warning(ex, "Error while checking environment variables");
-    }
 
-    // Debug: Check Serilog configuration
-    Log.Information("=== SERILOG CONFIGURATION DEBUG ===");
-    var serilogSection = configuration.GetSection("Serilog");
-    Log.Information($"Serilog section exists: {serilogSection.Exists()}");
-    
-    if (serilogSection.Exists())
-    {
-        var writeToSection = serilogSection.GetSection("WriteTo");
-        if (writeToSection.Exists())
-        {
-            Log.Information($"Serilog WriteTo count: {writeToSection.GetChildren().Count()}");
-            
-            foreach (var sink in writeToSection.GetChildren())
-            {
-                var sinkName = sink["Name"] ?? "Unknown";
-                Log.Information($"Sink: {sinkName}");
-            }
-        }
-        else
-        {
-            Log.Warning("Serilog WriteTo section not found in configuration");
-        }
-    }
-    else
-    {
-        Log.Warning("Serilog section not found in configuration");
-    }
 
-    Log.Information("GitHub integration configured for REST API (no configuration file needed)");
 
     // Application Insights is configured via Serilog above - don't add it again here
     // builder.Services.AddApplicationInsightsTelemetry(); // DISABLED to prevent conflicts
@@ -242,59 +168,17 @@ try
         return new Azure.Communication.Email.EmailClient(cfg.ConnectionString);
     });
 
-    // Debug configuration loading
-    Log.Information("=== CONFIGURATION DEBUG ===");
-    Log.Information("Environment: {Environment}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
-    Log.Information("Current Directory: {CurrentDirectory}", Directory.GetCurrentDirectory());
-    
-    // Check both configuration sources
+    // Get Azure AD B2C configuration
     var b2cFromBuilder = builder.Configuration.GetSection("AzureAdB2C");
     var b2cFromSerilog = configuration.GetSection("AzureAdB2C");
-    
-    Log.Information("AzureAdB2C from builder.Configuration - exists: {Exists}, path: {Path}", 
-        b2cFromBuilder.Exists(), b2cFromBuilder.Path);
-    Log.Information("AzureAdB2C from Serilog configuration - exists: {Exists}, path: {Path}", 
-        b2cFromSerilog.Exists(), b2cFromSerilog.Path);
-    
-    // Debug: Check what's actually in each configuration
-    Log.Information("=== BUILDER CONFIGURATION DEBUG ===");
-    var builderKeys = builder.Configuration.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
-    Log.Information("Builder config has {Count} Azure AD B2C keys: {Keys}", 
-        builderKeys.Count, string.Join(", ", builderKeys.Select(k => $"{k.Key}={k.Value}")));
-    
-    Log.Information("=== SERILOG CONFIGURATION DEBUG ===");
-    var serilogKeys = configuration.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
-    Log.Information("Serilog config has {Count} Azure AD B2C keys: {Keys}", 
-        serilogKeys.Count, string.Join(", ", serilogKeys.Select(k => $"{k.Key}={k.Value}")));
-    
-    // Use the configuration that actually has the values
     var b2c = b2cFromSerilog.Exists() ? b2cFromSerilog : b2cFromBuilder;
     
-    // List all configuration keys from the working configuration
-    var allKeys = b2c.AsEnumerable().Where(kvp => kvp.Key.StartsWith("AzureAdB2C")).ToList();
-    Log.Information("Selected configuration has {Count} Azure AD B2C configuration keys: {Keys}", 
-        allKeys.Count, string.Join(", ", allKeys.Select(k => $"{k.Key}={k.Value}")));
-    
-    // Log the Azure AD B2C configuration for debugging
-    Log.Information("=== AZURE AD B2C CONFIGURATION ===");
-    Log.Information("Instance: {Instance}", b2c["Instance"]);
-    Log.Information("Domain: {Domain}", b2c["Domain"]);
-    Log.Information("SignUpSignInPolicyId: {PolicyId}", b2c["SignUpSignInPolicyId"]);
-    Log.Information("Audience: {Audience}", b2c["Audience"]);
-    
-    // Check if any values are null or empty
+    // Check if configuration is missing
     if (string.IsNullOrWhiteSpace(b2c["Instance"]) || 
         string.IsNullOrWhiteSpace(b2c["Domain"]) || 
         string.IsNullOrWhiteSpace(b2c["Audience"]))
     {
-        Log.Error("=== AZURE AD B2C CONFIGURATION ERROR ===");
-        Log.Error("One or more Azure AD B2C configuration values are null or empty!");
-        Log.Error("Instance: '{Instance}'", b2c["Instance"] ?? "NULL");
-        Log.Error("Domain: '{Domain}'", b2c["Domain"] ?? "NULL");
-        Log.Error("SignUpSignInPolicyId: '{PolicyId}'", b2c["SignUpSignInPolicyId"] ?? "NULL");
-        Log.Error("Audience: '{Audience}'", b2c["Audience"] ?? "NULL");
-        
-        // Instead of throwing, log the error and continue with default values
+        Log.Error("Azure AD B2C configuration is missing or incomplete");
         Log.Warning("Continuing with default Azure AD B2C configuration - authentication may fail");
         
         // Set default values to prevent null reference exceptions
@@ -310,7 +194,7 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v9.82 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v10 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
@@ -329,51 +213,22 @@ try
             ValidAudiences = new[] { b2c["Audience"]!, "ee13203e-e81d-48cb-8402-422cace331dc" }
         };
         
-        // Log the actual values being used for JWT validation
-        Log.Information("=== JWT VALIDATION PARAMETERS ===");
-        Log.Information("ValidIssuer: {ValidIssuer}", baseAuthority);
-        Log.Information("ValidAudiences: {ValidAudiences}", string.Join(", ", new[] { b2c["Audience"], "ee13203e-e81d-48cb-8402-422cace331dc" }.Where(x => !string.IsNullOrWhiteSpace(x))));
-        Log.Information("Authority: {Authority}", baseAuthority);
+
         
-        // Add this to see what's happening during JWT validation
+        // JWT validation events
         o.Events = new JwtBearerEvents
         {
             OnAuthenticationFailed = context =>
             {
                 Log.Error("JWT Authentication failed: {Error}", context.Exception.Message);
-                Log.Error("JWT Authentication failed details: {Details}", context.Exception);
-                
-                // Log additional context information
-                if (context.HttpContext.Request.Headers.ContainsKey("Authorization"))
-                {
-                    var authHeader = context.HttpContext.Request.Headers["Authorization"].ToString();
-                    Log.Error("Authorization header: {AuthHeader}", authHeader.Substring(0, Math.Min(50, authHeader.Length)) + "...");
-                }
-                
                 return Task.CompletedTask;
             },
             OnTokenValidated = context =>
             {
                 Log.Information("JWT Token validated successfully for user: {User}", context.Principal?.Identity?.Name);
-                
-                // Log token claims for debugging
-                var claims = context.Principal?.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
-                Log.Information("Token claims: {Claims}", string.Join(", ", claims ?? new List<string>()));
-                
-                return Task.CompletedTask;
-            },
-            OnChallenge = context =>
-            {
-                Log.Warning("JWT Challenge issued: {Error}", context.Error);
-                Log.Warning("JWT Challenge description: {Description}", context.ErrorDescription);
-                return Task.CompletedTask;
-            },
-            OnMessageReceived = context =>
-            {
-                Log.Debug("JWT Message received from: {RemoteIP}", context.HttpContext.Connection.RemoteIpAddress);
                 return Task.CompletedTask;
             }
-            };
+        };
         });
 
     builder.Services.AddAuthorization(options =>
@@ -381,6 +236,13 @@ try
         options.AddPolicy("RequireAccessAsUser", policy =>
             policy.RequireAssertion(ctx =>
             {
+                // In Development, always allow access
+                var httpContext = ctx.Resource as HttpContext;
+                if (httpContext?.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment() == true)
+                {
+                    return true;
+                }
+
                 // Support both 'scp' and the full URI scope claim
                 var scp = ctx.User.FindFirst("scp")?.Value;
                 var scopeUri = ctx.User.FindFirst("http://schemas.microsoft.com/identity/claims/scope")?.Value;
@@ -396,11 +258,30 @@ try
                 return roles.Contains("access_as_user", StringComparer.Ordinal);
             })
         );
+
+        // Add admin policy for admin-only endpoints
+        options.AddPolicy("RequireAdminAccess", policy =>
+            policy.RequireAssertion(ctx =>
+            {
+                // In Development, always allow access
+                var httpContext = ctx.Resource as HttpContext;
+                if (httpContext?.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment() == true)
+                {
+                    return true;
+                }
+
+                // Check for admin role
+                var roles = ctx.User.FindAll("roles").Select(c => c.Value);
+                return roles.Contains("admin", StringComparer.OrdinalIgnoreCase);
+            })
+        );
     });
 
     // Add services to the container.
     builder.Services.AddScoped<IProjectService, ProjectService>();
     builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+    builder.Services.AddScoped<IUserSummaryService, UserSummaryService>();
+    builder.Services.AddMemoryCache();
     builder.Services.AddScoped<IProjectMatchingService, ProjectMatchingService>();
     builder.Services.AddScoped<IProjectConfigurationService, ProjectConfigurationService>();
     builder.Services.AddScoped<IEmailSender, AcsEmailSender>();
@@ -436,11 +317,7 @@ try
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         
-        // Log the actual JSON settings being used
-        Log.Information("=== JSON Settings Applied ===");
-        Log.Information($"ReferenceHandler: {options.JsonSerializerOptions.ReferenceHandler}");
-        Log.Information($"WriteIndented: {options.JsonSerializerOptions.WriteIndented}");
-        Log.Information($"PropertyNamingPolicy: {options.JsonSerializerOptions.PropertyNamingPolicy}");
+
     });
 
     // Force System.Text.Json globally to prevent Entity Framework from using JSON.NET
@@ -489,12 +366,7 @@ try
 
     var app = builder.Build();
 
-    // Test logging output for Azure Log Stream
-    Log.Information("=== APPLICATION TEST: Application built successfully ===");
-    Log.Information($"=== .NET Version: {Environment.Version} ===");
-    Log.Information($"=== Target Framework: {AppContext.TargetFrameworkName} ===");
-    Log.Information($"=== Environment: {app.Environment.EnvironmentName} ===");
-    Log.Information($"Running on .NET {Environment.Version} in {app.Environment.EnvironmentName} environment");
+    Log.Information("Application built successfully - Environment: {Environment}", app.Environment.EnvironmentName);
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
@@ -509,10 +381,12 @@ try
     app.UseHttpsRedirection(); //redirects to https
     app.UseCors("signalr-cors");
 
+    // Use authentication/authorization middleware based on environment
     if (!app.Environment.IsDevelopment())
     {
         app.UseAuthentication(); //authenticates the request
         app.UseAuthorization(); //authorizes the request
+        Log.Information("Production environment: authentication and authorization middleware enabled");
     }
     else
     {
@@ -543,16 +417,7 @@ try
         }
     }); 
 
-    // Add a simple test endpoint to verify logging
-    app.MapGet("/test-logging", () =>
-    {
-        Log.Debug("Test DEBUG log from minimal API endpoint");
-        Log.Information("Test INFORMATION log from minimal API endpoint");
-        Log.Warning("Test WARNING log from minimal API endpoint");
-        Log.Error("Test ERROR log from minimal API endpoint");
-        
-        return "Logging test completed - check Application Insights for log messages";
-    });
+
 
     // Seed the database with initial data
     using (var scope = app.Services.CreateScope())

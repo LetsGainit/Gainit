@@ -9,7 +9,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         public string ProjectDescription { get; set; }
         public string DifficultyLevel { get; set; }
         public string ProjectPictureUrl { get; set; }
-        public string Duration { get; set; }
+        public int? Duration { get; set; }
         public List<string> Goals { get; set; } = new List<string>();
         public List<string> Technologies { get; set; } = new List<string>();
         public List<string> RequiredRoles { get; set; } = new List<string>();
@@ -21,25 +21,13 @@ namespace GainIt.API.DTOs.ViewModels.Projects
             ProjectDescription = i_template.ProjectDescription;
             DifficultyLevel = i_template.DifficultyLevel.ToString();
             ProjectPictureUrl = i_template.ProjectPictureUrl;
-            Duration = toDaysAndMonthsString(i_template.Duration);
+            Duration = (int)Math.Round(i_template.Duration.TotalDays);
             // Extract data before JsonIgnore takes effect
             Goals = i_template.Goals.ToList();
             Technologies = i_template.Technologies.ToList();
             RequiredRoles = i_template.RequiredRoles.ToList();
         }
 
-        private static string toDaysAndMonthsString(TimeSpan duration)
-        {
-            int months = (int)(duration.TotalDays / 30);
-            int days = (int)(duration.TotalDays % 30);
-
-            if (months > 0)
-            {
-                return $"{months}m {days}d";
-            }
-
-            return $"{days}d";
-        }
-
+        
     }
 }

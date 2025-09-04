@@ -320,6 +320,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 {
                     ChatCompletion completion = await r_chatClient.CompleteChatAsync(messages, options);
                     var explanation = completion.Content[0].Text.Trim();
+                    explanation = NormalizeAnalyticsPeriod(explanation, daysPeriod);
                     r_logger.LogInformation("GitHub analytics explanation generated successfully: ExplanationLength={ExplanationLength}", explanation.Length);
                     return explanation;
                 }
@@ -336,6 +337,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
                     ChatCompletion completion = await r_chatClient.CompleteChatAsync(fallbackMessages, options);
                     var explanation = completion.Content[0].Text.Trim();
+                    explanation = NormalizeAnalyticsPeriod(explanation, daysPeriod);
                     r_logger.LogInformation("GitHub analytics explanation generated on retry: ExplanationLength={ExplanationLength}", explanation.Length);
                     return explanation;
                 }
@@ -346,6 +348,32 @@ namespace GainIt.API.Services.Projects.Implementations
                 // Return a fallback message instead of throwing to maintain service stability
                 return "Unable to generate AI-powered insights at this time. Please try again later.";
             }
+        }
+
+        private static string NormalizeAnalyticsPeriod(string text, int daysPeriod)
+        {
+            if (daysPeriod == 30 || string.IsNullOrWhiteSpace(text))
+            {
+                return text;
+            }
+
+            var replacements = new (string fromText, string toText)[]
+            {
+                ("in the last 30 days", $"in the last {daysPeriod} days"),
+                ("over the last 30 days", $"over the last {daysPeriod} days"),
+                ("for the last 30 days", $"for the last {daysPeriod} days"),
+                ("during the last 30 days", $"during the last {daysPeriod} days"),
+                ("past 30 days", $"past {daysPeriod} days"),
+                ("last 30 days", $"last {daysPeriod} days"),
+                ("in the previous 30 days", $"in the previous {daysPeriod} days")
+            };
+
+            foreach (var pair in replacements)
+            {
+                text = text.Replace(pair.fromText, pair.toText, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return text;
         }
 
         private async Task<List<TemplateProject>> filterProjectsWithChatAsync(string i_Query, List<TemplateProject> i_Projects)

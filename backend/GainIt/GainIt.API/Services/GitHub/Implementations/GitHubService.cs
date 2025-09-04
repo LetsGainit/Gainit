@@ -397,10 +397,11 @@ namespace GainIt.API.Services.GitHub.Implementations
                     _logger.LogDebug("Analytics freshness check: IsFresh={IsFresh}, CalculatedAt={CalculatedAt}, Now={Now}", 
                         isFresh, analytics.CalculatedAtUtc, DateTime.UtcNow);
 
-                    if (!isFresh)
+                    // Recompute if stale, or if caller requested different period, or force=true
+                    if (!isFresh || analytics.DaysPeriod != daysPeriod || force)
                     {
-                        _logger.LogInformation("Analytics for project {ProjectId} are stale (last calculated: {CalculatedAt}), refreshing automatically", 
-                            projectId, analytics.CalculatedAtUtc);
+                        _logger.LogInformation("Refreshing analytics for project {ProjectId}. Reason => Stale: {Stale}, PeriodChanged: {PeriodChanged}, Force: {Force}", 
+                            projectId, !isFresh, analytics.DaysPeriod != daysPeriod, force);
                         
                         // Create sync log entry for analytics refresh
                         var refreshSyncLog = new GitHubSyncLog
@@ -419,7 +420,31 @@ namespace GainIt.API.Services.GitHub.Implementations
                             var refreshedAnalytics = await _analyticsService.ProcessRepositoryAnalyticsAsync(repository, daysPeriod);
                             if (refreshedAnalytics != null)
                             {
-                                // Update existing analytics
+                                // Update existing analytics with full field set
+                                analytics.DaysPeriod = refreshedAnalytics.DaysPeriod;
+                                analytics.TotalCommits = refreshedAnalytics.TotalCommits;
+                                analytics.TotalAdditions = refreshedAnalytics.TotalAdditions;
+                                analytics.TotalDeletions = refreshedAnalytics.TotalDeletions;
+                                analytics.TotalLinesChanged = refreshedAnalytics.TotalLinesChanged;
+                                analytics.TotalIssues = refreshedAnalytics.TotalIssues;
+                                analytics.OpenIssues = refreshedAnalytics.OpenIssues;
+                                analytics.ClosedIssues = refreshedAnalytics.ClosedIssues;
+                                analytics.TotalPullRequests = refreshedAnalytics.TotalPullRequests;
+                                analytics.OpenPullRequests = refreshedAnalytics.OpenPullRequests;
+                                analytics.MergedPullRequests = refreshedAnalytics.MergedPullRequests;
+                                analytics.ClosedPullRequests = refreshedAnalytics.ClosedPullRequests;
+                                analytics.TotalBranches = refreshedAnalytics.TotalBranches;
+                                analytics.TotalReleases = refreshedAnalytics.TotalReleases;
+                                analytics.TotalTags = refreshedAnalytics.TotalTags;
+                                analytics.AverageTimeToCloseIssues = refreshedAnalytics.AverageTimeToCloseIssues;
+                                analytics.AverageTimeToMergePRs = refreshedAnalytics.AverageTimeToMergePRs;
+                                analytics.ActiveContributors = refreshedAnalytics.ActiveContributors;
+                                analytics.TotalContributors = refreshedAnalytics.TotalContributors;
+                                analytics.FirstCommitDate = refreshedAnalytics.FirstCommitDate;
+                                analytics.LastCommitDate = refreshedAnalytics.LastCommitDate;
+                                analytics.TotalStars = refreshedAnalytics.TotalStars;
+                                analytics.TotalForks = refreshedAnalytics.TotalForks;
+                                analytics.TotalWatchers = refreshedAnalytics.TotalWatchers;
                                 analytics.LanguageStats = refreshedAnalytics.LanguageStats;
                                 analytics.WeeklyCommits = refreshedAnalytics.WeeklyCommits;
                                 analytics.WeeklyIssues = refreshedAnalytics.WeeklyIssues;
@@ -1043,7 +1068,6 @@ namespace GainIt.API.Services.GitHub.Implementations
                         Services.Projects.Interfaces.GitHubInsightsMode.ProjectSummary,
                         daysPeriod
                     );
-                    
                     _logger.LogInformation("Successfully generated AI-enhanced project activity summary for project {ProjectId}", projectId);
                     return enhancedSummary;
                 }

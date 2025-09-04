@@ -25,6 +25,8 @@ This document provides a comprehensive overview of all API endpoints supported b
 |--------|----------|-------------|---------------|
 | POST | `/me/ensure` | Ensure a local user exists for the current external identity | RequireAccessAsUser |
 | GET | `/me` | Get current user profile | RequireAccessAsUser |
+| GET | `/me/summary` | Get AI-generated summary of user's activity | RequireAccessAsUser |
+| GET | `/{userId}/dashboard` | Get user dashboard analytics data | RequireAccessAsUser |
 
 ### Profile Picture Management
 | Method | Endpoint | Description | Authorization |
@@ -61,6 +63,63 @@ This document provides a comprehensive overview of all API endpoints supported b
 
 #### GET `/me`
 **Response:** `UserProfileDto` (same structure as above)
+
+#### GET `/me/summary`
+**Response:** object
+```json
+{
+  "overallSummary": "string"
+}
+```
+
+#### GET `/{userId}/dashboard`
+**Response:** object (analytics data used to build the dashboard)
+```json
+{
+  "userId": "guid",
+  "userName": "string",
+  "userRole": "string",
+  "kpis": {
+    "tasksCompleted": { "value": 0, "trend": "string", "subtitle": "string", "icon": "string" },
+    "totalHours": { "value": 0, "trend": "string", "subtitle": "string", "icon": "string" },
+    "projects": { "value": 0, "trend": "string", "subtitle": "string", "icon": "string" },
+    "streak": { "value": 0, "trend": "string", "subtitle": "string", "icon": "string" }
+  },
+  "skillDistribution": {
+    "frontend": { "count": 0, "percentage": 0 },
+    "backend": { "count": 0, "percentage": 0 },
+    "database": { "count": 0, "percentage": 0 },
+    "devops": { "count": 0, "percentage": 0 }
+  },
+  "activityMetrics": {
+    "totalTasks": 0,
+    "completedTasks": 0,
+    "completionRate": 0,
+    "totalProjects": 0,
+    "ownedProjects": 0,
+    "activeProjects": 0,
+    "completedProjects": 0,
+    "totalAchievements": 0
+  },
+  "technologies": {
+    "languages": ["string"],
+    "technologies": ["string"],
+    "totalLanguages": 0,
+    "totalTechnologies": 0
+  },
+  "githubData": {
+    "hasUsername": false,
+    "username": "string",
+    "linkedRepos": 0,
+    "hasActivity": false,
+    "hasData": false,
+    "totalPullRequests": 0,
+    "totalCommits": 0,
+    "totalCodeReviews": 0,
+    "needsSetup": false
+  }
+}
+```
 
 #### POST `/me/profile-picture`
 **Request Body:** `ProfilePictureRequestDto` (multipart/form-data)

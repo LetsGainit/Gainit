@@ -10,12 +10,14 @@ using GainIt.API.Models.Projects;
 using GainIt.API.Services.Users.Interfaces;
 using GainIt.API.Services.FileUpload.Interfaces;
 using Azure.Storage.Blobs.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 using GainIt.API.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace GainIt.API.Controllers.Users
 {
@@ -28,15 +30,17 @@ namespace GainIt.API.Controllers.Users
     {
         private readonly IUserProfileService r_userProfileService;
         private readonly ILogger<UsersController> r_logger;
+        private readonly IUserSummaryService r_userSummaryService;
         private readonly GainItDbContext r_DbContext;
         private readonly IFileUploadService r_FileUploadService;
 
-        public UsersController(IUserProfileService i_userProfileService, ILogger<UsersController> i_logger, GainItDbContext i_DbContext, IFileUploadService i_FileUploadService)
+        public UsersController(IUserProfileService i_userProfileService, ILogger<UsersController> i_logger, GainItDbContext i_DbContext, IFileUploadService i_FileUploadService, IUserSummaryService i_userSummaryService)
         {
             r_userProfileService = i_userProfileService;
             r_logger = i_logger;
             r_DbContext = i_DbContext;
             r_FileUploadService = i_FileUploadService;
+            r_userSummaryService = i_userSummaryService;
         }
         private static string? tryGetClaim(ClaimsPrincipal user, params string[] types)
         {
@@ -220,6 +224,396 @@ namespace GainIt.API.Controllers.Users
                     correlationId, processingTime, HttpContext.Connection.RemoteIpAddress);
                 return StatusCode(500, new { Message = "An error occurred while retrieving the user profile" });
             }
+        }
+
+        /// <summary>
+        /// Retrieves an AI-generated summary of the user's platform activity and GitHub contributions.
+        /// Can be used to get summary for current authenticated user or any specific user by providing userId.
+        /// </summary>
+        /// <param name="userId">Optional user ID. If not provided, uses the current authenticated user.</param>
+        /// <returns>AI-generated summary of user's platform activity</returns>
+        [HttpGet("me/summary")]
+        [Authorize(Policy = "RequireAccessAsUser")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetMySummary([FromQuery] Guid? userId = null)
+        {
+            var correlationId = HttpContext.TraceIdentifier;
+            var startTime = DateTimeOffset.UtcNow;
+            
+            r_logger.LogInformation("Getting user summary. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}", 
+                correlationId, Request.Headers.UserAgent.ToString(), HttpContext.Connection.RemoteIpAddress, User.Identity?.Name);
+
+            try
+            {
+                User? user;
+                
+                if (userId.HasValue)
+                {
+                    // Use the provided userId
+                    user = await r_DbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId.Value);
+                    if (user == null)
+                    {
+                        r_logger.LogWarning("User not found for summary request with provided userId. CorrelationId={CorrelationId}, UserId={UserId}", correlationId, userId.Value);
+                        return NotFound(new { Message = "User not found" });
+                    }
+                    r_logger.LogInformation("Getting summary for provided userId. CorrelationId={CorrelationId}, UserId={UserId}", correlationId, userId.Value);
+                }
+                else
+                {
+                    // Use current authenticated user
+                    var externalId = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                                  ?? tryGetClaim(User, "sub")
+                                  ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                                  ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                                  ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+                    if (string.IsNullOrEmpty(externalId))
+                    {
+                        r_logger.LogWarning("Missing external identity claim for summary request. CorrelationId={CorrelationId}", correlationId);
+                        return Unauthorized(new { Message = "Missing external identity claim (oid/sub)" });
+                    }
+
+                    user = await r_DbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.ExternalId == externalId);
+                    if (user == null)
+                    {
+                        r_logger.LogWarning("User not found for summary request. CorrelationId={CorrelationId}, ExternalId={ExternalId}", correlationId, externalId);
+                        return NotFound(new { Message = "User not found" });
+                    }
+                    r_logger.LogInformation("Getting summary for current authenticated user. CorrelationId={CorrelationId}, UserId={UserId}", correlationId, user.UserId);
+                }
+
+                if (user == null)
+                {
+                    r_logger.LogError("User is null after retrieval. CorrelationId={CorrelationId}", correlationId);
+                    return StatusCode(500, new { Message = "An error occurred while retrieving user information." });
+                }
+
+                var summary = await r_userSummaryService.GetUserSummaryAsync(user.UserId);
+                
+                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                r_logger.LogInformation("Successfully retrieved user summary. CorrelationId={CorrelationId}, UserId={UserId}, ProcessingTime={ProcessingTime}ms, SummaryLength={Length}, RemoteIP={RemoteIP}", 
+                    correlationId, user.UserId, processingTime, summary.Length, HttpContext.Connection.RemoteIpAddress);
+                
+                return Ok(new { overallSummary = summary });
+            }
+            catch (Exception ex)
+            {
+                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                r_logger.LogError(ex, "Error retrieving user summary. CorrelationId={CorrelationId}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
+                    correlationId, processingTime, HttpContext.Connection.RemoteIpAddress);
+                return StatusCode(500, new { Message = "An error occurred while generating the user summary." });
+            }
+        }
+
+
+
+
+
+        /// <summary>
+        /// Get user dashboard analytics data
+        /// Returns structured data for building analytics dashboard with KPIs, achievements, and skill distribution
+        /// </summary>
+        [HttpGet("{userId}/dashboard")]
+        [Authorize(Policy = "RequireAccessAsUser")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetUserDashboardData(Guid userId)
+        {
+            var correlationId = HttpContext.TraceIdentifier;
+            var startTime = DateTimeOffset.UtcNow;
+            
+            r_logger.LogInformation("Getting user dashboard data. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}", 
+                correlationId, Request.Headers.UserAgent.ToString(), HttpContext.Connection.RemoteIpAddress, User.Identity?.Name);
+            
+            try
+            {
+                // Get the user first
+                var user = await r_DbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
+                if (user == null)
+                {
+                    r_logger.LogWarning("User not found for dashboard: UserId={UserId}", userId);
+                    return NotFound(new { Message = "User not found" });
+                }
+
+                // Collect all metrics
+                var participatedProjectsCount = await r_DbContext.Projects
+                    .CountAsync(p => p.ProjectMembers.Any(pm => pm.UserId == userId));
+
+                var ownedProjectsCount = await r_DbContext.Projects
+                    .CountAsync(p => p.OwningOrganizationUserId == userId);
+
+                var activeProjectsCount = await r_DbContext.Projects
+                    .CountAsync(p => p.ProjectMembers.Any(pm => pm.UserId == userId) && p.ProjectStatus != Models.Enums.Projects.eProjectStatus.Completed);
+
+                var completedProjectsCount = await r_DbContext.Projects
+                    .CountAsync(p => p.ProjectMembers.Any(pm => pm.UserId == userId) && p.ProjectStatus == Models.Enums.Projects.eProjectStatus.Completed);
+
+                var tasksAssigned = await r_DbContext.ProjectTasks
+                    .CountAsync(t => t.AssignedUserId == userId);
+
+                var tasksCompleted = await r_DbContext.ProjectTasks
+                    .CountAsync(t => t.AssignedUserId == userId && t.Status == Models.Enums.Tasks.eTaskStatus.Done);
+
+                var achievementsCount = await r_DbContext.UserAchievements
+                    .CountAsync(a => a.UserId == userId);
+
+                var forumLikesCount = await r_DbContext.ForumPostLikes
+                    .CountAsync(l => l.UserId == userId);
+                var forumPostsCount = await r_DbContext.ForumPosts
+                    .CountAsync(p => p.AuthorId == userId);
+                var forumRepliesCount = await r_DbContext.ForumReplies
+                    .CountAsync(r => r.AuthorId == userId);
+
+                // Get project tech data for skill distribution
+                var projTechData = await r_DbContext.Projects
+                    .Where(p => p.ProjectMembers.Any(pm => pm.UserId == userId))
+                    .Select(p => new { p.ProjectId, p.ProgrammingLanguages, p.Technologies, p.RepositoryLink })
+                    .ToListAsync();
+
+                var languages = projTechData
+                    .Where(x => x.ProgrammingLanguages != null)
+                    .SelectMany(x => x.ProgrammingLanguages!)
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Select(s => s.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                var technologies = projTechData
+                    .Where(x => x.Technologies != null)
+                    .SelectMany(x => x.Technologies!)
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Select(s => s.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                // Calculate derived metrics
+                var completionRate = tasksAssigned > 0 ? (double)tasksCompleted / tasksAssigned * 100 : 0;
+                var totalPlatformActivity = participatedProjectsCount + tasksAssigned + achievementsCount + forumPostsCount + forumRepliesCount;
+                var isHighPlatformActivity = totalPlatformActivity >= 10;
+                var hasLeadershipIndicators = ownedProjectsCount > 0 || forumPostsCount > 5;
+
+                // Calculate skill distribution (categorize technologies)
+                var skillDistribution = CalculateSkillDistribution(languages, technologies);
+
+                // Get GitHub data for code reviewer metrics
+                var userProjectIds = projTechData.Select(p => p.ProjectId).ToList();
+                var repoProjects = await r_DbContext.Projects
+                    .Where(p => userProjectIds.Contains(p.ProjectId) && !string.IsNullOrWhiteSpace(p.RepositoryLink))
+                    .Select(p => p.ProjectId)
+                    .ToListAsync();
+
+                // Get actual GitHub analytics data for code reviewer metrics
+                var totalPullRequests = 0;
+                var totalCommits = 0;
+                var totalCodeReviews = 0;
+                var hasGitHubData = false;
+                
+                // Check if user has GitHub username and projects have repository links
+                if (!string.IsNullOrWhiteSpace(user.GitHubUsername) && repoProjects.Any())
+                {
+                    // Get GitHub contributions for the user across all their linked repositories
+                    var githubContributions = await r_DbContext.GitHubContributions
+                        .Where(gc => gc.UserId == userId && repoProjects.Contains(gc.Repository.ProjectId))
+                        .ToListAsync();
+
+                    if (githubContributions.Any())
+                    {
+                        totalPullRequests = githubContributions.Sum(gc => gc.TotalPullRequestsCreated);
+                        totalCommits = githubContributions.Sum(gc => gc.TotalCommits);
+                        totalCodeReviews = githubContributions.Sum(gc => gc.PullRequestsReviewed);
+                        hasGitHubData = true;
+                    }
+                    else
+                    {
+                        // GitHubContributions table is empty - data hasn't been generated yet
+                        r_logger.LogInformation("GitHub contributions data not found for user {UserId}. Data may need to be generated.", userId);
+                    }
+                }
+                else
+                {
+                    // User doesn't have GitHub username or no projects with repository links
+                    if (string.IsNullOrWhiteSpace(user.GitHubUsername))
+                    {
+                        r_logger.LogInformation("User {UserId} doesn't have GitHub username linked.", userId);
+                    }
+                    if (!repoProjects.Any())
+                    {
+                        r_logger.LogInformation("User {UserId} has no projects with GitHub repository links.", userId);
+                    }
+                }
+
+                // Build dashboard data structure
+                var dashboardData = new
+                {
+                    userId = userId,
+                    userName = user.FullName,
+                    userRole = user.UserRole,
+                    
+                    // Top Row KPIs (matching the dashboard image)
+                    kpis = new
+                    {
+                        tasksCompleted = new
+                        {
+                            value = tasksCompleted,
+                            trend = "up",
+                            subtitle = $"↑ {completionRate:F0}% completion rate",
+                            icon = "check-circle"
+                        },
+                        totalHours = new
+                        {
+                            value = tasksCompleted * 5.8, // Estimated hours per task
+                            trend = "up",
+                            subtitle = $"Avg 5.8h per task",
+                            icon = "clock"
+                        },
+                        projects = new
+                        {
+                            value = participatedProjectsCount,
+                            trend = "up",
+                            subtitle = $"{participatedProjectsCount + ownedProjectsCount} collaborations",
+                            icon = "users"
+                        },
+                        streak = new
+                        {
+                            value = Math.Min(achievementsCount, 10), // Mock streak based on achievements
+                            trend = "up",
+                            subtitle = $"Rank #{Math.Max(1, 50 - totalPlatformActivity)}",
+                            icon = "award"
+                        }
+                    },
+
+                    // Skill Distribution (donut chart data)
+                    skillDistribution = skillDistribution,
+
+                    // Achievements (matching the dashboard structure)
+                    achievements = new[]
+                    {
+                        new
+                        {
+                            title = "Task Master",
+                            description = "Completed 50+ tasks",
+                            progress = Math.Min(100, (tasksCompleted / 50.0) * 100),
+                            earned = tasksCompleted >= 50 ? "Earned 15/01/2024" : "In Progress",
+                            isEarned = tasksCompleted >= 50
+                        },
+                        new
+                        {
+                            title = "Team Player",
+                            description = "Helped 10+ teammates",
+                            progress = Math.Min(100, (forumRepliesCount / 10.0) * 100),
+                            earned = forumRepliesCount >= 10 ? "Earned 20/01/2024" : "In Progress",
+                            isEarned = forumRepliesCount >= 10
+                        },
+                        new
+                        {
+                            title = "Code Reviewer",
+                            description = hasGitHubData ? "Reviewed 25+ pull requests" : "Link GitHub account to track code reviews",
+                            progress = hasGitHubData ? Math.Min(100, (totalCodeReviews / 25.0) * 100) : 0,
+                            earned = hasGitHubData 
+                                ? (totalCodeReviews >= 25 ? "Earned 25/01/2024" : "In Progress")
+                                : "Link GitHub account",
+                            isEarned = hasGitHubData && totalCodeReviews >= 25
+                        },
+                        
+                    },
+
+                    // Activity metrics for charts
+                    activityMetrics = new
+                    {
+                        totalTasks = tasksAssigned,
+                        completedTasks = tasksCompleted,
+                        completionRate = completionRate,
+                        totalProjects = participatedProjectsCount,
+                        ownedProjects = ownedProjectsCount,
+                        activeProjects = activeProjectsCount,
+                        completedProjects = completedProjectsCount,
+                        totalAchievements = achievementsCount,
+                        forumEngagement = new
+                        {
+                            posts = forumPostsCount,
+                            replies = forumRepliesCount,
+                            likes = forumLikesCount
+                        },
+                        leadershipIndicators = hasLeadershipIndicators,
+                        activityLevel = isHighPlatformActivity ? "HIGH" : "LOW",
+                        totalActivity = totalPlatformActivity,
+                        githubActivity = new
+                        {
+                            hasData = hasGitHubData,
+                            totalPullRequests = totalPullRequests,
+                            totalCommits = totalCommits,
+                            totalCodeReviews = totalCodeReviews,
+                            needsSetup = !string.IsNullOrWhiteSpace(user.GitHubUsername) && repoProjects.Any() && !hasGitHubData
+                        }
+                    },
+
+                    // Technology breakdown
+                    technologies = new
+                    {
+                        languages = languages.Take(10).ToList(),
+                        technologies = technologies.Take(10).ToList(),
+                        totalLanguages = languages.Count,
+                        totalTechnologies = technologies.Count
+                    },
+
+                    // GitHub data
+                    githubData = new
+                    {
+                        hasUsername = !string.IsNullOrWhiteSpace(user.GitHubUsername),
+                        username = user.GitHubUsername,
+                        linkedRepos = repoProjects.Count,
+                        hasActivity = repoProjects.Any(),
+                        hasData = hasGitHubData,
+                        totalPullRequests = totalPullRequests,
+                        totalCommits = totalCommits,
+                        totalCodeReviews = totalCodeReviews,
+                        needsSetup = !string.IsNullOrWhiteSpace(user.GitHubUsername) && repoProjects.Any() && !hasGitHubData
+                    }
+                };
+
+                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                r_logger.LogInformation("Successfully retrieved dashboard data. CorrelationId={CorrelationId}, UserId={UserId}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
+                    correlationId, userId, processingTime, HttpContext.Connection.RemoteIpAddress);
+                
+                return Ok(dashboardData);
+            }
+            catch (Exception ex)
+            {
+                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                r_logger.LogError(ex, "Error retrieving dashboard data. CorrelationId={CorrelationId}, UserId={UserId}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
+                    correlationId, userId, processingTime, HttpContext.Connection.RemoteIpAddress);
+                return StatusCode(500, new { Message = "An error occurred while retrieving the dashboard data." });
+            }
+        }
+
+        private static object CalculateSkillDistribution(List<string> languages, List<string> technologies)
+        {
+            // Categorize skills into frontend, backend, database, devops
+            var frontend = new[] { "javascript", "typescript", "react", "vue", "angular", "html", "css", "sass", "bootstrap", "tailwind" };
+            var backend = new[] { "python", "java", "c#", "node.js", "express", "django", "spring", "asp.net", "php", "ruby" };
+            var database = new[] { "sql", "postgresql", "mysql", "mongodb", "redis", "sqlite", "oracle", "sql server" };
+            var devops = new[] { "docker", "kubernetes", "aws", "azure", "jenkins", "git", "terraform", "ansible", "nginx", "apache" };
+
+            var allSkills = languages.Concat(technologies).Select(s => s.ToLower()).ToList();
+            
+            var frontendCount = allSkills.Count(s => frontend.Any(f => s.Contains(f)));
+            var backendCount = allSkills.Count(s => backend.Any(b => s.Contains(b)));
+            var databaseCount = allSkills.Count(s => database.Any(d => s.Contains(d)));
+            var devopsCount = allSkills.Count(s => devops.Any(d => s.Contains(d)));
+
+            var total = frontendCount + backendCount + databaseCount + devopsCount;
+            if (total == 0) total = 1; // Avoid division by zero
+
+            return new
+            {
+                frontend = new { count = frontendCount, percentage = Math.Round((double)frontendCount / total * 100, 1) },
+                backend = new { count = backendCount, percentage = Math.Round((double)backendCount / total * 100, 1) },
+                database = new { count = databaseCount, percentage = Math.Round((double)databaseCount / total * 100, 1) },
+                devops = new { count = devopsCount, percentage = Math.Round((double)devopsCount / total * 100, 1) }
+            };
         }
 
         /// <summary>

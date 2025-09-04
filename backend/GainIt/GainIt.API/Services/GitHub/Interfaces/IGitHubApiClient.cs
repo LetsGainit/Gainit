@@ -30,6 +30,11 @@ namespace GainIt.API.Services.GitHub.Interfaces
         Task<List<GitHubAnalyticsCommitNode>> GetCommitHistoryAsync(string owner, string name, int daysPeriod = 30);
 
         /// <summary>
+        /// Gets commit history for a specific branch in a repository
+        /// </summary>
+        Task<List<GitHubAnalyticsCommitNode>> GetCommitHistoryForBranchAsync(string owner, string name, string branch, int daysPeriod = 30);
+
+        /// <summary>
         /// Gets detailed information for a specific commit (includes stats and files)
         /// </summary>
         Task<GitHubRestApiCommit?> GetCommitDetailsAsync(string owner, string name, string sha);

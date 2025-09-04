@@ -9,8 +9,10 @@ using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using System.Linq;
 
 namespace GainIt.API.Data
 {
@@ -229,6 +231,18 @@ namespace GainIt.API.Data
             
             try
             {
+                // Reusable ValueComparers for JSON-backed collections to satisfy EF Core model validation
+                var stringListComparer = new ValueComparer<List<string>>(
+                    (a, b) => a == b || (a != null && b != null && a.SequenceEqual(b)),
+                    v => v == null ? 0 : v.Aggregate(17, (hash, s) => HashCode.Combine(hash, s != null ? s.GetHashCode() : 0)),
+                    v => v == null ? new List<string>() : v.ToList()
+                );
+
+                var stringIntDictComparer = new ValueComparer<Dictionary<string, int>>(
+                    (a, b) => a == b || (a != null && b != null && a.Count == b.Count && !a.Except(b).Any()),
+                    v => v == null ? 0 : v.OrderBy(k => k.Key).Aggregate(19, (hash, kv) => HashCode.Combine(hash, kv.Key.GetHashCode(), kv.Value.GetHashCode())),
+                    v => v == null ? new Dictionary<string, int>() : v.ToDictionary(e => e.Key, e => e.Value)
+                );
                 #region Inheritance Configuration
                 // Configure TPT inheritance for User hierarchy
                 modelBuilder.Entity<User>().UseTptMappingStrategy();
@@ -321,7 +335,8 @@ namespace GainIt.API.Data
                         .HasConversion(
                             v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                             v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringListComparer);
 
                     // Configure relationships
                     entity.HasOne<NonprofitOrganization>(p => p.OwningOrganization)
@@ -598,43 +613,50 @@ namespace GainIt.API.Data
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringIntDictComparer);
 
                     entity.Property(e => e.WeeklyCommits)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringIntDictComparer);
 
                     entity.Property(e => e.WeeklyIssues)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringIntDictComparer);
 
                     entity.Property(e => e.WeeklyPullRequests)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringIntDictComparer);
 
                     entity.Property(e => e.MonthlyCommits)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringIntDictComparer);
 
                     entity.Property(e => e.MonthlyIssues)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringIntDictComparer);
 
                     entity.Property(e => e.MonthlyPullRequests)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringIntDictComparer);
 
                     // Configure relationships
                     entity.HasOne(e => e.Repository)
@@ -653,26 +675,30 @@ namespace GainIt.API.Data
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringIntDictComparer);
 
                     entity.Property(e => e.CommitsByHour)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringIntDictComparer);
 
                     entity.Property(e => e.ActivityByMonth)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, int>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringIntDictComparer);
 
                     // Configure List<string> property to be stored as JSON
                     entity.Property(e => e.LanguagesContributed)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringListComparer);
 
                     // Configure relationships
                     entity.HasOne(e => e.Repository)
@@ -694,13 +720,15 @@ namespace GainIt.API.Data
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringListComparer);
 
                     entity.Property(e => e.Branches)
                         .HasConversion(
                             v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                             v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
-                        );
+                        )
+                        .Metadata.SetValueComparer(stringListComparer);
 
                     // Configure relationships
                     entity.HasOne(e => e.Project)
