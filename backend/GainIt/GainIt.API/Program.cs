@@ -310,7 +310,7 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v9.81 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v9.82 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
@@ -481,7 +481,7 @@ try
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("signalr-cors", p => p
-            .WithOrigins("http://localhost:5173", "http://localhost:3000", "https://gray-moss-04b923a10.2.azurestaticapps.net")
+            .WithOrigins("http://localhost:5173", "http://localhost:3000", "https://letsgainit.com", "https://www.letsgainit.com", "https://gray-moss-04b923a10.2.azurestaticapps.net")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
