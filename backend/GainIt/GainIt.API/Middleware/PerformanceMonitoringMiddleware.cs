@@ -45,7 +45,7 @@ namespace GainIt.API.Middleware
                 var memoryDelta = finalMemory - initialMemory;
 
                 // Log performance metrics for slow requests (>1000ms) or high memory usage (>10MB)
-                if (stopwatch.ElapsedMilliseconds > 10000 || memoryDelta > 10 * 1024 * 1024)
+                if (stopwatch.ElapsedMilliseconds > 100000 || memoryDelta > 10 * 1024 * 1024)
                 {
                     r_logger.LogWarning("Performance alert: Path={Path}, Duration={Duration}ms, MemoryDelta={MemoryDelta}bytes, StatusCode={StatusCode}",
                         context.Request.Path, stopwatch.ElapsedMilliseconds, memoryDelta, context.Response.StatusCode);

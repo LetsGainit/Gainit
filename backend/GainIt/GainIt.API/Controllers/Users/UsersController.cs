@@ -54,172 +54,172 @@ namespace GainIt.API.Controllers.Users
 
 
 
-        /// <summary>
-        /// Ensure a local user exists for the current external identity (OID).
-        /// Builds the identity DTO from the access-token claims (server-side),
-        /// then creates/updates the user and returns a minimal profile.
-        /// </summary>
-        /// <returns>User profile information after provisioning</returns>
-        [HttpPost("me/ensure")]
-        [Authorize(Policy = "RequireAccessAsUser")]
-        [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<UserProfileDto>> ProvisionCurrentUser()
-        {
-            var correlationId = HttpContext.TraceIdentifier;
-            var startTime = DateTimeOffset.UtcNow;
-            
-            r_logger.LogInformation("Starting user provisioning process. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}", 
-                correlationId, Request.Headers.UserAgent.ToString(), HttpContext.Connection.RemoteIpAddress, User.Identity?.Name);
-            
-            // Log all available claims for security monitoring
-            var allClaims = User.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
-            r_logger.LogDebug("All available claims for user provisioning: CorrelationId={CorrelationId}, Claims={Claims}", 
-                correlationId, string.Join(", ", allClaims));
-            
-            try
+            /// <summary>
+            /// Ensure a local user exists for the current external identity (OID).
+            /// Builds the identity DTO from the access-token claims (server-side),
+            /// then creates/updates the user and returns a minimal profile.
+            /// </summary>
+            /// <returns>User profile information after provisioning</returns>
+            [HttpPost("me/ensure")]
+            [Authorize(Policy = "RequireAccessAsUser")]
+            [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+            [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+            [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+            public async Task<ActionResult<UserProfileDto>> ProvisionCurrentUser()
             {
+                var correlationId = HttpContext.TraceIdentifier;
+                var startTime = DateTimeOffset.UtcNow;
                 
-                var externalId =
-                    tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
-                 ?? tryGetClaim(User, "sub")
-                 ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
-                 ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
-                 ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
-
-                if (string.IsNullOrEmpty(externalId))
-                {
-                    return Unauthorized(new { Message = "Missing external identity claim (oid/sub)" });
-                }
-
-                r_logger.LogDebug("Extracted subject. CorrelationId={CorrelationId}, Subject={Subject}", correlationId, externalId);
-
-                // Use preferred_username directly since it contains the real Google email
-                var email = tryGetClaim(User, "preferred_username");
-
-                // Prefer display name if present, then compose from given + surname, then fallback
-                var displayName = tryGetClaim(User, "name", "displayName");
-                var given = tryGetClaim(User, "given_name");
-                var surname = tryGetClaim(User, "family_name", "surname");
-                var composed = string.Join(' ', new[] { given, surname }.Where(s => !string.IsNullOrWhiteSpace(s)));
-                var name = !string.IsNullOrWhiteSpace(displayName) ? displayName
-                           : (!string.IsNullOrWhiteSpace(composed) ? composed
-                           : (tryGetClaim(User, "preferred_username") ?? email));
-
-                var idp = tryGetClaim(User, "idp");
-
-                r_logger.LogDebug("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}", 
-                    correlationId, email, name, idp);
+                r_logger.LogInformation("Starting user provisioning process. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}", 
+                    correlationId, Request.Headers.UserAgent.ToString(), HttpContext.Connection.RemoteIpAddress, User.Identity?.Name);
                 
-                // Debug logging to see all available claims - this will help us find the correct claim for Google email
-                r_logger.LogInformation("ALL AVAILABLE CLAIMS: CorrelationId={CorrelationId}, Claims={Claims}", 
-                    correlationId, string.Join(" | ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
- 
-                var dto = new ExternalUserDto
-                {
-                    ExternalId = externalId!,
-                    Email = email,
-                    FullName = string.IsNullOrWhiteSpace(name) ? null : name,
-                    IdentityProvider = idp,
-                };
-
-                r_logger.LogDebug("Created ExternalUserDto for provisioning. CorrelationId={CorrelationId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
-                    correlationId, dto.ExternalId, dto.Email, dto.FullName);
-
-                var profile = await r_userProfileService.GetOrCreateFromExternalAsync(dto);
-                
-                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
-                r_logger.LogInformation("Successfully provisioned user. CorrelationId={CorrelationId}, UserId={UserId}, ExternalId={ExternalId}, Email={Email}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
-                    correlationId, profile.UserId, profile.ExternalId, profile.EmailAddress, processingTime, HttpContext.Connection.RemoteIpAddress);
-                
-                return Ok(profile);
-            }
-            catch (Exception ex)
-            {
-                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
-                r_logger.LogError(ex, "Error during user provisioning process. CorrelationId={CorrelationId}, ProcessingTime={ProcessingTime}ms, OID: {OID}, Available claims: {ClaimTypes}, RemoteIP={RemoteIP}", 
-                    correlationId, processingTime, tryGetClaim(User, "oid", ClaimTypes.NameIdentifier),
-                    string.Join(", ", allClaims), HttpContext.Connection.RemoteIpAddress);
-                return StatusCode(500, new { Message = "An error occurred during user provisioning" });
-            }
-        }
-
-        /// <summary>
-        /// Retrieves the current authenticated user's profile.
-        /// Uses JWT claims to identify the user without requiring their ID.
-        /// </summary>
-        /// <returns>User profile information for the authenticated user</returns>
-        [HttpGet("me")]
-        [Authorize(Policy = "RequireAccessAsUser")]
-        [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<UserProfileDto>> GetCurrentUser()
-        {
-            var correlationId = HttpContext.TraceIdentifier;
-            var startTime = DateTimeOffset.UtcNow;
-            
-            r_logger.LogInformation("Getting current user profile. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}", 
-                correlationId, Request.Headers.UserAgent.ToString(), HttpContext.Connection.RemoteIpAddress, User.Identity?.Name);
-            
-            try
-            {
-                // Debug: Log all available claims
+                // Log all available claims for security monitoring
                 var allClaims = User.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
-                r_logger.LogDebug("All available claims for GetCurrentUser: CorrelationId={CorrelationId}, Claims={Claims}", 
+                r_logger.LogDebug("All available claims for user provisioning: CorrelationId={CorrelationId}, Claims={Claims}", 
                     correlationId, string.Join(", ", allClaims));
-
-                // Use the same robust claim extraction as provisioning endpoint
-                var externalId =
-                    tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
-                 ?? tryGetClaim(User, "sub")
-                 ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
-                 ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
-                 ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
-
                 
-
-                if (string.IsNullOrEmpty(externalId))
+                try
                 {
-                    r_logger.LogWarning("Missing external identity claim (oid/sub) for current user. CorrelationId={CorrelationId}", correlationId);
-                    return Unauthorized(new { Message = "Missing external identity claim (oid/sub)" });
+                    
+                    var externalId =
+                        tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "sub")
+                    ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                    ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+                    if (string.IsNullOrEmpty(externalId))
+                    {
+                        return Unauthorized(new { Message = "Missing external identity claim (oid/sub)" });
+                    }
+
+                    r_logger.LogDebug("Extracted subject. CorrelationId={CorrelationId}, Subject={Subject}", correlationId, externalId);
+
+                    // Use preferred_username directly since it contains the real Google email
+                    var email = tryGetClaim(User, "preferred_username");
+
+                    // Prefer display name if present, then compose from given + surname, then fallback
+                    var displayName = tryGetClaim(User, "name", "displayName");
+                    var given = tryGetClaim(User, "given_name");
+                    var surname = tryGetClaim(User, "family_name", "surname");
+                    var composed = string.Join(' ', new[] { given, surname }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                    var name = !string.IsNullOrWhiteSpace(displayName) ? displayName
+                            : (!string.IsNullOrWhiteSpace(composed) ? composed
+                            : (tryGetClaim(User, "preferred_username") ?? email));
+
+                    var idp = tryGetClaim(User, "idp");
+
+                    r_logger.LogDebug("Extracted user claims. CorrelationId={CorrelationId}, Email={Email}, Name={Name}, IdentityProvider={IdP}", 
+                        correlationId, email, name, idp);
+                    
+                    // Debug logging to see all available claims - this will help us find the correct claim for Google email
+                    r_logger.LogInformation("ALL AVAILABLE CLAIMS: CorrelationId={CorrelationId}, Claims={Claims}", 
+                        correlationId, string.Join(" | ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+    
+                    var dto = new ExternalUserDto
+                    {
+                        ExternalId = externalId!,
+                        Email = email,
+                        FullName = string.IsNullOrWhiteSpace(name) ? null : name,
+                        IdentityProvider = idp,
+                    };
+
+                    r_logger.LogDebug("Created ExternalUserDto for provisioning. CorrelationId={CorrelationId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
+                        correlationId, dto.ExternalId, dto.Email, dto.FullName);
+
+                    var profile = await r_userProfileService.GetOrCreateFromExternalAsync(dto);
+                    
+                    var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                    r_logger.LogInformation("Successfully provisioned user. CorrelationId={CorrelationId}, UserId={UserId}, ExternalId={ExternalId}, Email={Email}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
+                        correlationId, profile.UserId, profile.ExternalId, profile.EmailAddress, processingTime, HttpContext.Connection.RemoteIpAddress);
+                    
+                    return Ok(profile);
                 }
-
-                r_logger.LogDebug("Extracted external ID for current user. CorrelationId={CorrelationId}, ExternalId={ExternalId}", correlationId, externalId);
-
-                // Find the user in the database by external ID (EXACTLY like ForumController)
-                var user = await r_DbContext.Users
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.ExternalId == externalId);
-
-                if (user == null)
+                catch (Exception ex)
                 {
-                    r_logger.LogWarning("Current user not found in database. CorrelationId={CorrelationId}, ExternalId={ExternalId}", correlationId, externalId);
-                    return NotFound(new { Message = "User profile not found. Please ensure your profile is created first." });
+                    var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                    r_logger.LogError(ex, "Error during user provisioning process. CorrelationId={CorrelationId}, ProcessingTime={ProcessingTime}ms, OID: {OID}, Available claims: {ClaimTypes}, RemoteIP={RemoteIP}", 
+                        correlationId, processingTime, tryGetClaim(User, "oid", ClaimTypes.NameIdentifier),
+                        string.Join(", ", allClaims), HttpContext.Connection.RemoteIpAddress);
+                    return StatusCode(500, new { Message = "An error occurred during user provisioning" });
                 }
+            }
 
-                // Check if user has completed their profile
-                var hasCompletedProfile = await r_userProfileService.CheckIfUserHasCompletedProfileAsync(user.UserId);
-
-                // Create UserProfileDto from the user entity
-                var profileDto = new UserProfileDto
-                {
-                    UserId = user.UserId,
-                    ExternalId = user.ExternalId,
-                    EmailAddress = user.EmailAddress,
-                    FullName = user.FullName,
-                    Country = user.Country,
-                    GitHubUsername = user.GitHubUsername,
-                    IsNewUser = !hasCompletedProfile
-                };
-
-                var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
-                r_logger.LogInformation("Successfully retrieved current user profile. CorrelationId={CorrelationId}, UserId={UserId}, ExternalId={ExternalId}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
-                    correlationId, profileDto.UserId, profileDto.ExternalId, processingTime, HttpContext.Connection.RemoteIpAddress);
+            /// <summary>
+            /// Retrieves the current authenticated user's profile.
+            /// Uses JWT claims to identify the user without requiring their ID.
+            /// </summary>
+            /// <returns>User profile information for the authenticated user</returns>
+            [HttpGet("me")]
+            [Authorize(Policy = "RequireAccessAsUser")]
+            [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+            [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+            [ProducesResponseType(StatusCodes.Status404NotFound)]
+            [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+            public async Task<ActionResult<UserProfileDto>> GetCurrentUser()
+            {
+                var correlationId = HttpContext.TraceIdentifier;
+                var startTime = DateTimeOffset.UtcNow;
                 
-                return Ok(profileDto);
+                r_logger.LogInformation("Getting current user profile. CorrelationId={CorrelationId}, UserAgent={UserAgent}, RemoteIP={RemoteIP}, AuthenticatedUser={AuthenticatedUser}", 
+                    correlationId, Request.Headers.UserAgent.ToString(), HttpContext.Connection.RemoteIpAddress, User.Identity?.Name);
+                
+                try
+                {
+                    // Debug: Log all available claims
+                    var allClaims = User.Claims.Select(c => $"{c.Type}={c.Value}").ToList();
+                    r_logger.LogDebug("All available claims for GetCurrentUser: CorrelationId={CorrelationId}, Claims={Claims}", 
+                        correlationId, string.Join(", ", allClaims));
+
+                    // Use the same robust claim extraction as provisioning endpoint
+                    var externalId =
+                        tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "sub")
+                    ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                    ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+                    
+
+                    if (string.IsNullOrEmpty(externalId))
+                    {
+                        r_logger.LogWarning("Missing external identity claim (oid/sub) for current user. CorrelationId={CorrelationId}", correlationId);
+                        return Unauthorized(new { Message = "Missing external identity claim (oid/sub)" });
+                    }
+
+                    r_logger.LogDebug("Extracted external ID for current user. CorrelationId={CorrelationId}, ExternalId={ExternalId}", correlationId, externalId);
+
+                    // Find the user in the database by external ID (EXACTLY like ForumController)
+                    var user = await r_DbContext.Users
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.ExternalId == externalId);
+
+                    if (user == null)
+                    {
+                        r_logger.LogWarning("Current user not found in database. CorrelationId={CorrelationId}, ExternalId={ExternalId}", correlationId, externalId);
+                        return NotFound(new { Message = "User profile not found. Please ensure your profile is created first." });
+                    }
+
+                    // Check if user has completed their profile
+                    var hasCompletedProfile = await r_userProfileService.CheckIfUserHasCompletedProfileAsync(user.UserId);
+
+                    // Create UserProfileDto from the user entity
+                    var profileDto = new UserProfileDto
+                    {
+                        UserId = user.UserId,
+                        ExternalId = user.ExternalId,
+                        EmailAddress = user.EmailAddress,
+                        FullName = user.FullName,
+                        Country = user.Country,
+                        GitHubUsername = user.GitHubUsername,
+                        IsNewUser = !hasCompletedProfile
+                    };
+
+                    var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
+                    r_logger.LogInformation("Successfully retrieved current user profile. CorrelationId={CorrelationId}, UserId={UserId}, ExternalId={ExternalId}, ProcessingTime={ProcessingTime}ms, RemoteIP={RemoteIP}", 
+                        correlationId, profileDto.UserId, profileDto.ExternalId, processingTime, HttpContext.Connection.RemoteIpAddress);
+                    
+                    return Ok(profileDto);
             }
             catch (Exception ex)
             {

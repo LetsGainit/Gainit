@@ -194,7 +194,7 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v10.1 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v10.2 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
@@ -203,6 +203,7 @@ try
         {
         o.Authority = baseAuthority;
         o.Audience = b2c["Audience"];
+        o.IncludeErrorDetails = true;
             o.TokenValidationParameters = new TokenValidationParameters
             {
             NameClaimType = "preferred_username",
@@ -226,6 +227,16 @@ try
             OnTokenValidated = context =>
             {
                 Log.Information("JWT Token validated successfully for user: {User}", context.Principal?.Identity?.Name);
+                return Task.CompletedTask;
+            },
+            OnChallenge = ctx =>
+            {
+                Log.Warning("JWT Challenge (401): {Error} {Description}", ctx.Error, ctx.ErrorDescription);
+                return Task.CompletedTask;
+            },
+            OnForbidden = ctx =>
+            {
+                Log.Warning("JWT Forbidden (403): user lacks required scopes/roles");
                 return Task.CompletedTask;
             }
         };
@@ -385,6 +396,7 @@ try
     if (!app.Environment.IsDevelopment())
     {
         app.UseAuthentication(); //authenticates the request
+        app.UseAuthorization(); //authorizes the request
         Log.Information("Production environment: authentication and authorization middleware enabled");
     }
     else
