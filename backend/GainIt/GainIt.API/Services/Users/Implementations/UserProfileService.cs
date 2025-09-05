@@ -1,6 +1,7 @@
 ﻿using GainIt.API.Data;
 using GainIt.API.DTOs.Requests.Users;
 using GainIt.API.DTOs.ViewModels.Users;
+using GainIt.API.Models.Enums.Users;
 using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
 using GainIt.API.Models.Users.Expertise;
@@ -152,6 +153,13 @@ namespace GainIt.API.Services.Users.Implementations
                 }
             }
 
+            // Determine user type if profile is completed
+            eUserType? userType = null;
+            if (!isNewUser)
+            {
+                userType = await GetUserTypeAsync(user.UserId);
+            }
+
             // Return profile DTO
             var profileDto = new UserProfileDto
             {
@@ -161,7 +169,8 @@ namespace GainIt.API.Services.Users.Implementations
                 FullName = user.FullName,
                 Country = user.Country,
                 GitHubUsername = user.GitHubUsername,
-                IsNewUser = isNewUser
+                IsNewUser = isNewUser,
+                UserType = userType
             };
 
             var totalTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
@@ -212,6 +221,52 @@ namespace GainIt.API.Services.Users.Implementations
                 r_logger.LogError(ex, "Error checking if user has completed profile: UserId={UserId}", userId);
                 // Return false to be safe - assume profile is incomplete if we can't determine
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines the user type by checking which derived table the user exists in
+        /// </summary>
+        /// <param name="userId">The user ID to check</param>
+        /// <returns>The user type (Gainer, Mentor, or NonprofitOrganization), or null if not found in any derived table</returns>
+        public async Task<eUserType?> GetUserTypeAsync(Guid userId)
+        {
+            r_logger.LogDebug("Determining user type: UserId={UserId}", userId);
+
+            try
+            {
+                // Check if user exists in Gainers table
+                var existsInGainers = await r_DbContext.Gainers.AnyAsync(g => g.UserId == userId);
+                if (existsInGainers)
+                {
+                    r_logger.LogDebug("User type determined as Gainer: UserId={UserId}", userId);
+                    return eUserType.Gainer;
+                }
+
+                // Check if user exists in Mentors table
+                var existsInMentors = await r_DbContext.Mentors.AnyAsync(m => m.UserId == userId);
+                if (existsInMentors)
+                {
+                    r_logger.LogDebug("User type determined as Mentor: UserId={UserId}", userId);
+                    return eUserType.Mentor;
+                }
+
+                // Check if user exists in Nonprofits table
+                var existsInNonprofits = await r_DbContext.Nonprofits.AnyAsync(n => n.UserId == userId);
+                if (existsInNonprofits)
+                {
+                    r_logger.LogDebug("User type determined as NonprofitOrganization: UserId={UserId}", userId);
+                    return eUserType.NonprofitOrganization;
+                }
+
+                r_logger.LogDebug("User not found in any derived tables - no user type: UserId={UserId}", userId);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error determining user type: UserId={UserId}", userId);
+                // Return null to be safe - assume no user type if we can't determine
+                return null;
             }
         }
 

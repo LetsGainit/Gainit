@@ -1,6 +1,7 @@
 ﻿using GainIt.API.DTOs.Requests.Users;
 using GainIt.API.DTOs.ViewModels.Users;
 using GainIt.API.DTOs.ViewModels.Projects;
+using GainIt.API.Models.Enums.Users;
 using GainIt.API.Models.Users.Gainers;
 using GainIt.API.Models.Users.Mentors;
 using GainIt.API.Models.Users.Nonprofits;
@@ -203,6 +204,13 @@ namespace GainIt.API.Controllers.Users
                     // Check if user has completed their profile
                     var hasCompletedProfile = await r_userProfileService.CheckIfUserHasCompletedProfileAsync(user.UserId);
 
+                    // Determine user type if profile is completed
+                    eUserType? userType = null;
+                    if (hasCompletedProfile)
+                    {
+                        userType = await r_userProfileService.GetUserTypeAsync(user.UserId);
+                    }
+
                     // Create UserProfileDto from the user entity
                     var profileDto = new UserProfileDto
                     {
@@ -212,7 +220,8 @@ namespace GainIt.API.Controllers.Users
                         FullName = user.FullName,
                         Country = user.Country,
                         GitHubUsername = user.GitHubUsername,
-                        IsNewUser = !hasCompletedProfile
+                        IsNewUser = !hasCompletedProfile,
+                        UserType = userType
                     };
 
                     var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;

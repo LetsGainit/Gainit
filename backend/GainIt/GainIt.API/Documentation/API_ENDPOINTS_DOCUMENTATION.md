@@ -57,7 +57,8 @@ This document provides a comprehensive overview of all API endpoints supported b
   "fullName": "string",
   "country": "string?",
   "gitHubUsername": "string?",
-  "isNewUser": "boolean"
+  "isNewUser": "boolean",
+  "userType": "Gainer|Mentor|NonprofitOrganization|null"
 }
 ```
 

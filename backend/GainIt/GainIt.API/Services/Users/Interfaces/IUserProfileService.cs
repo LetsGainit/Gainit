@@ -1,6 +1,7 @@
 ﻿using GainIt.API.DTOs.Requests.Users;
 using GainIt.API.DTOs.ViewModels.Users;
 using GainIt.API.DTOs.ViewModels.Users.Stats;
+using GainIt.API.Models.Enums.Users;
 using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
 using GainIt.API.Models.Users.Expertise;
@@ -27,6 +28,9 @@ namespace GainIt.API.Services.Users.Interfaces
         Task<Mentor> CreateOrUpdateMentorProfileAsync(Guid userId, MentorProfileUpdateDTO updateDto);
         Task<NonprofitOrganization> CreateOrUpdateNonprofitProfileAsync(Guid userId, NonprofitProfileUpdateDTO updateDto);
         Task<UserProfileDto> GetOrCreateFromExternalAsync(ExternalUserDto dto);
+
+        // User type determination
+        Task<eUserType?> GetUserTypeAsync(Guid userId);
 
         // Get expertise with type-specific details
         Task<IEnumerable<TechExpertise>> GetGainerExpertiseAsync(Guid userId);

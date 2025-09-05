@@ -23,9 +23,15 @@ namespace GainIt.API.DTOs.Requests.Users
         /// </summary>
         public bool IsNewUser { get; set; }
 
+        /// <summary>
+        /// The type of user profile (Gainer, Mentor, or NonprofitOrganization).
+        /// Null if user hasn't completed their profile yet.
+        /// </summary>
+        public eUserType? UserType { get; set; }
+
         public override string ToString()
         {
-            return $"UserProfileDto{{UserId={UserId}, ExternalId='{ExternalId}', EmailAddress='{EmailAddress}', FullName='{FullName}', Country='{Country}', GitHubUsername='{GitHubUsername}', IsNewUser={IsNewUser}}}";
+            return $"UserProfileDto{{UserId={UserId}, ExternalId='{ExternalId}', EmailAddress='{EmailAddress}', FullName='{FullName}', Country='{Country}', GitHubUsername='{GitHubUsername}', IsNewUser={IsNewUser}, UserType={UserType}}}";
         }
     }
 }
