@@ -119,20 +119,40 @@ namespace GainIt.API.Services.Projects.Implementations
                 joinRequest.JoinRequestId, i_ProjectId, i_RequesterUserId, i_RequestedRole);
 
             // 4) Realtime notification -> to the single admin (use external ID for SignalR)
-            await r_Hub.Clients.User(adminUser.ExternalId)
-                .SendAsync(RealtimeEvents.Projects.JoinRequested, new
+            r_logger.LogInformation("Admin found for join request notification: AdminUserId={AdminUserId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
+                adminUser.UserId, adminUser.ExternalId, adminUser.EmailAddress, adminUser.FullName);
+            
+            if (!string.IsNullOrEmpty(adminUser.ExternalId))
+            {
+                try
                 {
-                    joinRequest.JoinRequestId,
-                    joinRequest.ProjectId,
-                    joinRequest.RequesterUserId,
-                    joinRequest.RequestedRole,
-                    Status = joinRequest.Status.ToString(),
-                    joinRequest.CreatedAtUtc,
-                    joinRequest.Message
-                });
+                    await r_Hub.Clients.User(adminUser.ExternalId)
+                        .SendAsync(RealtimeEvents.Projects.JoinRequested, new
+                        {
+                            joinRequest.JoinRequestId,
+                            joinRequest.ProjectId,
+                            joinRequest.RequesterUserId,
+                            joinRequest.RequestedRole,
+                            Status = joinRequest.Status.ToString(),
+                            joinRequest.CreatedAtUtc,
+                            joinRequest.Message
+                        });
 
-            r_logger.LogInformation("Realtime notification sent to admin: AdminUserId={AdminUserId}, JoinRequestId={JoinRequestId}", 
-                adminUser.UserId, joinRequest.JoinRequestId);
+                    r_logger.LogInformation("Realtime notification sent to admin: AdminUserId={AdminUserId}, ExternalId={ExternalId}, JoinRequestId={JoinRequestId}", 
+                        adminUser.UserId, adminUser.ExternalId, joinRequest.JoinRequestId);
+                }
+                catch (Exception signalrEx)
+                {
+                    r_logger.LogWarning(signalrEx, "Failed to send SignalR join request notification: AdminUserId={AdminUserId}, ExternalId={ExternalId}, JoinRequestId={JoinRequestId}", 
+                        adminUser.UserId, adminUser.ExternalId, joinRequest.JoinRequestId);
+                    // Don't rethrow - continue with the operation even if SignalR fails
+                }
+            }
+            else
+            {
+                r_logger.LogWarning("Admin has no ExternalId for SignalR notification: AdminUserId={AdminUserId}, Email={Email}, FullName={FullName}, JoinRequestId={JoinRequestId}", 
+                    adminUser.UserId, adminUser.EmailAddress, adminUser.FullName, joinRequest.JoinRequestId);
+            }
 
             // 5) Email the admin (already loaded from the first query)
             await r_Email.SendAsync(
