@@ -290,11 +290,28 @@ namespace GainIt.API.Services.Projects.Implementations
             if (i_IsApproved)
             {
                 // Send SignalR notification using external ID
-                await r_Hub.Clients.User(requester.ExternalId)
-                    .SendAsync(RealtimeEvents.Projects.JoinApproved, new { joinRequest.JoinRequestId, joinRequest.ProjectId, Status = joinRequest.Status.ToString() });
+                if (!string.IsNullOrEmpty(requester.ExternalId))
+                {
+                    try
+                    {
+                        await r_Hub.Clients.User(requester.ExternalId)
+                            .SendAsync(RealtimeEvents.Projects.JoinApproved, new { joinRequest.JoinRequestId, joinRequest.ProjectId, Status = joinRequest.Status.ToString() });
 
-                r_logger.LogInformation("Realtime approval notification sent: RequesterUserId={RequesterUserId}, JoinRequestId={JoinRequestId}", 
-                    joinRequest.RequesterUserId, joinRequest.JoinRequestId);
+                        r_logger.LogInformation("Realtime approval notification sent: RequesterUserId={RequesterUserId}, ExternalId={ExternalId}, JoinRequestId={JoinRequestId}", 
+                            joinRequest.RequesterUserId, requester.ExternalId, joinRequest.JoinRequestId);
+                    }
+                    catch (Exception signalrEx)
+                    {
+                        r_logger.LogWarning(signalrEx, "Failed to send SignalR approval notification: RequesterUserId={RequesterUserId}, ExternalId={ExternalId}, JoinRequestId={JoinRequestId}", 
+                            joinRequest.RequesterUserId, requester.ExternalId, joinRequest.JoinRequestId);
+                        // Don't rethrow - continue with the operation even if SignalR fails
+                    }
+                }
+                else
+                {
+                    r_logger.LogWarning("Requester has no ExternalId for SignalR notification: RequesterUserId={RequesterUserId}, Email={Email}, JoinRequestId={JoinRequestId}", 
+                        joinRequest.RequesterUserId, requester.EmailAddress, joinRequest.JoinRequestId);
+                }
 
                 await r_Email.SendAsync(
                     requester.EmailAddress,
@@ -308,11 +325,29 @@ namespace GainIt.API.Services.Projects.Implementations
             }
             else
             {
-                await r_Hub.Clients.User(requester.ExternalId)
-                    .SendAsync(RealtimeEvents.Projects.JoinRejected, new { joinRequest.JoinRequestId, joinRequest.ProjectId, Status = joinRequest.Status.ToString(), joinRequest.DecisionReason });
+                // Send SignalR notification using external ID
+                if (!string.IsNullOrEmpty(requester.ExternalId))
+                {
+                    try
+                    {
+                        await r_Hub.Clients.User(requester.ExternalId)
+                            .SendAsync(RealtimeEvents.Projects.JoinRejected, new { joinRequest.JoinRequestId, joinRequest.ProjectId, Status = joinRequest.Status.ToString(), joinRequest.DecisionReason });
 
-                r_logger.LogInformation("Realtime rejection notification sent: RequesterUserId={RequesterUserId}, JoinRequestId={JoinRequestId}", 
-                    joinRequest.RequesterUserId, joinRequest.JoinRequestId);
+                        r_logger.LogInformation("Realtime rejection notification sent: RequesterUserId={RequesterUserId}, ExternalId={ExternalId}, JoinRequestId={JoinRequestId}", 
+                            joinRequest.RequesterUserId, requester.ExternalId, joinRequest.JoinRequestId);
+                    }
+                    catch (Exception signalrEx)
+                    {
+                        r_logger.LogWarning(signalrEx, "Failed to send SignalR rejection notification: RequesterUserId={RequesterUserId}, ExternalId={ExternalId}, JoinRequestId={JoinRequestId}", 
+                            joinRequest.RequesterUserId, requester.ExternalId, joinRequest.JoinRequestId);
+                        // Don't rethrow - continue with the operation even if SignalR fails
+                    }
+                }
+                else
+                {
+                    r_logger.LogWarning("Requester has no ExternalId for SignalR notification: RequesterUserId={RequesterUserId}, Email={Email}, JoinRequestId={JoinRequestId}", 
+                        joinRequest.RequesterUserId, requester.EmailAddress, joinRequest.JoinRequestId);
+                }
 
                 var reasonText = string.IsNullOrWhiteSpace(joinRequest.DecisionReason) ? "" : $"\nReason: {joinRequest.DecisionReason}";
                 var reasonHtml = string.IsNullOrWhiteSpace(joinRequest.DecisionReason) ? "" : $"<br/>Reason: {joinRequest.DecisionReason}";
