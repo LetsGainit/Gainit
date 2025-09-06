@@ -1,4 +1,5 @@
-﻿using GainIt.API.DTOs.Requests.Projects;
+﻿using GainIt.API.Data;
+using GainIt.API.DTOs.Requests.Projects;
 using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
@@ -6,6 +7,7 @@ using GainIt.API.Services.Projects.Implementations;
 using GainIt.API.Services.Projects.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace GainIt.API.Controllers.Projects
@@ -17,21 +19,45 @@ namespace GainIt.API.Controllers.Projects
     {
         private readonly ILogger<JoinRequestsController> r_logger;
         private readonly IJoinRequestService r_JoinRequestService;
-        public JoinRequestsController(ILogger<JoinRequestsController> i_Logger, IJoinRequestService i_JoinRequest)
+        private readonly GainItDbContext r_DbContext;
+        
+        public JoinRequestsController(ILogger<JoinRequestsController> i_Logger, IJoinRequestService i_JoinRequest, GainItDbContext i_DbContext)
         {
             r_logger = i_Logger;
             r_JoinRequestService = i_JoinRequest;
+            r_DbContext = i_DbContext;
         }
 
-        private Guid GetUserId()
+        private async Task<Guid> GetUserIdAsync()
         {
-            var externalId = User.FindFirst("oid")?.Value
-                  ?? User.FindFirst("sub")?.Value;
+            var externalId = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                          ?? tryGetClaim(User, "sub")
+                          ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                          ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                          ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
 
             if (string.IsNullOrEmpty(externalId))
                 throw new UnauthorizedAccessException("User ID not found in token.");
 
-            return Guid.Parse(externalId);
+            // Find the user in the database by external ID (same as "me" endpoint)
+            var user = await r_DbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.ExternalId == externalId);
+
+            if (user == null)
+                throw new UnauthorizedAccessException("User not found in database.");
+
+            return user.UserId;
+        }
+
+        private static string? tryGetClaim(ClaimsPrincipal user, params string[] types)
+        {
+            foreach (var t in types)
+            {
+                var v = user.FindFirstValue(t);
+                if (!string.IsNullOrWhiteSpace(v)) return v;
+            }
+            return null;
         }
 
         /// <summary>
@@ -51,7 +77,7 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                var userId = GetUserId();
+                var userId = await GetUserIdAsync();
                 r_logger.LogInformation("User authenticated: UserId={UserId}, ProjectId={ProjectId}", userId, projectId);
 
                 var req = await r_JoinRequestService.CreateJoinRequestAsync(projectId, userId, dto.RequestedRole, dto.Message);
@@ -102,7 +128,7 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                var userId = GetUserId();
+                var userId = await GetUserIdAsync();
                 if (userId == Guid.Empty)
                 {
                     r_logger.LogWarning("User not authenticated: ProjectId={ProjectId}, JoinRequestId={JoinRequestId}", projectId, joinRequestId);
@@ -158,7 +184,7 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                var userId = GetUserId();
+                var userId = await GetUserIdAsync();
                 if (userId == Guid.Empty)
                 {
                     r_logger.LogWarning("User not authenticated: ProjectId={ProjectId}", projectId);
@@ -212,7 +238,7 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                var userId = GetUserId();
+                var userId = await GetUserIdAsync();
                 if (userId == Guid.Empty)
                 {
                     r_logger.LogWarning("User not authenticated: ProjectId={ProjectId}, JoinRequestId={JoinRequestId}", projectId, joinRequestId);
@@ -282,7 +308,7 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                var userId = GetUserId();
+                var userId = await GetUserIdAsync();
                 if (userId == Guid.Empty)
                 {
                     r_logger.LogWarning("User not authenticated: ProjectId={ProjectId}, JoinRequestId={JoinRequestId}", projectId, joinRequestId);
