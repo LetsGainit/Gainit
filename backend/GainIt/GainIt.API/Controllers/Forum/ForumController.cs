@@ -31,18 +31,18 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Creates a new forum post in a project.
         /// </summary>
-        /// <param name="i_CreateDto">The post creation data.</param>
+        /// <param name="createDto">The post creation data.</param>
         /// <returns>The created post.</returns>
         [HttpPost("posts")]
-        public async Task<ActionResult<ForumPostViewModel>> CreatePost([FromBody] CreateForumPostDto i_CreateDto)
+        public async Task<ActionResult<ForumPostViewModel>> CreatePost([FromBody] CreateForumPostDto createDto)
         {
-            r_Logger.LogInformation("Creating forum post: ProjectId={ProjectId}", i_CreateDto.ProjectId);
+            r_Logger.LogInformation("Creating forum post: ProjectId={ProjectId}", createDto.ProjectId);
 
             try
             {
                 var currentUserId = await GetCurrentUserIdAsync();
 
-                var post = await r_ForumService.CreatePostAsync(i_CreateDto, currentUserId);
+                var post = await r_ForumService.CreatePostAsync(createDto, currentUserId);
                 r_Logger.LogInformation("Successfully created forum post: PostId={PostId}", post.PostId);
                 return CreatedAtAction(nameof(GetPost), new { postId = post.PostId }, post);
             }
@@ -61,29 +61,29 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Retrieves a forum post by its ID.
         /// </summary>
-        /// <param name="i_PostId">The ID of the post to retrieve.</param>
+        /// <param name="postId">The ID of the post to retrieve.</param>
         /// <returns>The forum post with replies.</returns>
         [HttpGet("posts/{postId}")]
-        public async Task<ActionResult<ForumPostViewModel>> GetPost(Guid i_PostId)
+        public async Task<ActionResult<ForumPostViewModel>> GetPost(Guid postId)
         {
-            r_Logger.LogInformation("Getting forum post: PostId={PostId}", i_PostId);
+            r_Logger.LogInformation("Getting forum post: PostId={PostId}", postId);
 
             try
             {
                 var currentUserId = await GetCurrentUserIdAsync();
 
-                var post = await r_ForumService.GetPostByIdAsync(i_PostId, currentUserId);
-                r_Logger.LogInformation("Successfully retrieved forum post: PostId={PostId}", i_PostId);
+                var post = await r_ForumService.GetPostByIdAsync(postId, currentUserId);
+                r_Logger.LogInformation("Successfully retrieved forum post: PostId={PostId}", postId);
                 return Ok(post);
             }
             catch (KeyNotFoundException ex)
             {
-                r_Logger.LogWarning("Forum post not found: PostId={PostId}", i_PostId);
+                r_Logger.LogWarning("Forum post not found: PostId={PostId}", postId);
                 return NotFound(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
-                r_Logger.LogError(ex, "Error getting forum post: PostId={PostId}", i_PostId);
+                r_Logger.LogError(ex, "Error getting forum post: PostId={PostId}", postId);
                 throw;
             }
         }
@@ -91,26 +91,26 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Retrieves all forum posts for a project with pagination.
         /// </summary>
-        /// <param name="i_ProjectId">The ID of the project.</param>
+        /// <param name="projectId">The ID of the project.</param>
         /// <param name="page">The page number (default: 1).</param>
         /// <param name="pageSize">The number of posts per page (default: 10).</param>
         /// <returns>A list of forum posts.</returns>
         [HttpGet("projects/{projectId}/posts")]
-        public async Task<ActionResult<List<ForumPostViewModel>>> GetProjectPosts(Guid i_ProjectId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult<List<ForumPostViewModel>>> GetProjectPosts(Guid projectId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            r_Logger.LogInformation("Getting project forum posts: ProjectId={ProjectId}, Page={Page}, PageSize={PageSize}", i_ProjectId, page, pageSize);
+            r_Logger.LogInformation("Getting project forum posts: ProjectId={ProjectId}, Page={Page}, PageSize={PageSize}", projectId, page, pageSize);
 
             try
             {
                 var currentUserId = await GetCurrentUserIdAsync();
 
-                var posts = await r_ForumService.GetProjectPostsAsync(i_ProjectId, currentUserId, page, pageSize);
-                r_Logger.LogInformation("Successfully retrieved project forum posts: ProjectId={ProjectId}, Count={Count}", i_ProjectId, posts.Count);
+                var posts = await r_ForumService.GetProjectPostsAsync(projectId, currentUserId, page, pageSize);
+                r_Logger.LogInformation("Successfully retrieved project forum posts: ProjectId={ProjectId}, Count={Count}", projectId, posts.Count);
                 return Ok(posts);
             }
             catch (Exception ex)
             {
-                r_Logger.LogError(ex, "Error getting project forum posts: ProjectId={ProjectId}", i_ProjectId);
+                r_Logger.LogError(ex, "Error getting project forum posts: ProjectId={ProjectId}", projectId);
                 throw;
             }
         }
@@ -118,25 +118,25 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Updates a forum post.
         /// </summary>
-        /// <param name="i_PostId">The ID of the post to update.</param>
-        /// <param name="i_UpdateDto">The update data.</param>
+        /// <param name="postId">The ID of the post to update.</param>
+        /// <param name="updateDto">The update data.</param>
         /// <returns>The updated post.</returns>
         [HttpPut("posts/{postId}")]
-        public async Task<ActionResult<ForumPostViewModel>> UpdatePost(Guid i_PostId, [FromBody] UpdateForumPostDto i_UpdateDto)
+        public async Task<ActionResult<ForumPostViewModel>> UpdatePost(Guid postId, [FromBody] UpdateForumPostDto updateDto)
         {
-            r_Logger.LogInformation("Updating forum post: PostId={PostId}", i_PostId);
+            r_Logger.LogInformation("Updating forum post: PostId={PostId}", postId);
 
             try
             {
                 var currentUserId = await GetCurrentUserIdAsync();
 
-                var post = await r_ForumService.UpdatePostAsync(i_PostId, i_UpdateDto, currentUserId);
-                r_Logger.LogInformation("Successfully updated forum post: PostId={PostId}", i_PostId);
+                var post = await r_ForumService.UpdatePostAsync(postId, updateDto, currentUserId);
+                r_Logger.LogInformation("Successfully updated forum post: PostId={PostId}", postId);
                 return Ok(post);
             }
             catch (KeyNotFoundException ex)
             {
-                r_Logger.LogWarning("Forum post not found: PostId={PostId}", i_PostId);
+                r_Logger.LogWarning("Forum post not found: PostId={PostId}", postId);
                 return NotFound(new { Message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
@@ -146,7 +146,7 @@ namespace GainIt.API.Controllers.Forum
             }
             catch (Exception ex)
             {
-                r_Logger.LogError(ex, "Error updating forum post: PostId={PostId}", i_PostId);
+                r_Logger.LogError(ex, "Error updating forum post: PostId={PostId}", postId);
                 throw;
             }
         }
@@ -154,24 +154,24 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Deletes a forum post.
         /// </summary>
-        /// <param name="i_PostId">The ID of the post to delete.</param>
+        /// <param name="postId">The ID of the post to delete.</param>
         /// <returns>No content on success.</returns>
         [HttpDelete("posts/{postId}")]
-        public async Task<ActionResult> DeletePost(Guid i_PostId)
+        public async Task<ActionResult> DeletePost(Guid postId)
         {
-            r_Logger.LogInformation("Deleting forum post: PostId={PostId}", i_PostId);
+            r_Logger.LogInformation("Deleting forum post: PostId={PostId}", postId);
 
             try
             {
                 var currentUserId = await GetCurrentUserIdAsync();
 
-                await r_ForumService.DeletePostAsync(i_PostId, currentUserId);
-                r_Logger.LogInformation("Successfully deleted forum post: PostId={PostId}", i_PostId);
+                await r_ForumService.DeletePostAsync(postId, currentUserId);
+                r_Logger.LogInformation("Successfully deleted forum post: PostId={PostId}", postId);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)
             {
-                r_Logger.LogWarning("Forum post not found: PostId={PostId}", i_PostId);
+                r_Logger.LogWarning("Forum post not found: PostId={PostId}", postId);
                 return NotFound(new { Message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
@@ -181,7 +181,7 @@ namespace GainIt.API.Controllers.Forum
             }
             catch (Exception ex)
             {
-                r_Logger.LogError(ex, "Error deleting forum post: PostId={PostId}", i_PostId);
+                r_Logger.LogError(ex, "Error deleting forum post: PostId={PostId}", postId);
                 throw;
             }
         }
@@ -193,24 +193,24 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Creates a new reply to a forum post.
         /// </summary>
-        /// <param name="i_CreateDto">The reply creation data.</param>
+        /// <param name="createDto">The reply creation data.</param>
         /// <returns>The created reply.</returns>
         [HttpPost("replies")]
-        public async Task<ActionResult<ForumReplyViewModel>> CreateReply([FromBody] CreateForumReplyDto i_CreateDto)
+        public async Task<ActionResult<ForumReplyViewModel>> CreateReply([FromBody] CreateForumReplyDto createDto)
         {
-            r_Logger.LogInformation("Creating forum reply: PostId={PostId}", i_CreateDto.PostId);
+            r_Logger.LogInformation("Creating forum reply: PostId={PostId}", createDto.PostId);
 
             try
             {
                 var currentUserId = await GetCurrentUserIdAsync();
 
-                var reply = await r_ForumService.CreateReplyAsync(i_CreateDto, currentUserId);
+                var reply = await r_ForumService.CreateReplyAsync(createDto, currentUserId);
                 r_Logger.LogInformation("Successfully created forum reply: ReplyId={ReplyId}", reply.ReplyId);
-                return CreatedAtAction(nameof(GetPost), new { postId = i_CreateDto.PostId }, reply);
+                return CreatedAtAction(nameof(GetPost), new { postId = createDto.PostId }, reply);
             }
             catch (KeyNotFoundException ex)
             {
-                r_Logger.LogWarning("Forum post not found: PostId={PostId}", i_CreateDto.PostId);
+                r_Logger.LogWarning("Forum post not found: PostId={PostId}", createDto.PostId);
                 return NotFound(new { Message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
@@ -228,25 +228,25 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Updates a forum reply.
         /// </summary>
-        /// <param name="i_ReplyId">The ID of the reply to update.</param>
-        /// <param name="i_UpdateDto">The update data.</param>
+        /// <param name="replyId">The ID of the reply to update.</param>
+        /// <param name="updateDto">The update data.</param>
         /// <returns>The updated reply.</returns>
         [HttpPut("replies/{replyId}")]
-        public async Task<ActionResult<ForumReplyViewModel>> UpdateReply(Guid i_ReplyId, [FromBody] UpdateForumReplyDto i_UpdateDto)
+        public async Task<ActionResult<ForumReplyViewModel>> UpdateReply(Guid replyId, [FromBody] UpdateForumReplyDto updateDto)
         {
-            r_Logger.LogInformation("Updating forum reply: ReplyId={ReplyId}", i_ReplyId);
+            r_Logger.LogInformation("Updating forum reply: ReplyId={ReplyId}", replyId);
 
             try
             {
                 var currentUserId = await GetCurrentUserIdAsync();
 
-                var reply = await r_ForumService.UpdateReplyAsync(i_ReplyId, i_UpdateDto, currentUserId);
-                r_Logger.LogInformation("Successfully updated forum reply: ReplyId={ReplyId}", i_ReplyId);
+                var reply = await r_ForumService.UpdateReplyAsync(replyId, updateDto, currentUserId);
+                r_Logger.LogInformation("Successfully updated forum reply: ReplyId={ReplyId}", replyId);
                 return Ok(reply);
             }
             catch (KeyNotFoundException ex)
             {
-                r_Logger.LogWarning("Forum reply not found: ReplyId={ReplyId}", i_ReplyId);
+                r_Logger.LogWarning("Forum reply not found: ReplyId={ReplyId}", replyId);
                 return NotFound(new { Message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
@@ -256,7 +256,7 @@ namespace GainIt.API.Controllers.Forum
             }
             catch (Exception ex)
             {
-                r_Logger.LogError(ex, "Error updating forum reply: ReplyId={ReplyId}", i_ReplyId);
+                r_Logger.LogError(ex, "Error updating forum reply: ReplyId={ReplyId}", replyId);
                 throw;
             }
         }
@@ -264,24 +264,24 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Deletes a forum reply.
         /// </summary>
-        /// <param name="i_ReplyId">The ID of the reply to delete.</param>
+        /// <param name="replyId">The ID of the reply to delete.</param>
         /// <returns>No content on success.</returns>
         [HttpDelete("replies/{replyId}")]
-        public async Task<ActionResult> DeleteReply(Guid i_ReplyId)
+        public async Task<ActionResult> DeleteReply(Guid replyId)
         {
-            r_Logger.LogInformation("Deleting forum reply: ReplyId={ReplyId}", i_ReplyId);
+            r_Logger.LogInformation("Deleting forum reply: ReplyId={ReplyId}", replyId);
 
             try
             {
                 var currentUserId = await GetCurrentUserIdAsync();
 
-                await r_ForumService.DeleteReplyAsync(i_ReplyId, currentUserId);
-                r_Logger.LogInformation("Successfully deleted forum reply: ReplyId={ReplyId}", i_ReplyId);
+                await r_ForumService.DeleteReplyAsync(replyId, currentUserId);
+                r_Logger.LogInformation("Successfully deleted forum reply: ReplyId={ReplyId}", replyId);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)
             {
-                r_Logger.LogWarning("Forum reply not found: ReplyId={ReplyId}", i_ReplyId);
+                r_Logger.LogWarning("Forum reply not found: ReplyId={ReplyId}", replyId);
                 return NotFound(new { Message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
@@ -291,7 +291,7 @@ namespace GainIt.API.Controllers.Forum
             }
             catch (Exception ex)
             {
-                r_Logger.LogError(ex, "Error deleting forum reply: ReplyId={ReplyId}", i_ReplyId);
+                r_Logger.LogError(ex, "Error deleting forum reply: ReplyId={ReplyId}", replyId);
                 throw;
             }
         }
@@ -303,24 +303,24 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Toggles the like status of a forum post.
         /// </summary>
-        /// <param name="i_PostId">The ID of the post to like/unlike.</param>
+        /// <param name="postId">The ID of the post to like/unlike.</param>
         /// <returns>No content on success.</returns>
         [HttpPost("posts/{postId}/like")]
-        public async Task<ActionResult> TogglePostLike(Guid i_PostId)
+        public async Task<ActionResult> TogglePostLike(Guid postId)
         {
-            r_Logger.LogInformation("Toggling post like: PostId={PostId}", i_PostId);
+            r_Logger.LogInformation("Toggling post like: PostId={PostId}", postId);
 
             try
             {
                 var currentUserId = await GetCurrentUserIdAsync();
 
-                await r_ForumService.TogglePostLikeAsync(i_PostId, currentUserId);
-                r_Logger.LogInformation("Successfully toggled post like: PostId={PostId}", i_PostId);
+                await r_ForumService.TogglePostLikeAsync(postId, currentUserId);
+                r_Logger.LogInformation("Successfully toggled post like: PostId={PostId}", postId);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                r_Logger.LogError(ex, "Error toggling post like: PostId={PostId}", i_PostId);
+                r_Logger.LogError(ex, "Error toggling post like: PostId={PostId}", postId);
                 throw;
             }
         }
@@ -328,24 +328,24 @@ namespace GainIt.API.Controllers.Forum
         /// <summary>
         /// Toggles the like status of a forum reply.
         /// </summary>
-        /// <param name="i_ReplyId">The ID of the reply to like/unlike.</param>
+        /// <param name="replyId">The ID of the reply to like/unlike.</param>
         /// <returns>No content on success.</returns>
         [HttpPost("replies/{replyId}/like")]
-        public async Task<ActionResult> ToggleReplyLike(Guid i_ReplyId)
+        public async Task<ActionResult> ToggleReplyLike(Guid replyId)
         {
-            r_Logger.LogInformation("Toggling reply like: ReplyId={ReplyId}", i_ReplyId);
+            r_Logger.LogInformation("Toggling reply like: ReplyId={ReplyId}", replyId);
 
             try
             {
                 var currentUserId = await GetCurrentUserIdAsync();
 
-                await r_ForumService.ToggleReplyLikeAsync(i_ReplyId, currentUserId);
-                r_Logger.LogInformation("Successfully toggled reply like: ReplyId={ReplyId}", i_ReplyId);
+                await r_ForumService.ToggleReplyLikeAsync(replyId, currentUserId);
+                r_Logger.LogInformation("Successfully toggled reply like: ReplyId={ReplyId}", replyId);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                r_Logger.LogError(ex, "Error toggling reply like: ReplyId={ReplyId}", i_ReplyId);
+                r_Logger.LogError(ex, "Error toggling reply like: ReplyId={ReplyId}", replyId);
                 throw;
             }
         }
