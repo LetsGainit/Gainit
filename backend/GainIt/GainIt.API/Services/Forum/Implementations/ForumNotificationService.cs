@@ -102,8 +102,8 @@ namespace GainIt.API.Services.Forum.Implementations
                     post.Author.EmailAddress,
                     $"New reply to your post in {post.Project.ProjectName}",
                     $"Hi {post.Author.FullName},\n\n{replyAuthor.FullName} replied to your post in project '{post.Project.ProjectName}'.\n\nReply: {i_Reply.Content}\n\nYou can view the full discussion in your project forum.",
-                    $"Hi {post.Author.FullName},<br/><br/><b>{replyAuthor.FullName}</b> replied to your post in project <b>'{post.Project.ProjectName}'</b>.<br/><br/><b>Reply:</b> {i_Reply.Content}<br/><br/>You can view the full discussion in your project forum.",
-                    "GainIt Notifications"
+                    "GainIt Notifications",
+                    null
                 );
 
                 r_Log.LogInformation("Email notification sent for post reply: PostId={PostId}, ReplyId={ReplyId}, PostAuthorEmail={PostAuthorEmail}", 

@@ -161,7 +161,8 @@ namespace GainIt.API.Services.Projects.Implementations
                     adminUser.EmailAddress,
                     "New join request",
                     $"Hi {adminUser.FullName},\n\n{requester.FullName} requested to join the project '{project.ProjectName}'.",
-                    "GainIt Notifications"
+                    "GainIt Notifications",
+                    null
                 );
             }
             catch (Exception emailEx)
@@ -328,7 +329,8 @@ namespace GainIt.API.Services.Projects.Implementations
                         requester.EmailAddress,
                         "Your join request was approved",
                         $"You have been accepted to the project '{project.ProjectName}'.",
-                        "GainIt Notifications");
+                        "GainIt Notifications",
+                        null);
                 }
                 catch (Exception emailEx)
                 {
@@ -375,7 +377,8 @@ namespace GainIt.API.Services.Projects.Implementations
                         requester.EmailAddress,
                         "Your join request was rejected",
                         $"Your request to join '{project.ProjectName}' was rejected.{reasonText}",
-                        "GainIt Notifications");
+                        "GainIt Notifications",
+                        null);
                 }
                 catch (Exception emailEx)
                 {

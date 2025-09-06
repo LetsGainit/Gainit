@@ -127,8 +127,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                         member.User.EmailAddress,
                         $"New task: {task.Title}",
                         $"Hi {member.User.FullName},\n\n{assignmentText} in project '{project.ProjectName}'.\n\nTask: {task.Title}\nType: {task.Type}\nPriority: {task.Priority}\n\nYou can view it in your project dashboard.",
-                        $"Hi {member.User.FullName},<br/><br/>{assignmentText} in project <b>{project.ProjectName}</b>.<br/><br/><b>Task:</b> {task.Title}<br/><b>Type:</b> {task.Type}<br/><b>Priority:</b> {task.Priority}<br/><br/>You can view it in your project dashboard.",
-                        "GainIt Notifications"
+                        "GainIt Notifications",
+                        null
                     );
                 }
 
@@ -223,8 +223,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                         member.User.EmailAddress,
                         $"Task completed: {task.Title}",
                         $"Hi {member.User.FullName},\n\n{assignmentText} in project '{project.ProjectName}'.\n\nTask: {task.Title}\nType: {task.Type}\nPriority: {task.Priority}\n\nGreat work!",
-                        $"Hi {member.User.FullName},<br/><br/>{assignmentText} in project <b>{project.ProjectName}</b>.<br/><br/><b>Task:</b> {task.Title}<br/><b>Type:</b> {task.Type}<br/><b>Priority:</b> {task.Priority}<br/><br/>Great work!",
-                        "GainIt Notifications"
+                        "GainIt Notifications",
+                        null
                     );
                 }
 
@@ -294,8 +294,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                         assignedUser.EmailAddress,
                         $"Task unblocked: {task.Title}",
                         $"Hi {assignedUser.FullName},\n\nYour task '{task.Title}' in project '{project.ProjectName}' has been unblocked and is ready for you to work on.\n\nYou can now continue with this task.",
-                        $"Hi {assignedUser.FullName},<br/><br/>Your task <b>'{task.Title}'</b> in project <b>'{project.ProjectName}'</b> has been unblocked and is ready for you to work on.<br/><br/>You can now continue with this task.",
-                        "GainIt Notifications"
+                        "GainIt Notifications",
+                        null
                     );
                 }
                 else if (!string.IsNullOrEmpty(task.AssignedRole))
@@ -341,8 +341,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                             member.User.EmailAddress,
                             $"Task unblocked: {task.Title}",
                             $"Hi {member.User.FullName},\n\nA task assigned to your role '{task.AssignedRole}' in project '{project.ProjectName}' has been unblocked.\n\nTask: {task.Title}\n\nYou can now work on this task.",
-                            $"Hi {member.User.FullName},<br/><br/>A task assigned to your role <b>'{task.AssignedRole}'</b> in project <b>'{project.ProjectName}'</b> has been unblocked.<br/><br/><b>Task:</b> {task.Title}<br/><br/>You can now work on this task.",
-                            "GainIt Notifications"
+                            "GainIt Notifications",
+                            null
                         );
                     }
                 }
@@ -416,8 +416,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                         member.User.EmailAddress,
                         $"Milestone completed: {milestone.Title}",
                         $"Hi {member.User.FullName},\n\nCongratulations! The milestone '{milestone.Title}' in project '{project.ProjectName}' has been completed!\n\nTasks completed: {i_ProjectMilestoneViewModel.DoneTasksCount}/{i_ProjectMilestoneViewModel.TasksCount}\n\nGreat work team!",
-                        $"Hi {member.User.FullName},<br/><br/>Congratulations! The milestone <b>'{milestone.Title}'</b> in project <b>'{project.ProjectName}'</b> has been completed!<br/><br/><b>Tasks completed:</b> {i_ProjectMilestoneViewModel.DoneTasksCount}/{i_ProjectMilestoneViewModel.TasksCount}<br/><br/>Great work team!",
-                        "GainIt Notifications"
+                        "GainIt Notifications",
+                        null
                     );
                 }
 

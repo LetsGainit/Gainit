@@ -20,7 +20,7 @@ namespace GainIt.API.Services.Email.Implementations
             r_logger = i_logger;
         }
 
-        public async Task SendAsync(string i_To, string i_Subject, string i_PlainText, string? i_Html = null, string? i_DisplayName = null)
+        public async Task SendAsync(string i_To, string i_Subject, string i_PlainText, string?, string? i_DisplayName = null, i_Html = null)
         {
             try
             {
@@ -58,5 +58,5 @@ namespace GainIt.API.Services.Email.Implementations
 //    public MyService(IEmailSender email) { _email = email; }
 
 //    public Task NotifyAsync(string to) =>
-//        _email.SendAsync(to, "title", "text", "<b>HTML</b>", "GainIt Support");
+//        _email.SendAsync(to, "title", "text", "GainIt Support", "<b>HTML</b>");
 //}
