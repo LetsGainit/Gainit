@@ -20,7 +20,7 @@ namespace GainIt.API.Services.Email.Implementations
             r_logger = i_logger;
         }
 
-        public async Task SendAsync(string i_To, string i_Subject, string i_PlainText, string?, string? i_DisplayName = null, i_Html = null)
+        public async Task SendAsync(string i_To, string i_Subject, string i_PlainText, string? i_DisplayName = null, string? i_Html = null)
         {
             try
             {
