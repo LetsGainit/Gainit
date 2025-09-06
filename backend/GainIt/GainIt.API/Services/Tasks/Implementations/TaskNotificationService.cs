@@ -83,19 +83,35 @@ namespace GainIt.API.Services.Tasks.Implementations
                 // Send realtime notifications
                 foreach (var member in membersToNotify)
                 {
-                    await r_Hub.Clients.User(member.User.ExternalId)
-                        .SendAsync(RealtimeEvents.Tasks.TaskCreated, new TaskCreatedNotificationDto
+                    if (!string.IsNullOrEmpty(member.User.ExternalId))
+                    {
+                        try
                         {
-                            TaskId = task.TaskId,
-                            ProjectId = task.ProjectId,
-                            Title = task.Title,
-                            Type = task.Type.ToString(),
-                            Priority = task.Priority.ToString(),
-                            AssignedRole = task.AssignedRole,
-                            AssignedUserId = task.AssignedUserId,
-                            ProjectName = project.ProjectName,
-                            CreatedAtUtc = task.CreatedAtUtc
-                        });
+                            await r_Hub.Clients.User(member.User.ExternalId)
+                                .SendAsync(RealtimeEvents.Tasks.TaskCreated, new TaskCreatedNotificationDto
+                                {
+                                    TaskId = task.TaskId,
+                                    ProjectId = task.ProjectId,
+                                    Title = task.Title,
+                                    Type = task.Type.ToString(),
+                                    Priority = task.Priority.ToString(),
+                                    AssignedRole = task.AssignedRole,
+                                    AssignedUserId = task.AssignedUserId,
+                                    ProjectName = project.ProjectName,
+                                    CreatedAtUtc = task.CreatedAtUtc
+                                });
+                        }
+                        catch (Exception signalrEx)
+                        {
+                            r_Log.LogWarning(signalrEx, "Failed to send SignalR task created notification: UserId={UserId}, ExternalId={ExternalId}, TaskId={TaskId}", 
+                                member.User.UserId, member.User.ExternalId, task.TaskId);
+                        }
+                    }
+                    else
+                    {
+                        r_Log.LogWarning("User has no ExternalId for SignalR notification: UserId={UserId}, Email={Email}, TaskId={TaskId}", 
+                            member.User.UserId, member.User.EmailAddress, task.TaskId);
+                    }
                 }
 
                 // Send email notifications
@@ -149,20 +165,36 @@ namespace GainIt.API.Services.Tasks.Implementations
                 // Notify all project members about task completion
                 foreach (var member in allMembers)
                 {
-                    await r_Hub.Clients.User(member.User.ExternalId)
-                        .SendAsync(RealtimeEvents.Tasks.TaskCompleted, new TaskCompletedNotificationDto
+                    if (!string.IsNullOrEmpty(member.User.ExternalId))
+                    {
+                        try
                         {
-                            TaskId = task.TaskId,
-                            ProjectId = task.ProjectId,
-                            Title = task.Title,
-                            Type = task.Type.ToString(),
-                            AssignedRole = task.AssignedRole,
-                            AssignedUserId = task.AssignedUserId,
-                            ProjectName = project.ProjectName,
-                            OldStatus = i_OldStatus,
-                            NewStatus = i_NewStatus,
-                            CompletedAtUtc = DateTime.UtcNow
-                        });
+                            await r_Hub.Clients.User(member.User.ExternalId)
+                                .SendAsync(RealtimeEvents.Tasks.TaskCompleted, new TaskCompletedNotificationDto
+                                {
+                                    TaskId = task.TaskId,
+                                    ProjectId = task.ProjectId,
+                                    Title = task.Title,
+                                    Type = task.Type.ToString(),
+                                    AssignedRole = task.AssignedRole,
+                                    AssignedUserId = task.AssignedUserId,
+                                    ProjectName = project.ProjectName,
+                                    OldStatus = i_OldStatus,
+                                    NewStatus = i_NewStatus,
+                                    CompletedAtUtc = DateTime.UtcNow
+                                });
+                        }
+                        catch (Exception signalrEx)
+                        {
+                            r_Log.LogWarning(signalrEx, "Failed to send SignalR task completed notification: UserId={UserId}, ExternalId={ExternalId}, TaskId={TaskId}", 
+                                member.User.UserId, member.User.ExternalId, task.TaskId);
+                        }
+                    }
+                    else
+                    {
+                        r_Log.LogWarning("User has no ExternalId for SignalR notification: UserId={UserId}, Email={Email}, TaskId={TaskId}", 
+                            member.User.UserId, member.User.EmailAddress, task.TaskId);
+                    }
                 }
 
                 // Send email to project admins and the assigned user (if different)
@@ -230,15 +262,31 @@ namespace GainIt.API.Services.Tasks.Implementations
                     var assignedUser = await r_Db.Users.FindAsync(task.AssignedUserId.Value);
                     if (assignedUser != null)
                     {
-                        await r_Hub.Clients.User(assignedUser.ExternalId)
-                            .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new TaskUnblockedNotificationDto
+                        if (!string.IsNullOrEmpty(assignedUser.ExternalId))
+                        {
+                            try
                             {
-                                TaskId = task.TaskId,
-                                ProjectId = task.ProjectId,
-                                Title = task.Title,
-                                ProjectName = project.ProjectName,
-                                UnblockedAtUtc = DateTime.UtcNow
-                            });
+                                await r_Hub.Clients.User(assignedUser.ExternalId)
+                                    .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new TaskUnblockedNotificationDto
+                                    {
+                                        TaskId = task.TaskId,
+                                        ProjectId = task.ProjectId,
+                                        Title = task.Title,
+                                        ProjectName = project.ProjectName,
+                                        UnblockedAtUtc = DateTime.UtcNow
+                                    });
+                            }
+                            catch (Exception signalrEx)
+                            {
+                                r_Log.LogWarning(signalrEx, "Failed to send SignalR task unblocked notification: UserId={UserId}, ExternalId={ExternalId}, TaskId={TaskId}", 
+                                    assignedUser.UserId, assignedUser.ExternalId, task.TaskId);
+                            }
+                        }
+                        else
+                        {
+                            r_Log.LogWarning("User has no ExternalId for SignalR notification: UserId={UserId}, Email={Email}, TaskId={TaskId}", 
+                                assignedUser.UserId, assignedUser.EmailAddress, task.TaskId);
+                        }
                     }
 
                     // Send email notification
@@ -262,16 +310,32 @@ namespace GainIt.API.Services.Tasks.Implementations
 
                     foreach (var member in roleMembers)
                     {
-                        await r_Hub.Clients.User(member.User.ExternalId)
-                            .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new TaskUnblockedNotificationDto
+                        if (!string.IsNullOrEmpty(member.User.ExternalId))
+                        {
+                            try
                             {
-                                TaskId = task.TaskId,
-                                ProjectId = task.ProjectId,
-                                Title = task.Title,
-                                AssignedRole = task.AssignedRole,
-                                ProjectName = project.ProjectName,
-                                UnblockedAtUtc = DateTime.UtcNow
-                            });
+                                await r_Hub.Clients.User(member.User.ExternalId)
+                                    .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new TaskUnblockedNotificationDto
+                                    {
+                                        TaskId = task.TaskId,
+                                        ProjectId = task.ProjectId,
+                                        Title = task.Title,
+                                        AssignedRole = task.AssignedRole,
+                                        ProjectName = project.ProjectName,
+                                        UnblockedAtUtc = DateTime.UtcNow
+                                    });
+                            }
+                            catch (Exception signalrEx)
+                            {
+                                r_Log.LogWarning(signalrEx, "Failed to send SignalR task unblocked notification: UserId={UserId}, ExternalId={ExternalId}, TaskId={TaskId}", 
+                                    member.User.UserId, member.User.ExternalId, task.TaskId);
+                            }
+                        }
+                        else
+                        {
+                            r_Log.LogWarning("User has no ExternalId for SignalR notification: UserId={UserId}, Email={Email}, TaskId={TaskId}", 
+                                member.User.UserId, member.User.EmailAddress, task.TaskId);
+                        }
 
                         await r_Email.SendAsync(
                             member.User.EmailAddress,
@@ -316,17 +380,33 @@ namespace GainIt.API.Services.Tasks.Implementations
                 // Notify all project members about milestone completion
                 foreach (var member in allMembers)
                 {
-                    await r_Hub.Clients.User(member.User.ExternalId)
-                        .SendAsync(RealtimeEvents.Tasks.MilestoneCompleted, new MilestoneCompletedNotificationDto
+                    if (!string.IsNullOrEmpty(member.User.ExternalId))
+                    {
+                        try
                         {
-                            MilestoneId = milestone.MilestoneId,
-                            ProjectId = milestone.ProjectId,
-                            Title = milestone.Title,
-                            ProjectName = project.ProjectName,
-                            TasksCount = i_ProjectMilestoneViewModel.TasksCount,
-                            DoneTasksCount = i_ProjectMilestoneViewModel.DoneTasksCount,
-                            CompletedAtUtc = DateTime.UtcNow
-                        });
+                            await r_Hub.Clients.User(member.User.ExternalId)
+                                .SendAsync(RealtimeEvents.Tasks.MilestoneCompleted, new MilestoneCompletedNotificationDto
+                                {
+                                    MilestoneId = milestone.MilestoneId,
+                                    ProjectId = milestone.ProjectId,
+                                    Title = milestone.Title,
+                                    ProjectName = project.ProjectName,
+                                    TasksCount = i_ProjectMilestoneViewModel.TasksCount,
+                                    DoneTasksCount = i_ProjectMilestoneViewModel.DoneTasksCount,
+                                    CompletedAtUtc = DateTime.UtcNow
+                                });
+                        }
+                        catch (Exception signalrEx)
+                        {
+                            r_Log.LogWarning(signalrEx, "Failed to send SignalR milestone completed notification: UserId={UserId}, ExternalId={ExternalId}, MilestoneId={MilestoneId}", 
+                                member.User.UserId, member.User.ExternalId, milestone.MilestoneId);
+                        }
+                    }
+                    else
+                    {
+                        r_Log.LogWarning("User has no ExternalId for SignalR notification: UserId={UserId}, Email={Email}, MilestoneId={MilestoneId}", 
+                            member.User.UserId, member.User.EmailAddress, milestone.MilestoneId);
+                    }
                 }
 
                 // Send email to all project members

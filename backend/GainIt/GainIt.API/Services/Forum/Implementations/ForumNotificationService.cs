@@ -65,18 +65,34 @@ namespace GainIt.API.Services.Forum.Implementations
                 }
 
                 // Send SignalR notification to post author
-                await r_Hub.Clients.User(post.Author.ExternalId)
-                    .SendAsync(RealtimeEvents.Forum.PostReplied, new PostRepliedNotificationViewModel
+                if (!string.IsNullOrEmpty(post.Author.ExternalId))
+                {
+                    try
                     {
-                        PostId = post.PostId,
-                        ProjectId = post.ProjectId,
-                        ProjectName = post.Project.ProjectName ?? "Unknown Project",
-                        ReplyId = i_Reply.ReplyId,
-                        ReplyContent = i_Reply.Content ?? "",
-                        ReplyAuthorName = i_Reply.AuthorName ?? "Unknown User",
-                        ReplyAuthorId = i_Reply.AuthorId,
-                        RepliedAtUtc = i_Reply.CreatedAtUtc
-                    });
+                        await r_Hub.Clients.User(post.Author.ExternalId)
+                            .SendAsync(RealtimeEvents.Forum.PostReplied, new PostRepliedNotificationViewModel
+                            {
+                                PostId = post.PostId,
+                                ProjectId = post.ProjectId,
+                                ProjectName = post.Project.ProjectName ?? "Unknown Project",
+                                ReplyId = i_Reply.ReplyId,
+                                ReplyContent = i_Reply.Content ?? "",
+                                ReplyAuthorName = i_Reply.AuthorName ?? "Unknown User",
+                                ReplyAuthorId = i_Reply.AuthorId,
+                                RepliedAtUtc = i_Reply.CreatedAtUtc
+                            });
+                    }
+                    catch (Exception signalrEx)
+                    {
+                        r_Log.LogWarning(signalrEx, "Failed to send SignalR post replied notification: PostAuthorId={PostAuthorId}, ExternalId={ExternalId}, PostId={PostId}", 
+                            post.AuthorId, post.Author.ExternalId, post.PostId);
+                    }
+                }
+                else
+                {
+                    r_Log.LogWarning("Post author has no ExternalId for SignalR notification: PostAuthorId={PostAuthorId}, Email={Email}, PostId={PostId}", 
+                        post.AuthorId, post.Author.EmailAddress, post.PostId);
+                }
 
                 r_Log.LogInformation("SignalR notification sent for post reply: PostId={PostId}, ReplyId={ReplyId}, PostAuthorId={PostAuthorId}", 
                     i_PostId, i_Reply.ReplyId, post.AuthorId);
@@ -137,16 +153,32 @@ namespace GainIt.API.Services.Forum.Implementations
                 }
 
                 // Send SignalR notification only to post author
-                await r_Hub.Clients.User(post.Author.ExternalId)
-                    .SendAsync(RealtimeEvents.Forum.PostLiked, new PostLikedNotificationViewModel
+                if (!string.IsNullOrEmpty(post.Author.ExternalId))
+                {
+                    try
                     {
-                        PostId = post.PostId,
-                        ProjectId = post.ProjectId,
-                        ProjectName = post.Project.ProjectName ?? "Unknown Project",
-                        LikedByUserName = likedByUser.FullName ?? "Unknown User",
-                        LikedByUserId = i_LikedByUserId,
-                        LikedAtUtc = DateTime.UtcNow
-                    });
+                        await r_Hub.Clients.User(post.Author.ExternalId)
+                            .SendAsync(RealtimeEvents.Forum.PostLiked, new PostLikedNotificationViewModel
+                            {
+                                PostId = post.PostId,
+                                ProjectId = post.ProjectId,
+                                ProjectName = post.Project.ProjectName ?? "Unknown Project",
+                                LikedByUserName = likedByUser.FullName ?? "Unknown User",
+                                LikedByUserId = i_LikedByUserId,
+                                LikedAtUtc = DateTime.UtcNow
+                            });
+                    }
+                    catch (Exception signalrEx)
+                    {
+                        r_Log.LogWarning(signalrEx, "Failed to send SignalR post liked notification: PostAuthorId={PostAuthorId}, ExternalId={ExternalId}, PostId={PostId}", 
+                            post.AuthorId, post.Author.ExternalId, post.PostId);
+                    }
+                }
+                else
+                {
+                    r_Log.LogWarning("Post author has no ExternalId for SignalR notification: PostAuthorId={PostAuthorId}, Email={Email}, PostId={PostId}", 
+                        post.AuthorId, post.Author.EmailAddress, post.PostId);
+                }
 
                 r_Log.LogInformation("SignalR notification sent for post like: PostId={PostId}, LikedByUserId={LikedByUserId}, PostAuthorId={PostAuthorId}", 
                     i_PostId, i_LikedByUserId, post.AuthorId);
@@ -196,16 +228,32 @@ namespace GainIt.API.Services.Forum.Implementations
                 }
 
                 // Send SignalR notification only to reply author
-                await r_Hub.Clients.User(reply.Author.ExternalId)
-                    .SendAsync(RealtimeEvents.Forum.ReplyLiked, new ReplyLikedNotificationViewModel
+                if (!string.IsNullOrEmpty(reply.Author.ExternalId))
+                {
+                    try
                     {
-                        ReplyId = reply.ReplyId,
-                        PostId = reply.PostId,
-                        ProjectName = reply.Post.Project.ProjectName ?? "Unknown Project",
-                        LikedByUserName = likedByUser.FullName ?? "Unknown User",
-                        LikedByUserId = i_LikedByUserId,
-                        LikedAtUtc = DateTime.UtcNow
-                    });
+                        await r_Hub.Clients.User(reply.Author.ExternalId)
+                            .SendAsync(RealtimeEvents.Forum.ReplyLiked, new ReplyLikedNotificationViewModel
+                            {
+                                ReplyId = reply.ReplyId,
+                                PostId = reply.PostId,
+                                ProjectName = reply.Post.Project.ProjectName ?? "Unknown Project",
+                                LikedByUserName = likedByUser.FullName ?? "Unknown User",
+                                LikedByUserId = i_LikedByUserId,
+                                LikedAtUtc = DateTime.UtcNow
+                            });
+                    }
+                    catch (Exception signalrEx)
+                    {
+                        r_Log.LogWarning(signalrEx, "Failed to send SignalR reply liked notification: ReplyAuthorId={ReplyAuthorId}, ExternalId={ExternalId}, ReplyId={ReplyId}", 
+                            reply.AuthorId, reply.Author.ExternalId, reply.ReplyId);
+                    }
+                }
+                else
+                {
+                    r_Log.LogWarning("Reply author has no ExternalId for SignalR notification: ReplyAuthorId={ReplyAuthorId}, Email={Email}, ReplyId={ReplyId}", 
+                        reply.AuthorId, reply.Author.EmailAddress, reply.ReplyId);
+                }
 
                 r_Log.LogInformation("SignalR notification sent for reply like: ReplyId={ReplyId}, LikedByUserId={LikedByUserId}, ReplyAuthorId={ReplyAuthorId}", 
                     i_ReplyId, i_LikedByUserId, reply.AuthorId);

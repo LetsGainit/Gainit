@@ -155,12 +155,21 @@ namespace GainIt.API.Services.Projects.Implementations
             }
 
             // 5) Email the admin (already loaded from the first query)
-            await r_Email.SendAsync(
-                adminUser.EmailAddress,
-                "New join request",
-                $"Hi {adminUser.FullName},\n\n{requester.FullName} requested to join the project '{project.ProjectName}'.",
-                "GainIt Notifications"
-            );
+            try
+            {
+                await r_Email.SendAsync(
+                    adminUser.EmailAddress,
+                    "New join request",
+                    $"Hi {adminUser.FullName},\n\n{requester.FullName} requested to join the project '{project.ProjectName}'.",
+                    "GainIt Notifications"
+                );
+            }
+            catch (Exception emailEx)
+            {
+                r_logger.LogWarning(emailEx, "Failed to send email notification to admin: AdminEmail={AdminEmail}, JoinRequestId={JoinRequestId}", 
+                    adminUser.EmailAddress, joinRequest.JoinRequestId);
+                // Don't rethrow - continue with the operation even if email fails
+            }
 
             r_logger.LogInformation("Email notification sent to admin: AdminEmail={AdminEmail}, JoinRequestId={JoinRequestId}", 
                 adminUser.EmailAddress, joinRequest.JoinRequestId);
@@ -313,12 +322,20 @@ namespace GainIt.API.Services.Projects.Implementations
                         joinRequest.RequesterUserId, requester.EmailAddress, joinRequest.JoinRequestId);
                 }
 
-                await r_Email.SendAsync(
-                    requester.EmailAddress,
-                    "Your join request was approved",
-                    $"You have been accepted to the project '{project.ProjectName}'.",
-                    $"You have been accepted to the project <b>{project.ProjectName}</b>.",
-                    "GainIt Notifications");
+                try
+                {
+                    await r_Email.SendAsync(
+                        requester.EmailAddress,
+                        "Your join request was approved",
+                        $"You have been accepted to the project '{project.ProjectName}'.",
+                        "GainIt Notifications");
+                }
+                catch (Exception emailEx)
+                {
+                    r_logger.LogWarning(emailEx, "Failed to send approval email: RequesterEmail={RequesterEmail}, JoinRequestId={JoinRequestId}", 
+                        requester.EmailAddress, joinRequest.JoinRequestId);
+                    // Don't rethrow - continue with the operation even if email fails
+                }
 
                 r_logger.LogInformation("Approval email sent: RequesterEmail={RequesterEmail}, JoinRequestId={JoinRequestId}", 
                     requester.EmailAddress, joinRequest.JoinRequestId);
@@ -352,12 +369,20 @@ namespace GainIt.API.Services.Projects.Implementations
                 var reasonText = string.IsNullOrWhiteSpace(joinRequest.DecisionReason) ? "" : $"\nReason: {joinRequest.DecisionReason}";
                 var reasonHtml = string.IsNullOrWhiteSpace(joinRequest.DecisionReason) ? "" : $"<br/>Reason: {joinRequest.DecisionReason}";
 
-                await r_Email.SendAsync(
-                    requester.EmailAddress,
-                    "Your join request was rejected",
-                    $"Your request to join '{project.ProjectName}' was rejected.{reasonText}",
-                    $"Your request to join <b>{project.ProjectName}</b> was rejected.{reasonHtml}",
-                    "GainIt Notifications");
+                try
+                {
+                    await r_Email.SendAsync(
+                        requester.EmailAddress,
+                        "Your join request was rejected",
+                        $"Your request to join '{project.ProjectName}' was rejected.{reasonText}",
+                        "GainIt Notifications");
+                }
+                catch (Exception emailEx)
+                {
+                    r_logger.LogWarning(emailEx, "Failed to send rejection email: RequesterEmail={RequesterEmail}, JoinRequestId={JoinRequestId}", 
+                        requester.EmailAddress, joinRequest.JoinRequestId);
+                    // Don't rethrow - continue with the operation even if email fails
+                }
 
                 r_logger.LogInformation("Rejection email sent: RequesterEmail={RequesterEmail}, JoinRequestId={JoinRequestId}", 
                     requester.EmailAddress, joinRequest.JoinRequestId);
