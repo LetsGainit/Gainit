@@ -1171,10 +1171,10 @@ namespace GainIt.API.Controllers.Users
                     userId.ToString());
 
                 // Update user's profile picture URL in database
-                var user = await r_DbContext.Users.FindAsync(userId);
-                if (user != null)
+                var userToUpdate = await r_DbContext.Users.FindAsync(userId);
+                if (userToUpdate != null)
                 {
-                    user.ProfilePictureURL = blobUrl;
+                    userToUpdate.ProfilePictureURL = blobUrl;
                     await r_DbContext.SaveChangesAsync();
                     r_logger.LogInformation("Updated user profile picture URL in database: UserId={UserId}, NewUrl={NewUrl}", userId, blobUrl);
                 }
@@ -1245,12 +1245,6 @@ namespace GainIt.API.Controllers.Users
                 }
 
                 var userId = user.UserId;
-                // Get current user to find existing profile picture URL
-                var currentUser = await r_DbContext.Users.FindAsync(userId);
-                if (currentUser == null)
-                {
-                    return NotFound("User not found");
-                }
 
                 r_logger.LogInformation("Profile picture update requested: UserId={UserId}, FileName={FileName}, Size={Size}KB",
                     userId, request.ProfilePicture.FileName, request.ProfilePicture.Length / 1024);
@@ -1264,7 +1258,7 @@ namespace GainIt.API.Controllers.Users
                 // Update profile picture (delete old, upload new) using generic method
                 var success = await r_FileUploadService.UpdateFileAsync(
                     request.ProfilePicture,
-                    currentUser.ProfilePictureURL,
+                    user.ProfilePictureURL,
                     "profile-pictures",
                     userId.ToString());
 
@@ -1280,10 +1274,10 @@ namespace GainIt.API.Controllers.Users
                     userId.ToString());
 
                 // Update user's profile picture URL in database
-                var user = await r_DbContext.Users.FindAsync(userId);
-                if (user != null)
+                var userToUpdate = await r_DbContext.Users.FindAsync(userId);
+                if (userToUpdate != null)
                 {
-                    user.ProfilePictureURL = newBlobUrl;
+                    userToUpdate.ProfilePictureURL = newBlobUrl;
                     await r_DbContext.SaveChangesAsync();
                     r_logger.LogInformation("Updated user profile picture URL in database: UserId={UserId}, NewUrl={NewUrl}", userId, newBlobUrl);
                 }
@@ -1353,30 +1347,28 @@ namespace GainIt.API.Controllers.Users
                 }
 
                 var userId = user.UserId;
-                // Get current user to find existing profile picture URL
-                var currentUser = await r_DbContext.Users.FindAsync(userId);
-                if (currentUser == null)
-                {
-                    return NotFound("User not found");
-                }
 
-                if (string.IsNullOrEmpty(currentUser.ProfilePictureURL))
+                if (string.IsNullOrEmpty(user.ProfilePictureURL))
                 {
                     return NotFound("No profile picture found to delete");
                 }
 
                 r_logger.LogInformation("Profile picture deletion requested: UserId={UserId}, CurrentUrl={CurrentUrl}",
-                    userId, currentUser.ProfilePictureURL);
+                    userId, user.ProfilePictureURL);
 
                 // Delete from blob storage using generic method
-                var success = await r_FileUploadService.DeleteFileAsync(currentUser.ProfilePictureURL, "profile-pictures");
+                var success = await r_FileUploadService.DeleteFileAsync(user.ProfilePictureURL, "profile-pictures");
 
                 if (success)
                 {
                     // Clear the profile picture URL from database
-                    currentUser.ProfilePictureURL = null;
-                    await r_DbContext.SaveChangesAsync();
-                    r_logger.LogInformation("Profile picture deleted successfully and URL cleared from database: UserId={UserId}", userId);
+                    var userToUpdate = await r_DbContext.Users.FindAsync(userId);
+                    if (userToUpdate != null)
+                    {
+                        userToUpdate.ProfilePictureURL = null;
+                        await r_DbContext.SaveChangesAsync();
+                        r_logger.LogInformation("Profile picture deleted successfully and URL cleared from database: UserId={UserId}", userId);
+                    }
                     return Ok("Profile picture deleted successfully");
                 }
                 else
