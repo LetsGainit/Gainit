@@ -178,15 +178,16 @@ Planning Requirements:
 - Target Due Date: {planRequest.TargetDueDateUtc?.ToString("yyyy-MM-dd") ?? "Not specified"}
 
 Please create a comprehensive roadmap with milestones and tasks that:
-1. Breaks down the project into logical phases
-2. Assigns appropriate tasks to each actual team member role
-3. Includes realistic timeframes and dependencies
-4. Covers all aspects of the project (planning, development, testing, deployment)
-5. Considers the project's difficulty level and actual team composition
-6. Includes subtasks for complex tasks
+1. Creates TEAM-LEVEL MILESTONES that represent major project phases (all team members work toward these)
+2. Assigns PERSONAL TASKS to specific team member roles (each task is owned by one person)
+3. Includes PERSONAL SUBTASKS for complex tasks (owned by the same person as the parent task)
+4. Includes realistic timeframes and dependencies
+5. Covers all aspects of the project (planning, development, testing, deployment)
+6. Considers the project's difficulty level and actual team composition
 7. Uses appropriate task types (Feature, Research, Infra, Docs, Refactor)
 8. Sets realistic priorities based on dependencies and importance
-9. Distributes work evenly among available team members";
+9. Distributes work evenly among available team members
+10. Ensures each task has a clear owner (assignedRole) and subtasks belong to the same owner";
 
             r_logger.LogInformation("Project context built successfully: ProjectId={ProjectId}, ContextLength={ContextLength}", 
                 project.ProjectId, context.Length);
@@ -234,14 +235,15 @@ Please create a comprehensive roadmap with milestones and tasks that:
                         "  ]\n" +
                         "}\n" +
                         "Rules:\n" +
-                        "1. Create 3-6 milestones that represent project phases\n" +
-                        "2. Create 10-25 tasks distributed across milestones\n" +
-                        "3. Include subtasks for complex tasks (2-5 subtasks per task)\n" +
+                        "1. Create 3-6 TEAM-LEVEL milestones that represent major project phases (all team works toward these)\n" +
+                        "2. Create 10-25 PERSONAL tasks distributed across milestones (each task assigned to ONE specific role)\n" +
+                        "3. Include PERSONAL subtasks for complex tasks (2-5 subtasks per task, same owner as parent task)\n" +
                         "4. Use realistic dates and timeframes\n" +
-                        "5. Assign tasks to actual team member roles appropriately\n" +
+                        "5. Assign each task to ONE specific team member role (assignedRole field)\n" +
                         "6. Ensure task dependencies make sense\n" +
                         "7. Distribute work evenly among available team members\n" +
-                        "8. Return ONLY the JSON, no other text"
+                        "8. Milestones are team achievements, tasks/subtasks are individual responsibilities\n" +
+                        "9. Return ONLY the JSON, no other text"
                     ),
                     new UserChatMessage(projectContext)
                 };
