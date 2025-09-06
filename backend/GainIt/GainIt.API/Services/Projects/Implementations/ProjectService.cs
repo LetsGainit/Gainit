@@ -361,7 +361,21 @@ namespace GainIt.API.Services.Projects.Implementations
             {
                 currentMentor.LeftAtUtc = DateTime.UtcNow;
                 await r_DbContext.SaveChangesAsync();
-                r_logger.LogInformation("Successfully removed mentor from project: ProjectId={ProjectId}", i_ProjectId);
+                
+                // Check if project has any active members left (including team members)
+                var activeMemberCount = project.ProjectMembers.Count(member => member.LeftAtUtc == null);
+                if (activeMemberCount == 0)
+                {
+                    r_logger.LogWarning("Project has no active members left after mentor removal, deleting orphaned project: ProjectId={ProjectId}", i_ProjectId);
+                    r_DbContext.Projects.Remove(project);
+                    await r_DbContext.SaveChangesAsync();
+                    r_logger.LogInformation("Successfully deleted orphaned project: ProjectId={ProjectId}", i_ProjectId);
+                }
+                else
+                {
+                    r_logger.LogInformation("Successfully removed mentor from project: ProjectId={ProjectId}, RemainingActiveMembers={RemainingMembers}", 
+                        i_ProjectId, activeMemberCount);
+                }
             }
             else
             {
@@ -400,7 +414,21 @@ namespace GainIt.API.Services.Projects.Implementations
 
             teamMember.LeftAtUtc = DateTime.UtcNow;
             await r_DbContext.SaveChangesAsync();
-            r_logger.LogInformation("Successfully removed team member from project: ProjectId={ProjectId}, UserId={UserId}", i_ProjectId, i_UserId);
+            
+            // Check if project has any active members left
+            var activeMemberCount = project.ProjectMembers.Count(member => member.LeftAtUtc == null);
+            if (activeMemberCount == 0)
+            {
+                r_logger.LogWarning("Project has no active members left, deleting orphaned project: ProjectId={ProjectId}", i_ProjectId);
+                r_DbContext.Projects.Remove(project);
+                await r_DbContext.SaveChangesAsync();
+                r_logger.LogInformation("Successfully deleted orphaned project: ProjectId={ProjectId}", i_ProjectId);
+            }
+            else
+            {
+                r_logger.LogInformation("Successfully removed team member from project: ProjectId={ProjectId}, UserId={UserId}, RemainingActiveMembers={RemainingMembers}", 
+                    i_ProjectId, i_UserId, activeMemberCount);
+            }
 
             return project;
         }
