@@ -65,7 +65,7 @@ namespace GainIt.API.Services.Forum.Implementations
                 }
 
                 // Send SignalR notification to post author
-                await r_Hub.Clients.User(post.AuthorId.ToString())
+                await r_Hub.Clients.User(post.Author.ExternalId)
                     .SendAsync(RealtimeEvents.Forum.PostReplied, new PostRepliedNotificationViewModel
                     {
                         PostId = post.PostId,
@@ -137,7 +137,7 @@ namespace GainIt.API.Services.Forum.Implementations
                 }
 
                 // Send SignalR notification only to post author
-                await r_Hub.Clients.User(post.AuthorId.ToString())
+                await r_Hub.Clients.User(post.Author.ExternalId)
                     .SendAsync(RealtimeEvents.Forum.PostLiked, new PostLikedNotificationViewModel
                     {
                         PostId = post.PostId,
@@ -196,7 +196,7 @@ namespace GainIt.API.Services.Forum.Implementations
                 }
 
                 // Send SignalR notification only to reply author
-                await r_Hub.Clients.User(reply.AuthorId.ToString())
+                await r_Hub.Clients.User(reply.Author.ExternalId)
                     .SendAsync(RealtimeEvents.Forum.ReplyLiked, new ReplyLikedNotificationViewModel
                     {
                         ReplyId = reply.ReplyId,

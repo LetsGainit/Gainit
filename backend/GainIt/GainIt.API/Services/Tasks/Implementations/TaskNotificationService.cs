@@ -83,7 +83,7 @@ namespace GainIt.API.Services.Tasks.Implementations
                 // Send realtime notifications
                 foreach (var member in membersToNotify)
                 {
-                    await r_Hub.Clients.User(member.UserId.ToString())
+                    await r_Hub.Clients.User(member.User.ExternalId)
                         .SendAsync(RealtimeEvents.Tasks.TaskCreated, new TaskCreatedNotificationDto
                         {
                             TaskId = task.TaskId,
@@ -149,7 +149,7 @@ namespace GainIt.API.Services.Tasks.Implementations
                 // Notify all project members about task completion
                 foreach (var member in allMembers)
                 {
-                    await r_Hub.Clients.User(member.UserId.ToString())
+                    await r_Hub.Clients.User(member.User.ExternalId)
                         .SendAsync(RealtimeEvents.Tasks.TaskCompleted, new TaskCompletedNotificationDto
                         {
                             TaskId = task.TaskId,
@@ -226,30 +226,29 @@ namespace GainIt.API.Services.Tasks.Implementations
                 // Notify the assigned user or role members
                 if (task.AssignedUserId.HasValue)
                 {
-                    // Send to specific assigned user
-                    await r_Hub.Clients.User(task.AssignedUserId.Value.ToString())
-                        .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new TaskUnblockedNotificationDto
-                        {
-                            TaskId = task.TaskId,
-                            ProjectId = task.ProjectId,
-                            Title = task.Title,
-                            ProjectName = project.ProjectName,
-                            UnblockedAtUtc = DateTime.UtcNow
-                        });
-
-                    var assignedUser = await r_Db.Users.AsNoTracking()
-                        .FirstOrDefaultAsync(u => u.UserId == task.AssignedUserId.Value);
-
+                    // Get assigned user's external ID for SignalR
+                    var assignedUser = await r_Db.Users.FindAsync(task.AssignedUserId.Value);
                     if (assignedUser != null)
                     {
-                        await r_Email.SendAsync(
-                            assignedUser.EmailAddress,
-                            $"Task unblocked: {task.Title}",
-                            $"Hi {assignedUser.FullName},\n\nYour task '{task.Title}' in project '{project.ProjectName}' has been unblocked and is ready for you to work on.\n\nYou can now continue with this task.",
-                            $"Hi {assignedUser.FullName},<br/><br/>Your task <b>'{task.Title}'</b> in project <b>'{project.ProjectName}'</b> has been unblocked and is ready for you to work on.<br/><br/>You can now continue with this task.",
-                            "GainIt Notifications"
-                        );
+                        await r_Hub.Clients.User(assignedUser.ExternalId)
+                            .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new TaskUnblockedNotificationDto
+                            {
+                                TaskId = task.TaskId,
+                                ProjectId = task.ProjectId,
+                                Title = task.Title,
+                                ProjectName = project.ProjectName,
+                                UnblockedAtUtc = DateTime.UtcNow
+                            });
                     }
+
+                    // Send email notification
+                    await r_Email.SendAsync(
+                        assignedUser.EmailAddress,
+                        $"Task unblocked: {task.Title}",
+                        $"Hi {assignedUser.FullName},\n\nYour task '{task.Title}' in project '{project.ProjectName}' has been unblocked and is ready for you to work on.\n\nYou can now continue with this task.",
+                        $"Hi {assignedUser.FullName},<br/><br/>Your task <b>'{task.Title}'</b> in project <b>'{project.ProjectName}'</b> has been unblocked and is ready for you to work on.<br/><br/>You can now continue with this task.",
+                        "GainIt Notifications"
+                    );
                 }
                 else if (!string.IsNullOrEmpty(task.AssignedRole))
                 {
@@ -263,7 +262,7 @@ namespace GainIt.API.Services.Tasks.Implementations
 
                     foreach (var member in roleMembers)
                     {
-                        await r_Hub.Clients.User(member.UserId.ToString())
+                        await r_Hub.Clients.User(member.User.ExternalId)
                             .SendAsync(RealtimeEvents.Tasks.TaskUnblocked, new TaskUnblockedNotificationDto
                             {
                                 TaskId = task.TaskId,
@@ -317,7 +316,7 @@ namespace GainIt.API.Services.Tasks.Implementations
                 // Notify all project members about milestone completion
                 foreach (var member in allMembers)
                 {
-                    await r_Hub.Clients.User(member.UserId.ToString())
+                    await r_Hub.Clients.User(member.User.ExternalId)
                         .SendAsync(RealtimeEvents.Tasks.MilestoneCompleted, new MilestoneCompletedNotificationDto
                         {
                             MilestoneId = milestone.MilestoneId,

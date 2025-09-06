@@ -118,8 +118,8 @@ namespace GainIt.API.Services.Projects.Implementations
             r_logger.LogInformation("Join request created successfully: JoinRequestId={JoinRequestId}, ProjectId={ProjectId}, RequesterUserId={RequesterUserId}, RequestedRole={RequestedRole}",
                 joinRequest.JoinRequestId, i_ProjectId, i_RequesterUserId, i_RequestedRole);
 
-            // 4) Realtime notification -> to the single admin (use IUserIdProvider mapping)
-            await r_Hub.Clients.User(adminUser.UserId.ToString())
+            // 4) Realtime notification -> to the single admin (use external ID for SignalR)
+            await r_Hub.Clients.User(adminUser.ExternalId)
                 .SendAsync(RealtimeEvents.Projects.JoinRequested, new
                 {
                     joinRequest.JoinRequestId,
@@ -269,7 +269,8 @@ namespace GainIt.API.Services.Projects.Implementations
 
             if (i_IsApproved)
             {
-                await r_Hub.Clients.User(joinRequest.RequesterUserId.ToString())
+                // Send SignalR notification using external ID
+                await r_Hub.Clients.User(requester.ExternalId)
                     .SendAsync(RealtimeEvents.Projects.JoinApproved, new { joinRequest.JoinRequestId, joinRequest.ProjectId, Status = joinRequest.Status.ToString() });
 
                 r_logger.LogInformation("Realtime approval notification sent: RequesterUserId={RequesterUserId}, JoinRequestId={JoinRequestId}", 
@@ -287,7 +288,7 @@ namespace GainIt.API.Services.Projects.Implementations
             }
             else
             {
-                await r_Hub.Clients.User(joinRequest.RequesterUserId.ToString())
+                await r_Hub.Clients.User(requester.ExternalId)
                     .SendAsync(RealtimeEvents.Projects.JoinRejected, new { joinRequest.JoinRequestId, joinRequest.ProjectId, Status = joinRequest.Status.ToString(), joinRequest.DecisionReason });
 
                 r_logger.LogInformation("Realtime rejection notification sent: RequesterUserId={RequesterUserId}, JoinRequestId={JoinRequestId}", 
@@ -357,14 +358,14 @@ namespace GainIt.API.Services.Projects.Implementations
                 r_logger.LogInformation("Join request cancelled successfully: ProjectId={ProjectId}, JoinRequestId={JoinRequestId}, RequesterUserId={RequesterUserId}",
                     i_ProjectId, i_JoinRequestId, i_RequesterUserId);
 
-                var adminId = await r_Db.ProjectMembers
+                var admin = await r_Db.ProjectMembers
                     .Where(pm => pm.ProjectId == i_ProjectId && pm.IsAdmin && pm.LeftAtUtc == null)
-                    .Select(pm => pm.UserId)
+                    .Select(pm => pm.User)
                     .SingleOrDefaultAsync();
 
-                if (adminId != Guid.Empty)
+                if (admin != null)
                 {
-                    await r_Hub.Clients.User(adminId.ToString())
+                    await r_Hub.Clients.User(admin.ExternalId)
                         .SendAsync(RealtimeEvents.Projects.JoinCancelled, new
                         {
                             joinRequest.JoinRequestId,
@@ -374,7 +375,7 @@ namespace GainIt.API.Services.Projects.Implementations
                         });
 
                     r_logger.LogInformation("Cancellation notification sent to admin: AdminUserId={AdminUserId}, JoinRequestId={JoinRequestId}", 
-                        adminId, joinRequest.JoinRequestId);
+                        admin.UserId, joinRequest.JoinRequestId);
                 }
                 else
                 {
