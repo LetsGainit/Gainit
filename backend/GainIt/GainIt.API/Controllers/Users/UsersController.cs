@@ -1130,20 +1130,31 @@ namespace GainIt.API.Controllers.Users
         {
             try
             {
-                // Use the existing GetCurrentUser method to get the user profile
-                var userProfileResult = await GetCurrentUser();
-                if (userProfileResult.Result is NotFoundObjectResult || userProfileResult.Result is UnauthorizedObjectResult)
+                // Extract user ID directly from JWT claims to avoid database lookup
+                var externalId = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "sub")
+                    ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                    ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+                if (string.IsNullOrEmpty(externalId))
                 {
-                    return userProfileResult.Result;
+                    r_logger.LogWarning("Missing external identity claim (oid/sub) for profile picture upload");
+                    return Unauthorized("Missing external identity claim (oid/sub)");
                 }
 
-                var userProfile = userProfileResult.Value as UserProfileDto;
-                if (userProfile == null)
+                // Find the user in the database by external ID
+                var user = await r_DbContext.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.ExternalId == externalId);
+
+                if (user == null)
                 {
-                    return Unauthorized("User not authenticated");
+                    r_logger.LogWarning("User not found in database for profile picture upload. ExternalId={ExternalId}", externalId);
+                    return NotFound("User profile not found. Please ensure your profile is created first.");
                 }
 
-                var userId = userProfile.UserId;
+                var userId = user.UserId;
                 r_logger.LogInformation("Profile picture upload requested: UserId={UserId}, FileName={FileName}, Size={Size}KB",
                     userId, request.ProfilePicture.FileName, request.ProfilePicture.Length / 1024);
 
@@ -1209,20 +1220,31 @@ namespace GainIt.API.Controllers.Users
         {
             try
             {
-                // Use the existing GetCurrentUser method to get the user profile
-                var userProfileResult = await GetCurrentUser();
-                if (userProfileResult.Result is NotFoundObjectResult || userProfileResult.Result is UnauthorizedObjectResult)
+                // Extract user ID directly from JWT claims to avoid database lookup
+                var externalId = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "sub")
+                    ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                    ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+                if (string.IsNullOrEmpty(externalId))
                 {
-                    return userProfileResult.Result;
+                    r_logger.LogWarning("Missing external identity claim (oid/sub) for profile picture update");
+                    return Unauthorized("Missing external identity claim (oid/sub)");
                 }
 
-                var userProfile = userProfileResult.Value as UserProfileDto;
-                if (userProfile == null)
+                // Find the user in the database by external ID
+                var user = await r_DbContext.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.ExternalId == externalId);
+
+                if (user == null)
                 {
-                    return Unauthorized("User not authenticated");
+                    r_logger.LogWarning("User not found in database for profile picture update. ExternalId={ExternalId}", externalId);
+                    return NotFound("User profile not found. Please ensure your profile is created first.");
                 }
 
-                var userId = userProfile.UserId;
+                var userId = user.UserId;
                 // Get current user to find existing profile picture URL
                 var currentUser = await r_DbContext.Users.FindAsync(userId);
                 if (currentUser == null)
@@ -1306,20 +1328,31 @@ namespace GainIt.API.Controllers.Users
         {
             try
             {
-                // Use the existing GetCurrentUser method to get the user profile
-                var userProfileResult = await GetCurrentUser();
-                if (userProfileResult.Result is NotFoundObjectResult || userProfileResult.Result is UnauthorizedObjectResult)
+                // Extract user ID directly from JWT claims to avoid database lookup
+                var externalId = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "sub")
+                    ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                    ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+                if (string.IsNullOrEmpty(externalId))
                 {
-                    return userProfileResult.Result;
+                    r_logger.LogWarning("Missing external identity claim (oid/sub) for profile picture deletion");
+                    return Unauthorized("Missing external identity claim (oid/sub)");
                 }
 
-                var userProfile = userProfileResult.Value as UserProfileDto;
-                if (userProfile == null)
+                // Find the user in the database by external ID
+                var user = await r_DbContext.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.ExternalId == externalId);
+
+                if (user == null)
                 {
-                    return Unauthorized("User not authenticated");
+                    r_logger.LogWarning("User not found in database for profile picture deletion. ExternalId={ExternalId}", externalId);
+                    return NotFound("User profile not found. Please ensure your profile is created first.");
                 }
 
-                var userId = userProfile.UserId;
+                var userId = user.UserId;
                 // Get current user to find existing profile picture URL
                 var currentUser = await r_DbContext.Users.FindAsync(userId);
                 if (currentUser == null)
@@ -1373,24 +1406,28 @@ namespace GainIt.API.Controllers.Users
         {
             try
             {
-                // Use the existing GetCurrentUser method to get the user profile
-                var userProfileResult = await GetCurrentUser();
-                if (userProfileResult.Result is NotFoundObjectResult || userProfileResult.Result is UnauthorizedObjectResult)
+                // Extract user ID directly from JWT claims to avoid database lookup
+                var externalId = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "sub")
+                    ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                    ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                    ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+                if (string.IsNullOrEmpty(externalId))
                 {
-                    return userProfileResult.Result;
+                    r_logger.LogWarning("Missing external identity claim (oid/sub) for profile picture retrieval");
+                    return Unauthorized("Missing external identity claim (oid/sub)");
                 }
 
-                var userProfile = userProfileResult.Value as UserProfileDto;
-                if (userProfile == null)
-                {
-                    return Unauthorized("User not authenticated");
-                }
+                // Find the user in the database by external ID
+                var user = await r_DbContext.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.ExternalId == externalId);
 
-                // Get the full user entity to access ProfilePictureURL
-                var user = await r_DbContext.Users.FindAsync(userProfile.UserId);
                 if (user == null)
                 {
-                    return NotFound("User not found");
+                    r_logger.LogWarning("User not found in database for profile picture retrieval. ExternalId={ExternalId}", externalId);
+                    return NotFound("User profile not found. Please ensure your profile is created first.");
                 }
 
                 if (string.IsNullOrEmpty(user.ProfilePictureURL))

@@ -24,9 +24,15 @@ namespace GainIt.API.Services.Email.Implementations
         {
             try
             {
+                r_logger.LogInformation("SendAsync called with: To={To}, Subject={Subject}, DisplayName={DisplayName}, PlainTextLength={PlainTextLength}, HtmlLength={HtmlLength}", 
+                    i_To, i_Subject, i_DisplayName, i_PlainText?.Length ?? 0, i_Html?.Length ?? 0);
+                r_logger.LogInformation("PlainText content: '{PlainText}'", i_PlainText);
+
                 var sender = string.IsNullOrWhiteSpace(i_DisplayName)
                     ? r_options.Sender
                     : $"{i_DisplayName} <{r_options.Sender}>";
+
+                r_logger.LogInformation("Sender will be: '{Sender}'", sender);
 
                 var content = new EmailContent(i_Subject)
                 {
@@ -38,7 +44,11 @@ namespace GainIt.API.Services.Email.Implementations
                 var recipients = new EmailRecipients(new[] { new EmailAddress(i_To)});
                 var message = new EmailMessage(sender, recipients, content);
 
+                r_logger.LogInformation("About to send email with PlainText: '{PlainText}'", content.PlainText);
+
                 await r_emailClient.SendAsync(WaitUntil.Completed, message);
+                
+                r_logger.LogInformation("Email sent successfully to {To}", i_To);
             }
             catch (Exception ex)
             {

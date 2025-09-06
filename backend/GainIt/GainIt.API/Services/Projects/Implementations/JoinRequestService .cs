@@ -606,7 +606,10 @@ namespace GainIt.API.Services.Projects.Implementations
                     JoinedAtUtc = DateTime.UtcNow
                 });
 
-                r_logger.LogInformation("Successfully added team member: ProjectId={ProjectId}, UserId={UserId}, Role={Role}",
+                // Remove the role from the open roles list since it's now filled
+                project.RequiredRoles.Remove(i_Role);
+
+                r_logger.LogInformation("Successfully added team member and removed role from open roles: ProjectId={ProjectId}, UserId={UserId}, Role={Role}",
                     i_ProjectId, i_UserId, i_Role);
                 return project;
             }
