@@ -358,24 +358,53 @@ namespace GainIt.API.Services.Projects.Implementations
                 r_logger.LogInformation("Join request cancelled successfully: ProjectId={ProjectId}, JoinRequestId={JoinRequestId}, RequesterUserId={RequesterUserId}",
                     i_ProjectId, i_JoinRequestId, i_RequesterUserId);
 
-                var admin = await r_Db.ProjectMembers
+                var adminMember = await r_Db.ProjectMembers
+                    .Include(pm => pm.User)
                     .Where(pm => pm.ProjectId == i_ProjectId && pm.IsAdmin && pm.LeftAtUtc == null)
-                    .Select(pm => pm.User)
                     .SingleOrDefaultAsync();
+                
+                var admin = adminMember?.User;
+                
+                // Debug: Check if admin has ExternalId
+                if (admin != null)
+                {
+                    r_logger.LogDebug("Admin user details: UserId={UserId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}, CreatedAt={CreatedAt}", 
+                        admin.UserId, admin.ExternalId, admin.EmailAddress, admin.FullName, admin.CreatedAt);
+                }
 
                 if (admin != null)
                 {
-                    await r_Hub.Clients.User(admin.ExternalId)
-                        .SendAsync(RealtimeEvents.Projects.JoinCancelled, new
+                    r_logger.LogInformation("Admin found for cancellation notification: AdminUserId={AdminUserId}, ExternalId={ExternalId}, Email={Email}, FullName={FullName}", 
+                        admin.UserId, admin.ExternalId, admin.EmailAddress, admin.FullName);
+                    
+                    if (!string.IsNullOrEmpty(admin.ExternalId))
+                    {
+                        try
                         {
-                            joinRequest.JoinRequestId,
-                            joinRequest.ProjectId,
-                            Status = joinRequest.Status.ToString(),
-                            joinRequest.DecisionReason
-                        });
+                            await r_Hub.Clients.User(admin.ExternalId)
+                                .SendAsync(RealtimeEvents.Projects.JoinCancelled, new
+                                {
+                                    joinRequest.JoinRequestId,
+                                    joinRequest.ProjectId,
+                                    Status = joinRequest.Status.ToString(),
+                                    joinRequest.DecisionReason
+                                });
 
-                    r_logger.LogInformation("Cancellation notification sent to admin: AdminUserId={AdminUserId}, JoinRequestId={JoinRequestId}", 
-                        admin.UserId, joinRequest.JoinRequestId);
+                            r_logger.LogInformation("Cancellation notification sent to admin: AdminUserId={AdminUserId}, ExternalId={ExternalId}, JoinRequestId={JoinRequestId}", 
+                                admin.UserId, admin.ExternalId, joinRequest.JoinRequestId);
+                        }
+                        catch (Exception signalrEx)
+                        {
+                            r_logger.LogWarning(signalrEx, "Failed to send SignalR cancellation notification: AdminUserId={AdminUserId}, ExternalId={ExternalId}, JoinRequestId={JoinRequestId}", 
+                                admin.UserId, admin.ExternalId, joinRequest.JoinRequestId);
+                            // Don't rethrow - continue with the operation even if SignalR fails
+                        }
+                    }
+                    else
+                    {
+                        r_logger.LogWarning("Admin has no ExternalId for SignalR notification: AdminUserId={AdminUserId}, Email={Email}, FullName={FullName}, JoinRequestId={JoinRequestId}", 
+                            admin.UserId, admin.EmailAddress, admin.FullName, joinRequest.JoinRequestId);
+                    }
                 }
                 else
                 {
