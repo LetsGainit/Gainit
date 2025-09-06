@@ -20,19 +20,18 @@ namespace GainIt.API.Services.Email.Implementations
             r_logger = i_logger;
         }
 
-        public async Task SendAsync(string i_To, string i_Subject, string i_PlainText, string? i_DisplayName = null, string? i_Html = null)
+        public async Task SendAsync(string i_To, string i_Subject, string i_PlainText, string? i_Html = null)
         {
             try
             {
-                r_logger.LogInformation("SendAsync called with: To={To}, Subject={Subject}, DisplayName={DisplayName}, PlainTextLength={PlainTextLength}, HtmlLength={HtmlLength}", 
-                    i_To, i_Subject, i_DisplayName, i_PlainText?.Length ?? 0, i_Html?.Length ?? 0);
+                r_logger.LogInformation("SendAsync called with: To={To}, Subject={Subject}, PlainTextLength={PlainTextLength}, HtmlLength={HtmlLength}", 
+                    i_To, i_Subject, i_PlainText?.Length ?? 0, i_Html?.Length ?? 0);
                 r_logger.LogInformation("PlainText content: '{PlainText}'", i_PlainText);
 
-                var sender = string.IsNullOrWhiteSpace(i_DisplayName)
-                    ? r_options.Sender
-                    : $"{i_DisplayName} <{r_options.Sender}>";
+                // Azure Communication Services only accepts plain email addresses, not "Display Name <email>" format
+                var sender = r_options.Sender;
 
-                r_logger.LogInformation("Sender will be: '{Sender}'", sender);
+                r_logger.LogInformation("Sender will be: '{Sender}', Subject: '{Subject}'", sender, i_Subject);
 
                 var content = new EmailContent(i_Subject)
                 {
@@ -68,5 +67,5 @@ namespace GainIt.API.Services.Email.Implementations
 //    public MyService(IEmailSender email) { _email = email; }
 
 //    public Task NotifyAsync(string to) =>
-//        _email.SendAsync(to, "title", "text", "GainIt Support", "<b>HTML</b>");
+//        _email.SendAsync(to, "GainIt Notifications: title", "text", "<b>HTML</b>");
 //}

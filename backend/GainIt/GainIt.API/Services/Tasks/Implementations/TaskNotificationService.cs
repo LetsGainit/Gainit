@@ -125,9 +125,8 @@ namespace GainIt.API.Services.Tasks.Implementations
 
                     await r_Email.SendAsync(
                         member.User.EmailAddress,
-                        $"New task: {task.Title}",
+                        $"GainIt Notifications: New task: {task.Title}",
                         $"Hi {member.User.FullName},\n\n{assignmentText} in project '{project.ProjectName}'.\n\nTask: {task.Title}\nType: {task.Type}\nPriority: {task.Priority}\n\nYou can view it in your project dashboard.",
-                        "GainIt Notifications",
                         null
                     );
                 }
@@ -221,9 +220,8 @@ namespace GainIt.API.Services.Tasks.Implementations
 
                     await r_Email.SendAsync(
                         member.User.EmailAddress,
-                        $"Task completed: {task.Title}",
+                        $"GainIt Notifications: Task completed: {task.Title}",
                         $"Hi {member.User.FullName},\n\n{assignmentText} in project '{project.ProjectName}'.\n\nTask: {task.Title}\nType: {task.Type}\nPriority: {task.Priority}\n\nGreat work!",
-                        "GainIt Notifications",
                         null
                     );
                 }
@@ -292,9 +290,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                     // Send email notification
                     await r_Email.SendAsync(
                         assignedUser.EmailAddress,
-                        $"Task unblocked: {task.Title}",
+                        $"GainIt Notifications: Task unblocked: {task.Title}",
                         $"Hi {assignedUser.FullName},\n\nYour task '{task.Title}' in project '{project.ProjectName}' has been unblocked and is ready for you to work on.\n\nYou can now continue with this task.",
-                        "GainIt Notifications",
                         null
                     );
                 }
@@ -339,9 +336,8 @@ namespace GainIt.API.Services.Tasks.Implementations
 
                         await r_Email.SendAsync(
                             member.User.EmailAddress,
-                            $"Task unblocked: {task.Title}",
+                            $"GainIt Notifications: Task unblocked: {task.Title}",
                             $"Hi {member.User.FullName},\n\nA task assigned to your role '{task.AssignedRole}' in project '{project.ProjectName}' has been unblocked.\n\nTask: {task.Title}\n\nYou can now work on this task.",
-                            "GainIt Notifications",
                             null
                         );
                     }
@@ -414,9 +410,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                 {
                     await r_Email.SendAsync(
                         member.User.EmailAddress,
-                        $"Milestone completed: {milestone.Title}",
+                        $"GainIt Notifications: Milestone completed: {milestone.Title}",
                         $"Hi {member.User.FullName},\n\nCongratulations! The milestone '{milestone.Title}' in project '{project.ProjectName}' has been completed!\n\nTasks completed: {i_ProjectMilestoneViewModel.DoneTasksCount}/{i_ProjectMilestoneViewModel.TasksCount}\n\nGreat work team!",
-                        "GainIt Notifications",
                         null
                     );
                 }

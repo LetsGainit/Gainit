@@ -88,5 +88,10 @@ namespace GainIt.API.Services.GitHub.Interfaces
         /// Gets the project ID that a repository is linked to
         /// </summary>
         Task<Guid?> GetProjectIdForRepositoryAsync(string owner, string name);
+
+        /// <summary>
+        /// Extracts the GitHub username from a GitHub URL
+        /// </summary>
+        string? ExtractGitHubUsername(string githubUrl);
     }
 }

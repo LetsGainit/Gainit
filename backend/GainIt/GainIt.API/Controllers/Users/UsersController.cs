@@ -10,6 +10,7 @@ using GainIt.API.Models.Users;
 using GainIt.API.Models.Projects;
 using GainIt.API.Services.Users.Interfaces;
 using GainIt.API.Services.FileUpload.Interfaces;
+using GainIt.API.Services.GitHub.Interfaces;
 using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authorization;
@@ -34,14 +35,16 @@ namespace GainIt.API.Controllers.Users
         private readonly IUserSummaryService r_userSummaryService;
         private readonly GainItDbContext r_DbContext;
         private readonly IFileUploadService r_FileUploadService;
+        private readonly IGitHubService r_githubService;
 
-        public UsersController(IUserProfileService i_userProfileService, ILogger<UsersController> i_logger, GainItDbContext i_DbContext, IFileUploadService i_FileUploadService, IUserSummaryService i_userSummaryService)
+        public UsersController(IUserProfileService i_userProfileService, ILogger<UsersController> i_logger, GainItDbContext i_DbContext, IFileUploadService i_FileUploadService, IUserSummaryService i_userSummaryService, IGitHubService i_githubService)
         {
             r_userProfileService = i_userProfileService;
             r_logger = i_logger;
             r_DbContext = i_DbContext;
             r_FileUploadService = i_FileUploadService;
             r_userSummaryService = i_userSummaryService;
+            r_githubService = i_githubService;
         }
         private static string? tryGetClaim(ClaimsPrincipal user, params string[] types)
         {
@@ -845,6 +848,12 @@ namespace GainIt.API.Controllers.Users
 
             try
             {
+                // Extract GitHub username from URL if provided
+                if (!string.IsNullOrEmpty(updateDto.GitHubURL) && string.IsNullOrEmpty(updateDto.GitHubUsername))
+                {
+                    updateDto.GitHubUsername = r_githubService.ExtractGitHubUsername(updateDto.GitHubURL);
+                }
+
                 // Use the new create-or-update method
                 var result = await r_userProfileService.CreateOrUpdateGainerProfileAsync(id, updateDto);
                 
@@ -904,6 +913,12 @@ namespace GainIt.API.Controllers.Users
 
             try
             {
+                // Extract GitHub username from URL if provided
+                if (!string.IsNullOrEmpty(updateDto.GitHubURL) && string.IsNullOrEmpty(updateDto.GitHubUsername))
+                {
+                    updateDto.GitHubUsername = r_githubService.ExtractGitHubUsername(updateDto.GitHubURL);
+                }
+
                 var result = await r_userProfileService.CreateOrUpdateMentorProfileAsync(id, updateDto);
                 
                 // Check if any expertise strings were provided and add expertise
@@ -962,6 +977,12 @@ namespace GainIt.API.Controllers.Users
 
             try
             {
+                // Extract GitHub username from URL if provided
+                if (!string.IsNullOrEmpty(updateDto.GitHubURL) && string.IsNullOrEmpty(updateDto.GitHubUsername))
+                {
+                    updateDto.GitHubUsername = r_githubService.ExtractGitHubUsername(updateDto.GitHubURL);
+                }
+
                 var result = await r_userProfileService.CreateOrUpdateNonprofitProfileAsync(id, updateDto);
                 
                 // Check if any expertise strings were provided and add expertise

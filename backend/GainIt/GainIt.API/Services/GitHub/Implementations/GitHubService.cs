@@ -1210,7 +1210,7 @@ namespace GainIt.API.Services.GitHub.Implementations
             throw new ArgumentException("Invalid GitHub repository URL format");
         }
 
-        private string? ExtractGitHubUsername(string githubUrl)
+        public string? ExtractGitHubUsername(string githubUrl)
         {
             try
             {

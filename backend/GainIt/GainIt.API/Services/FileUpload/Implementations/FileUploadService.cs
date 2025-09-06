@@ -78,7 +78,17 @@ namespace GainIt.API.Services.FileUpload.Implementations
 
                 var containerClient = _BlobServiceClient.GetBlobContainerClient(containerName);
                 var uri = new Uri(blobUrl);
-                var blobName = uri.Segments.Last();
+                
+                // Extract the full blob path (including subfolders) by removing the container name from the URL
+                var containerSegment = $"/{containerName}/";
+                var containerIndex = uri.AbsolutePath.IndexOf(containerSegment);
+                if (containerIndex == -1)
+                {
+                    _Logger.LogWarning("Invalid blob URL format - container name not found: {BlobUrl}", blobUrl);
+                    return false;
+                }
+                
+                var blobName = uri.AbsolutePath.Substring(containerIndex + containerSegment.Length);
                 
                 var blobClient = containerClient.GetBlobClient(blobName);
                 var response = await blobClient.DeleteIfExistsAsync();
@@ -131,7 +141,17 @@ namespace GainIt.API.Services.FileUpload.Implementations
 
                 var containerClient = _BlobServiceClient.GetBlobContainerClient(containerName);
                 var uri = new Uri(blobUrl);
-                var blobName = uri.Segments.Last();
+                
+                // Extract the full blob path (including subfolders) by removing the container name from the URL
+                var containerSegment = $"/{containerName}/";
+                var containerIndex = uri.AbsolutePath.IndexOf(containerSegment);
+                if (containerIndex == -1)
+                {
+                    _Logger.LogWarning("Invalid blob URL format - container name not found: {BlobUrl}", blobUrl);
+                    return null;
+                }
+                
+                var blobName = uri.AbsolutePath.Substring(containerIndex + containerSegment.Length);
                 
                 var blobClient = containerClient.GetBlobClient(blobName);
                 

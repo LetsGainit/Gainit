@@ -100,9 +100,8 @@ namespace GainIt.API.Services.Forum.Implementations
                 // Send email notification to post author
                 await r_Email.SendAsync(
                     post.Author.EmailAddress,
-                    $"New reply to your post in {post.Project.ProjectName}",
+                    $"GainIt Notifications: New reply to your post in {post.Project.ProjectName}",
                     $"Hi {post.Author.FullName},\n\n{replyAuthor.FullName} replied to your post in project '{post.Project.ProjectName}'.\n\nReply: {i_Reply.Content}\n\nYou can view the full discussion in your project forum.",
-                    "GainIt Notifications",
                     null
                 );
 
