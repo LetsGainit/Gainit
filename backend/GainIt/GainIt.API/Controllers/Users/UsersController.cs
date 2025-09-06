@@ -1204,7 +1204,6 @@ namespace GainIt.API.Controllers.Users
                 var response = new ProfilePictureResponseViewModel
                 {
                     ProfilePictureUrl = blobUrl,
-                    Description = request.Description,
                     UploadedAt = DateTimeOffset.UtcNow,
                     FileSizeInBytes = request.ProfilePicture.Length,
                     FileName = request.ProfilePicture.FileName,
@@ -1306,7 +1305,6 @@ namespace GainIt.API.Controllers.Users
                 var response = new ProfilePictureResponseViewModel
                 {
                     ProfilePictureUrl = newBlobUrl,
-                    Description = request.Description,
                     UploadedAt = DateTimeOffset.UtcNow,
                     FileSizeInBytes = request.ProfilePicture.Length,
                     FileName = request.ProfilePicture.FileName,

@@ -511,6 +511,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 CreatedAtUtc = DateTime.UtcNow,
                 DifficultyLevel = template.DifficultyLevel,
                 ProjectPictureUrl = template.ProjectPictureUrl,
+                Duration = template.Duration,
                 Goals = template.Goals,
                 Technologies = template.Technologies,
                 RequiredRoles = template.RequiredRoles

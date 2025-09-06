@@ -361,8 +361,11 @@ namespace GainIt.API.Controllers.Forum
         /// <returns>The current user ID from the database.</returns>
         private async Task<Guid> GetCurrentUserIdAsync()
         {
-            var externalId = User.FindFirst("oid")?.Value
-                  ?? User.FindFirst("sub")?.Value;
+            var externalId = tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+                ?? tryGetClaim(User, "sub")
+                ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+                ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
 
             if (string.IsNullOrEmpty(externalId))
                 throw new UnauthorizedAccessException("User ID not found in token.");
@@ -376,6 +379,22 @@ namespace GainIt.API.Controllers.Forum
                 throw new UnauthorizedAccessException("User not found in database.");
 
             return user.UserId;
+        }
+
+        /// <summary>
+        /// Helper method to try getting a claim value from multiple claim types.
+        /// </summary>
+        /// <param name="user">The user claims principal.</param>
+        /// <param name="types">The claim types to try.</param>
+        /// <returns>The claim value if found, null otherwise.</returns>
+        private static string? tryGetClaim(ClaimsPrincipal user, params string[] types)
+        {
+            foreach (var t in types)
+            {
+                var v = user.FindFirstValue(t);
+                if (!string.IsNullOrWhiteSpace(v)) return v;
+            }
+            return null;
         }
 
         #endregion

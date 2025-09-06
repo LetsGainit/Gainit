@@ -7,8 +7,5 @@ namespace GainIt.API.DTOs.Requests.Users
     {
         [Required]
         public IFormFile ProfilePicture { get; set; } = default!;
-        
-        [StringLength(500)]
-        public string? Description { get; set; }
     }
 }

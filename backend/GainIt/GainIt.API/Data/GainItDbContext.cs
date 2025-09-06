@@ -290,6 +290,12 @@ namespace GainIt.API.Data
                         .IsRequired()
                         .HasMaxLength(1000);
 
+                        // Configure Duration to handle PostgreSQL interval type properly
+                    entity.Property(e => e.Duration)
+                        .HasConversion(
+                            v => v.TotalDays, // Convert TimeSpan to days for storage
+                            v => TimeSpan.FromDays(v)); // Convert days back to TimeSpan
+
 
 
                     // Configure RagContext as owned entity (stored as JSON in same table)

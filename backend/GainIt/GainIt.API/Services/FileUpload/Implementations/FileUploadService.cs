@@ -90,11 +90,18 @@ namespace GainIt.API.Services.FileUpload.Implementations
                 
                 var blobName = uri.AbsolutePath.Substring(containerIndex + containerSegment.Length);
                 
+                _Logger.LogDebug("Blob path extraction: OriginalUrl={OriginalUrl}, ContainerName={ContainerName}, ExtractedBlobName={BlobName}", 
+                    blobUrl, containerName, blobName);
+                
                 var blobClient = containerClient.GetBlobClient(blobName);
+                
+                _Logger.LogInformation("Attempting to delete blob: Container={Container}, BlobName={BlobName}, FullUrl={BlobUrl}", 
+                    containerName, blobName, blobUrl);
+                
                 var response = await blobClient.DeleteIfExistsAsync();
 
-                _Logger.LogInformation("File deleted: Container={Container}, BlobUrl={BlobUrl}, Deleted={Deleted}", 
-                    containerName, blobUrl, response.Value);
+                _Logger.LogInformation("File deleted: Container={Container}, BlobUrl={BlobUrl}, BlobName={BlobName}, Deleted={Deleted}", 
+                    containerName, blobUrl, blobName, response.Value);
 
                 return response.Value;
             }
@@ -152,6 +159,9 @@ namespace GainIt.API.Services.FileUpload.Implementations
                 }
                 
                 var blobName = uri.AbsolutePath.Substring(containerIndex + containerSegment.Length);
+                
+                _Logger.LogDebug("Blob path extraction: OriginalUrl={OriginalUrl}, ContainerName={ContainerName}, ExtractedBlobName={BlobName}", 
+                    blobUrl, containerName, blobName);
                 
                 var blobClient = containerClient.GetBlobClient(blobName);
                 

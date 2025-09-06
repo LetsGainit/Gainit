@@ -160,7 +160,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 await r_Email.SendAsync(
                     adminUser.EmailAddress,
                     "GainIt Notifications: New join request",
-                    $"Hi {adminUser.FullName},\n\n{requester.FullName} requested to join the project '{project.ProjectName}'.",
+                    $"Hi {adminUser.FullName},\n\n{requester.FullName} requested to join the project '{project.ProjectName}' as a {i_RequestedRole}.",
                     null
                 );
             }
@@ -327,7 +327,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     await r_Email.SendAsync(
                         requester.EmailAddress,
                         "GainIt Notifications: Your join request was approved",
-                        $"You have been accepted to the project '{project.ProjectName}'.",
+                        $"You have been accepted to the project '{project.ProjectName}' as a {joinRequest.RequestedRole}.",
                         null);
                 }
                 catch (Exception emailEx)
@@ -374,7 +374,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     await r_Email.SendAsync(
                         requester.EmailAddress,
                         "GainIt Notifications: Your join request was rejected",
-                        $"Your request to join '{project.ProjectName}' was rejected.{reasonText}",
+                        $"Your request to join '{project.ProjectName}' as a {joinRequest.RequestedRole} was rejected.{reasonText}",
                         null);
                 }
                 catch (Exception emailEx)
