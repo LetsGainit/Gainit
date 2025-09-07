@@ -356,6 +356,25 @@ Please create a comprehensive roadmap with milestones and tasks that:
                         continue;
                     }
 
+                    // Try to assign task to a specific user with the assigned role
+                    var assignedUserId = (Guid?)null;
+                    if (!string.IsNullOrEmpty(taskData.AssignedRole))
+                    {
+                        var memberWithRole = project.ProjectMembers
+                            .FirstOrDefault(pm => pm.UserRole == taskData.AssignedRole && pm.LeftAtUtc == null);
+                        if (memberWithRole != null)
+                        {
+                            assignedUserId = memberWithRole.UserId;
+                            r_logger.LogDebug("Assigned task to specific user: TaskTitle={TaskTitle}, AssignedRole={AssignedRole}, AssignedUserId={AssignedUserId}", 
+                                taskData.Title, taskData.AssignedRole, assignedUserId);
+                        }
+                        else
+                        {
+                            r_logger.LogDebug("No user found with role, task assigned to role only: TaskTitle={TaskTitle}, AssignedRole={AssignedRole}", 
+                                taskData.Title, taskData.AssignedRole);
+                        }
+                    }
+
                     var task = new ProjectTask
                     {
                         ProjectId = project.ProjectId,
@@ -367,6 +386,7 @@ Please create a comprehensive roadmap with milestones and tasks that:
                         MilestoneId = milestone.MilestoneId,
                         Milestone = milestone,
                         AssignedRole = taskData.AssignedRole,
+                        AssignedUserId = assignedUserId,
                         OrderIndex = taskData.OrderIndex,
                         DueAtUtc = projectStartDate.AddDays(taskData.DaysFromStart),
                         Status = eTaskStatus.Todo,
@@ -398,7 +418,14 @@ Please create a comprehensive roadmap with milestones and tasks that:
                 }
 
                 await r_DbContext.SaveChangesAsync();
-                r_logger.LogInformation("Tasks and subtasks created: ProjectId={ProjectId}, TaskCount={TaskCount}", project.ProjectId, createdTasks.Count);
+                
+                // Log assignment summary
+                var assignedToUsers = createdTasks.Count(t => t.AssignedUserId.HasValue);
+                var assignedToRolesOnly = createdTasks.Count(t => !t.AssignedUserId.HasValue && !string.IsNullOrEmpty(t.AssignedRole));
+                var unassigned = createdTasks.Count(t => !t.AssignedUserId.HasValue && string.IsNullOrEmpty(t.AssignedRole));
+                
+                r_logger.LogInformation("Tasks and subtasks created: ProjectId={ProjectId}, TaskCount={TaskCount}, AssignedToUsers={AssignedToUsers}, AssignedToRolesOnly={AssignedToRolesOnly}, Unassigned={Unassigned}", 
+                    project.ProjectId, createdTasks.Count, assignedToUsers, assignedToRolesOnly, unassigned);
 
                 // Map to view models
                 result.CreatedMilestones = createdMilestones.Select(m => new ProjectMilestoneViewModel
@@ -408,7 +435,9 @@ Please create a comprehensive roadmap with milestones and tasks that:
                     Description = m.Description,
                     OrderIndex = m.OrderIndex,
                     TargetDateUtc = m.TargetDateUtc,
-                    Status = m.Status
+                    Status = m.Status,
+                    TasksCount = createdTasks.Count(t => t.MilestoneId == m.MilestoneId),
+                    DoneTasksCount = createdTasks.Count(t => t.MilestoneId == m.MilestoneId && t.Status == eTaskStatus.Done)
                 }).ToList();
 
                 result.CreatedTasks = createdTasks.Select(t => new ProjectTaskViewModel
@@ -427,6 +456,8 @@ Please create a comprehensive roadmap with milestones and tasks that:
                     AssignedUserId = t.AssignedUserId,
                     MilestoneId = t.MilestoneId,
                     MilestoneTitle = t.Milestone?.Title,
+                    SubtaskCount = t.Subtasks?.Count ?? 0,
+                    CompletedSubtaskCount = t.Subtasks?.Count(s => s.IsDone) ?? 0,
                     Subtasks = t.Subtasks?.Select(s => new ProjectSubtaskViewModel
                     {
                         SubtaskId = s.SubtaskId,
