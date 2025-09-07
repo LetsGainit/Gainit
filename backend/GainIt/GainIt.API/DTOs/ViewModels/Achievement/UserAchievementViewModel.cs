@@ -20,7 +20,10 @@ namespace GainIt.API.DTOs.ViewModels.Achievement
             {
                 Title = i_UserAchievement.AchievementTemplate.Title;
                 Description = i_UserAchievement.AchievementTemplate.Description;
-                IconUrl = i_UserAchievement.AchievementTemplate.IconUrl;
+                // Prefer per-achievement icon if provided; fallback to template icon
+                IconUrl = !string.IsNullOrWhiteSpace(i_UserAchievement.AchievementIconUrl)
+                    ? i_UserAchievement.AchievementIconUrl!
+                    : i_UserAchievement.AchievementTemplate.IconUrl;
                 UnlockCriteria = i_UserAchievement.AchievementTemplate.UnlockCriteria;
                 Category = i_UserAchievement.AchievementTemplate.Category;
             }
@@ -28,7 +31,7 @@ namespace GainIt.API.DTOs.ViewModels.Achievement
             {
                 Title = "Don't hold achievements";
                 Description = string.Empty;
-                IconUrl = string.Empty;
+                IconUrl = i_UserAchievement.AchievementIconUrl ?? string.Empty;
                 UnlockCriteria = string.Empty;
                 Category = string.Empty;
             }

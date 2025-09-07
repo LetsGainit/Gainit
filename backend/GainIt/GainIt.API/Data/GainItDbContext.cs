@@ -293,8 +293,8 @@ namespace GainIt.API.Data
                         // Configure Duration to handle PostgreSQL interval type properly
                     entity.Property(e => e.Duration)
                         .HasConversion(
-                            v => v.TotalDays, // Convert TimeSpan to days for storage
-                            v => TimeSpan.FromDays(v)); // Convert days back to TimeSpan
+                            v => (int)v.TotalDays, // Convert TimeSpan to days (integer) for storage
+                            v => TimeSpan.FromDays(v)); // Convert days back to TimeSpan
 
 
 
@@ -574,7 +574,7 @@ namespace GainIt.API.Data
                         .HasMaxLength(500);
 
                     entity.Property(e => e.IconUrl)
-                        .HasMaxLength(200);
+                        .HasMaxLength(500);
 
                     entity.Property(e => e.UnlockCriteria)
                         .IsRequired()
@@ -1477,7 +1477,7 @@ namespace GainIt.API.Data
                     ProjectId = Guid.NewGuid(),
                     ProjectName = "TechForGood Learning Platform",
                     ProjectDescription = "An online learning platform for TechForGood Israel to provide free coding courses to underprivileged communities. Features include course management, progress tracking, and interactive coding exercises.",
-                    ProjectStatus = eProjectStatus.InProgress,
+                    ProjectStatus = eProjectStatus.Pending,
                     ProjectSource = eProjectSource.NonprofitOrganization,
                     CreatedAtUtc = DateTime.UtcNow.AddDays(-30),
                     OwningOrganization = nonprofit,
@@ -1544,7 +1544,7 @@ namespace GainIt.API.Data
                     ProjectId = Guid.NewGuid(),
                     ProjectName = "Local Business Directory",
                     ProjectDescription = "A platform for small businesses to create profiles, manage their information, and connect with local customers. Includes features for business owners to update their information and for customers to leave reviews.",
-                    ProjectStatus = eProjectStatus.InProgress,
+                    ProjectStatus = eProjectStatus.Pending,
                     ProjectSource = eProjectSource.Template,
                     DifficultyLevel = eDifficultyLevel.Beginner,
                     CreatedAtUtc = DateTime.UtcNow.AddDays(-10),
@@ -1609,7 +1609,7 @@ namespace GainIt.API.Data
                     ProjectId = Guid.NewGuid(),
                     ProjectName = "Community Food Bank Management System",
                     ProjectDescription = "A web application to help food banks manage inventory, track donations, and coordinate volunteers. Features include donation tracking, volunteer scheduling, and inventory management.",
-                    ProjectStatus = eProjectStatus.InProgress,
+                    ProjectStatus = eProjectStatus.Pending,
                     ProjectSource = eProjectSource.Template,
                     DifficultyLevel = eDifficultyLevel.Intermediate,
                     CreatedAtUtc = DateTime.UtcNow.AddDays(-2),
@@ -1864,78 +1864,33 @@ namespace GainIt.API.Data
                 #region Seed Achievements
                 var achievementTemplates = new List<AchievementTemplate>
                 {
-                    new AchievementTemplate
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "First Project Complete",
-                        Description = "Successfully completed your first project",
-                        IconUrl = "/achievements/first-project.png",
-                        UnlockCriteria = "Complete a project with status 'Completed'",
-                        Category = "Project Completion"
-                    },
-                    new AchievementTemplate
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "Team Player",
-                        Description = "Participated in 5 different projects",
-                        IconUrl = "/achievements/team-player.png",
-                        UnlockCriteria = "Be a team member in 5 different projects",
-                        Category = "Collaboration"
-                    },
-                    new AchievementTemplate
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "Mentor's Choice",
-                        Description = "Received positive feedback from a mentor",
-                        IconUrl = "/achievements/mentor-choice.png",
-                        UnlockCriteria = "Receive positive feedback from a project mentor",
-                        Category = "Recognition"
-                    },
-                    new AchievementTemplate
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "Expert Mentor",
-                        Description = "Successfully mentored 3 different projects",
-                        IconUrl = "/achievements/expert-mentor.png",
-                        UnlockCriteria = "Mentor 3 different projects to completion",
-                        Category = "Leadership"
-                    },
-                    new AchievementTemplate
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "Innovation Leader",
-                        Description = "Led a project that introduced new technologies or approaches",
-                        IconUrl = "/achievements/innovation-leader.png",
-                        UnlockCriteria = "Lead a project that successfully implements innovative solutions",
-                        Category = "Innovation"
-                    },
-                    new AchievementTemplate
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "Community Builder",
-                        Description = "Successfully organized and led community-focused projects",
-                        IconUrl = "/achievements/community-builder.png",
-                        UnlockCriteria = "Lead 2 community-focused projects",
-                        Category = "Community"
-                    },
-                    new AchievementTemplate
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "Tech Pioneer",
-                        Description = "Mastered cutting-edge technologies in project development",
-                        IconUrl = "/achievements/tech-pioneer.png",
-                        UnlockCriteria = "Use advanced technologies in 3 different projects",
-                        Category = "Technology"
-                    },
-                    new AchievementTemplate
-                    {
-                        Id = Guid.NewGuid(),
-                        Title = "Social Impact Champion",
-                        Description = "Contributed to projects with significant social impact",
-                        IconUrl = "/achievements/social-impact.png",
-                        UnlockCriteria = "Participate in 3 nonprofit or social impact projects",
-                        Category = "Social Impact"
-                    }
+                    // New Gainer Achievements (10)
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Project Pioneer", Description = "Complete 3 projects", IconUrl = "/achievements/project-pioneer.png", UnlockCriteria = "Complete 3 projects", Category = "Project Completion" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Beginner Conqueror", Description = "Complete 2 beginner-level projects", IconUrl = "/achievements/beginner-conqueror.png", UnlockCriteria = "Complete 2 beginner-level projects", Category = "Project Completion" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Nonprofit Hero", Description = "Complete 1 nonprofit project", IconUrl = "/achievements/nonprofit-hero.png", UnlockCriteria = "Complete 1 nonprofit project", Category = "Social Impact" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "First Commit", Description = "Make your first commit", IconUrl = "/achievements/first-commit.png", UnlockCriteria = "Make your first commit", Category = "GitHub" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Code Contributor", Description = "Make 15 commits", IconUrl = "/achievements/code-contributor.png", UnlockCriteria = "Make 15 commits", Category = "GitHub" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Pull Request Pro", Description = "Create 5 successful pull requests", IconUrl = "/achievements/pull-request-pro.png", UnlockCriteria = "Create 5 successful pull requests", Category = "GitHub" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Team Player", Description = "Join 2 different project teams", IconUrl = "/achievements/team-player.png", UnlockCriteria = "Join 2 different project teams", Category = "Collaboration" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Forum Contributor", Description = "Create 5 forum posts", IconUrl = "/achievements/forum-contributor.png", UnlockCriteria = "Create 5 forum posts", Category = "Community" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Profile Builder", Description = "Complete your user profile", IconUrl = "/achievements/profile-builder.png", UnlockCriteria = "Complete your user profile", Category = "Onboarding" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Mentor Seeker", Description = "Work on 2 projects with mentors", IconUrl = "/achievements/mentor-seeker.png", UnlockCriteria = "Work on 2 projects with mentors", Category = "Collaboration" },
+
+                    // New Mentor Achievements (10)
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Mentor Guide", Description = "Mentor 3 projects", IconUrl = "/achievements/mentor-guide.png", UnlockCriteria = "Mentor 3 projects", Category = "Leadership" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Beginner Mentor", Description = "Mentor 2 beginner-level projects", IconUrl = "/achievements/beginner-mentor.png", UnlockCriteria = "Mentor 2 beginner-level projects", Category = "Leadership" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Nonprofit Mentor", Description = "Mentor 1 nonprofit project", IconUrl = "/achievements/nonprofit-mentor.png", UnlockCriteria = "Mentor 1 nonprofit project", Category = "Social Impact" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Forum Expert", Description = "Create 8 helpful forum posts", IconUrl = "/achievements/forum-expert.png", UnlockCriteria = "Create 8 helpful forum posts", Category = "Community" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Answer Provider", Description = "Provide 20 helpful forum replies", IconUrl = "/achievements/answer-provider.png", UnlockCriteria = "Provide 20 helpful forum replies", Category = "Community" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Code Review Expert", Description = "Review 10 pull requests", IconUrl = "/achievements/code-review-expert.png", UnlockCriteria = "Review 10 pull requests", Category = "Collaboration" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Team Builder", Description = "Help form 2 successful project teams", IconUrl = "/achievements/team-builder.png", UnlockCriteria = "Help form 2 successful project teams", Category = "Collaboration" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Join Request Reviewer", Description = "Approve 10 join requests", IconUrl = "/achievements/join-request-reviewer.png", UnlockCriteria = "Approve 10 join requests", Category = "Collaboration" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Mentor Profile Complete", Description = "Complete your mentor profile", IconUrl = "/achievements/mentor-profile-complete.png", UnlockCriteria = "Complete your mentor profile", Category = "Onboarding" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Knowledge Transfer", Description = "Conduct 3 knowledge sharing sessions", IconUrl = "/achievements/knowledge-transfer.png", UnlockCriteria = "Conduct 3 knowledge sharing sessions", Category = "Leadership" },
+
+                    // Dashboard Achievements (2)
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Task Master", Description = "Complete 50+ tasks", IconUrl = "/achievements/task-master.png", UnlockCriteria = "Complete at least 50 tasks", Category = "Productivity" },
+                    new AchievementTemplate { Id = Guid.NewGuid(), Title = "Code Reviewer", Description = "Review 25+ pull requests", IconUrl = "/achievements/code-reviewer.png", UnlockCriteria = "Review at least 25 pull requests", Category = "Collaboration" }
                 };
 
                 context.AchievementTemplates.AddRange(achievementTemplates);
@@ -2166,6 +2121,27 @@ namespace GainIt.API.Data
                         AchievementTemplate = achievementTemplates[7],
                         EarnedAtUtc = DateTime.UtcNow.AddDays(-12),
                         EarnedDetails = "Contributed to 3 nonprofit projects with significant healthcare impact"
+                    },
+                    // Dashboard-related achievements
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer1.UserId,
+                        User = gainer1,
+                        AchievementTemplateId = achievementTemplates[8].Id, // Task Master
+                        AchievementTemplate = achievementTemplates[8],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-3),
+                        EarnedDetails = "Completed over 50 tasks across multiple projects"
+                    },
+                    new UserAchievement
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = gainer2.UserId,
+                        User = gainer2,
+                        AchievementTemplateId = achievementTemplates[9].Id, // Code Reviewer
+                        AchievementTemplate = achievementTemplates[9],
+                        EarnedAtUtc = DateTime.UtcNow.AddDays(-2),
+                        EarnedDetails = "Reviewed more than 25 pull requests"
                     }
                 };
 

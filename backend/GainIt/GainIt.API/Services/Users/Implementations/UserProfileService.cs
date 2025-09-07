@@ -286,6 +286,13 @@ namespace GainIt.API.Services.Users.Implementations
                     throw new KeyNotFoundException($"Gainer with ID {i_userId} not found");
                 }
 
+                // Manually attach TechExpertise because the nav is ignored in the model mapping
+                var gainerTech = await r_DbContext.TechExpertises.FirstOrDefaultAsync(t => t.UserId == i_userId);
+                if (gainerTech != null)
+                {
+                    gainer.TechExpertise = gainerTech;
+                }
+
                 r_logger.LogInformation("Successfully retrieved Gainer: UserId={UserId}", i_userId);
                 return gainer;
             }
@@ -337,8 +344,7 @@ namespace GainIt.API.Services.Users.Implementations
                     throw new KeyNotFoundException($"Mentor with ID {i_userId} not found");
                 }
 
-                // Load collections separately to avoid the warning
-                // TechExpertise navigation is ignored in the model; skip loading it here
+                // Load collections separately. Attach TechExpertise manually from DbSet
 
                 await r_DbContext.Entry(mentor)
                     .Collection(m => m.MentoredProjects)
@@ -347,6 +353,12 @@ namespace GainIt.API.Services.Users.Implementations
                 await r_DbContext.Entry(mentor)
                     .Collection(m => m.Achievements)
                     .LoadAsync();
+
+                var mentorTech = await r_DbContext.TechExpertises.FirstOrDefaultAsync(t => t.UserId == i_userId);
+                if (mentorTech != null)
+                {
+                    mentor.TechExpertise = mentorTech;
+                }
 
                 r_logger.LogInformation("Successfully retrieved Mentor: UserId={UserId}", i_userId);
                 return mentor;
@@ -419,6 +431,29 @@ namespace GainIt.API.Services.Users.Implementations
                 gainer.EducationStatus = i_updateDto.EducationStatus;
                 gainer.AreasOfInterest = i_updateDto.AreasOfInterest;   // we get it as List<string> so we need to think how to take it
 
+                // Upsert TechExpertise if expertise fields are provided
+                if (i_updateDto.ProgrammingLanguages != null || i_updateDto.Technologies != null || i_updateDto.Tools != null)
+                {
+                    var existingExpertise = await r_DbContext.TechExpertises.FirstOrDefaultAsync(t => t.UserId == i_userId);
+                    if (existingExpertise == null)
+                    {
+                        existingExpertise = new TechExpertise
+                        {
+                            ExpertiseId = Guid.NewGuid(),
+                            UserId = i_userId,
+                            User = gainer,
+                            ProgrammingLanguages = new List<string>(),
+                            Technologies = new List<string>(),
+                            Tools = new List<string>()
+                        };
+                        r_DbContext.TechExpertises.Add(existingExpertise);
+                    }
+
+                    existingExpertise.ProgrammingLanguages = (i_updateDto.ProgrammingLanguages ?? new List<string>()).ToList();
+                    existingExpertise.Technologies = (i_updateDto.Technologies ?? new List<string>()).ToList();
+                    existingExpertise.Tools = (i_updateDto.Tools ?? new List<string>()).ToList();
+                }
+
                 await r_DbContext.SaveChangesAsync();
                 
                 r_logger.LogInformation("Successfully updated Gainer profile: UserId={UserId}", i_userId);
@@ -466,6 +501,29 @@ namespace GainIt.API.Services.Users.Implementations
                 gainer.ProfilePictureURL = i_updateDto.ProfilePictureURL;
                 gainer.EducationStatus = i_updateDto.EducationStatus;
                 gainer.AreasOfInterest = i_updateDto.AreasOfInterest;
+
+                // Upsert TechExpertise if expertise fields are provided
+                if (i_updateDto.ProgrammingLanguages != null || i_updateDto.Technologies != null || i_updateDto.Tools != null)
+                {
+                    var existingExpertise = await r_DbContext.TechExpertises.FirstOrDefaultAsync(t => t.UserId == i_userId);
+                    if (existingExpertise == null)
+                    {
+                        existingExpertise = new TechExpertise
+                        {
+                            ExpertiseId = Guid.NewGuid(),
+                            UserId = i_userId,
+                            User = gainer,
+                            ProgrammingLanguages = new List<string>(),
+                            Technologies = new List<string>(),
+                            Tools = new List<string>()
+                        };
+                        r_DbContext.TechExpertises.Add(existingExpertise);
+                    }
+
+                    existingExpertise.ProgrammingLanguages = (i_updateDto.ProgrammingLanguages ?? new List<string>()).ToList();
+                    existingExpertise.Technologies = (i_updateDto.Technologies ?? new List<string>()).ToList();
+                    existingExpertise.Tools = (i_updateDto.Tools ?? new List<string>()).ToList();
+                }
 
                 await r_DbContext.SaveChangesAsync();
                 
@@ -573,8 +631,28 @@ namespace GainIt.API.Services.Users.Implementations
                 mentor.YearsOfExperience = i_updateDto.YearsOfExperience;
                 mentor.AreaOfExpertise = i_updateDto.AreaOfExpertise;
 
-                // Note: TechExpertise is now handled separately via the controller
-                // The expertise strings are processed in the controller before calling this service
+                // Upsert TechExpertise if expertise fields are provided
+                if (i_updateDto.ProgrammingLanguages != null || i_updateDto.Technologies != null || i_updateDto.Tools != null)
+                {
+                    var existingExpertise = await r_DbContext.TechExpertises.FirstOrDefaultAsync(t => t.UserId == userId);
+                    if (existingExpertise == null)
+                    {
+                        existingExpertise = new TechExpertise
+                        {
+                            ExpertiseId = Guid.NewGuid(),
+                            UserId = userId,
+                            User = mentor,
+                            ProgrammingLanguages = new List<string>(),
+                            Technologies = new List<string>(),
+                            Tools = new List<string>()
+                        };
+                        r_DbContext.TechExpertises.Add(existingExpertise);
+                    }
+
+                    existingExpertise.ProgrammingLanguages = (i_updateDto.ProgrammingLanguages ?? new List<string>()).ToList();
+                    existingExpertise.Technologies = (i_updateDto.Technologies ?? new List<string>()).ToList();
+                    existingExpertise.Tools = (i_updateDto.Tools ?? new List<string>()).ToList();
+                }
 
                 await r_DbContext.SaveChangesAsync();
                 
@@ -617,8 +695,34 @@ namespace GainIt.API.Services.Users.Implementations
                 // Update Nonprofit-specific properties
                 nonprofit.WebsiteUrl = updateDto.WebsiteUrl;
 
-                // Note: NonprofitExpertise is now handled separately via the controller
-                // The expertise strings are processed in the controller before calling this service
+                // Upsert NonprofitExpertise if provided in DTO
+                if (!string.IsNullOrWhiteSpace(updateDto.FieldOfWork) || !string.IsNullOrWhiteSpace(updateDto.MissionStatement))
+                {
+                    var existingExpertise = await r_DbContext.NonprofitExpertises.FirstOrDefaultAsync(t => t.UserId == userId);
+                    if (existingExpertise == null)
+                    {
+                        existingExpertise = new NonprofitExpertise
+                        {
+                            ExpertiseId = Guid.NewGuid(),
+                            UserId = userId,
+                            User = nonprofit,
+                            FieldOfWork = updateDto.FieldOfWork ?? string.Empty,
+                            MissionStatement = updateDto.MissionStatement ?? string.Empty
+                        };
+                        r_DbContext.NonprofitExpertises.Add(existingExpertise);
+                    }
+                    else
+                    {
+                        if (updateDto.FieldOfWork != null)
+                        {
+                            existingExpertise.FieldOfWork = updateDto.FieldOfWork;
+                        }
+                        if (updateDto.MissionStatement != null)
+                        {
+                            existingExpertise.MissionStatement = updateDto.MissionStatement;
+                        }
+                    }
+                }
 
                 await r_DbContext.SaveChangesAsync();
                 
@@ -937,7 +1041,8 @@ namespace GainIt.API.Services.Users.Implementations
                     EarnedAtUtc = DateTime.UtcNow,
                     User = gainer,
                     AchievementTemplate = achievementTemplate,
-                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}"
+                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}",
+                    AchievementIconUrl = achievementTemplate.IconUrl
                 };
 
                 // Add to DbContext explicitly to ensure proper tracking and ID generation
@@ -990,7 +1095,8 @@ namespace GainIt.API.Services.Users.Implementations
                     EarnedAtUtc = DateTime.UtcNow,
                     User = mentor,
                     AchievementTemplate = achievementTemplate,
-                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}"
+                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}",
+                    AchievementIconUrl = achievementTemplate.IconUrl
                 };
 
                 // Add to DbContext explicitly to ensure proper tracking and ID generation
@@ -1043,7 +1149,8 @@ namespace GainIt.API.Services.Users.Implementations
                     EarnedAtUtc = DateTime.UtcNow,
                     User = nonprofit,
                     AchievementTemplate = achievementTemplate,
-                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}"
+                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}",
+                    AchievementIconUrl = achievementTemplate.IconUrl
                 };
 
                 // Add to DbContext explicitly to ensure proper tracking and ID generation
