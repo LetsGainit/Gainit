@@ -277,7 +277,7 @@ GET /api/users/12345678-1234-1234-1234-123456789012/dashboard?forceRefresh=true
 | GET | `/templates` | Get all template projects | - |
 | GET | `/nonprofits` | Get nonprofit projects | - |
 | GET | `/active` | Get active projects | - |
-| GET | `/user/{userId}` | Get projects for specific user | - |
+| GET | `/user/me` | Get projects for current authenticated user | RequireAccessAsUser |
 | GET | `/mentor/{mentorId}` | Get projects for specific mentor | - |
 | GET | `/nonprofit/{nonprofitId}` | Get projects for specific nonprofit | - |
 
@@ -316,15 +316,71 @@ GET /api/users/12345678-1234-1234-1234-123456789012/dashboard?forceRefresh=true
 ### Project Management
 | Method | Endpoint | Description | Authorization |
 |--------|----------|-------------|---------------|
-| POST | `/start-from-template` | Start a new project from template | - |
+| POST | `/start-from-template` | Start a new project from template | RequireAccessAsUser |
 | PUT | `/{projectId}/update` | Update project details (including picture upload) | Project Admin/Mentor |
 | PUT | `/{projectId}/mentor` | Update project mentor | - |
 | DELETE | `/{projectId}/mentor` | Remove project mentor | - |
 | POST | `/{projectId}/team-members` | Add team members to project | - |
-| DELETE | `/{projectId}/team-members` | Remove team members from project | - |
+| DELETE | `/{projectId}/team-members` | Remove current user from project team | RequireAccessAsUser |
 | PUT | `/{projectId}/status` | Update project status | - |
 | PUT | `/{projectId}/repository` | Update project repository | - |
 | GET | `/{projectId}/picture` | Get project picture (proxy to blob storage) | - |
+
+#### POST `/start-from-template`
+**Description:** Start a new project from a template and assign the current authenticated user as a team member.
+
+**Authorization:** Requires authentication (`RequireAccessAsUser`)
+
+**Query Parameters:**
+- `templateId`: The ID of the template to use (required)
+
+**Response:** `UserProjectViewModel` (same structure as GET `/{projectId}`)
+
+**Example Usage:**
+```
+POST /api/projects/start-from-template?templateId=12345678-1234-1234-1234-123456789012
+```
+
+#### GET `/user/me`
+**Description:** Get all projects associated with the current authenticated user.
+
+**Authorization:** Requires authentication (`RequireAccessAsUser`)
+
+**Response:** `IEnumerable<ConciseUserProjectViewModel>`
+```json
+[
+  {
+    "projectId": "string",
+    "projectName": "string",
+    "projectDescription": "string",
+    "projectStatus": "string",
+    "difficultyLevel": "string",
+    "projectSource": "string",
+    "createdAtUtc": "datetime",
+    "projectPictureUrl": "string?",
+    "duration": "timespan?",
+    "userRole": "string",
+    "isAdmin": "boolean"
+  }
+]
+```
+
+**Example Usage:**
+```
+GET /api/projects/user/me
+```
+
+#### DELETE `/{projectId}/team-members`
+**Description:** Remove the current authenticated user from a project team.
+
+**Authorization:** Requires authentication (`RequireAccessAsUser`)
+
+**Response:** `UserProjectViewModel` (updated project details)
+
+**Example Usage:**
+```
+DELETE /api/projects/12345678-1234-1234-1234-123456789012/team-members
+```
 
 #### PUT `/{projectId}/update`
 **Description:** Update project details including name, description, repository link, picture upload, and other properties. Supports multipart form data for file uploads.
@@ -416,7 +472,7 @@ projectPictureUrl: "https://example.com/image.jpg"
 | GET | `/search` | Search projects | - |
 | GET | `/search/template` | Search template projects | - |
 | GET | `/search/vector` | Vector search for projects | - |
-| GET | `/match/profile` | Match projects to user profile | - |
+| GET | `/match/profile` | Match projects to current authenticated user's profile | RequireAccessAsUser |
 | GET | `/projects/filter` | Filter projects | - |
 | GET | `/templates/filter` | Filter template projects | - |
 
@@ -428,6 +484,107 @@ projectPictureUrl: "https://example.com/image.jpg"
 - `status`: Project status filter
 - `page`: Page number (default: 1)
 - `pageSize`: Items per page (default: 20)
+
+#### GET `/search/vector`
+**Description:** Performs vector-based semantic search for projects using AI-powered matching.
+
+**Query Parameters:**
+- `query`: The user's search text (required)
+- `count`: Maximum number of results to return (default: 3)
+
+**Response:** `ProjectMatchResultViewModel`
+```json
+{
+  "projects": [
+    {
+      "projectId": "string",
+      "projectName": "string",
+      "projectDescription": "string",
+      "difficultyLevel": "string",
+      "durationDays": "integer",
+      "goals": ["string"],
+      "technologies": ["string"],
+      "requiredRoles": ["string"],
+      "programmingLanguages": ["string"],
+      "projectSource": "string?",
+      "projectStatus": "string?",
+      "ragContext": {
+        "searchableText": "string",
+        "tags": ["string"],
+        "skillLevels": ["string"],
+        "projectType": "string",
+        "domain": "string",
+        "learningOutcomes": ["string"],
+        "complexityFactors": ["string"]
+      }
+    }
+  ],
+  "explanation": "string"
+}
+```
+
+**Example Usage:**
+```
+GET /api/projects/search/vector?query=web development with React&count=5
+```
+
+#### GET `/match/profile`
+**Description:** Matches projects to the current authenticated user's profile using AI-powered analysis of their skills, interests, and experience.
+
+**Authorization:** Requires authentication (`RequireAccessAsUser`)
+
+**Query Parameters:**
+- `count`: Maximum number of results to return (default: 3)
+
+**Response:** `IEnumerable<AzureVectorSearchProjectViewModel>`
+```json
+[
+  {
+    "projectId": "string",
+    "projectName": "string",
+    "projectDescription": "string",
+    "difficultyLevel": "string",
+    "durationDays": "integer",
+    "goals": ["string"],
+    "technologies": ["string"],
+    "requiredRoles": ["string"],
+    "programmingLanguages": ["string"],
+    "projectSource": "string?",
+    "projectStatus": "string?",
+    "ragContext": {
+      "searchableText": "string",
+      "tags": ["string"],
+      "skillLevels": ["string"],
+      "projectType": "string",
+      "domain": "string",
+      "learningOutcomes": ["string"],
+      "complexityFactors": ["string"]
+    }
+  }
+]
+```
+
+**Project Source Values:**
+- `"Template"`: Template project (can be started by users)
+- `"NonprofitOrganization"`: Active project created by a nonprofit
+- `"User"`: Active project created by a regular user
+
+**Project Status Values (for active projects only):**
+- `"NotActive"`: Project is not active
+- `"Pending"`: Project is pending approval
+- `"InProgress"`: Project is currently active
+- `"Completed"`: Project is completed
+
+**Example Usage:**
+```
+GET /api/projects/match/profile?count=5
+```
+
+**Benefits for Frontend:**
+- **Project Type Detection**: Use `projectSource` to distinguish between templates and active projects
+- **Status Information**: Use `projectStatus` to show current project state for active projects
+- **Rich Metadata**: Access `ragContext` for additional categorization and filtering
+- **Consistent Structure**: All project matching endpoints return the same view model structure
 
 ### Nonprofit Projects
 | Method | Endpoint | Description | Authorization |

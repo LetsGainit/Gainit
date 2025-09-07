@@ -2,11 +2,11 @@
 {
     public class ProjectMatchResultViewModel
     {
-        public List<TemplateProjectViewModel> Projects { get; }
+        public List<AzureVectorSearchProjectViewModel> Projects { get; }
         public string Explanation { get; }
 
         public ProjectMatchResultViewModel(
-            IEnumerable<TemplateProjectViewModel> projectVms,
+            IEnumerable<AzureVectorSearchProjectViewModel> projectVms,
             string explanation)
         {
             Projects = projectVms.ToList();

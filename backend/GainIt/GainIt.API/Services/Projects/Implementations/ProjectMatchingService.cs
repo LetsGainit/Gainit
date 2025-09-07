@@ -63,10 +63,13 @@ namespace GainIt.API.Services.Projects.Implementations
                 var filteredProjects = await filterProjectsWithChatAsync(chatrefinedQuery, matchedProjects);
                 r_logger.LogInformation("Projects filtered with chat: FilteredCount={FilteredCount}", filteredProjects.Count);
 
+                // Convert to AzureVectorSearchProjectViewModel
+                var projectViewModels = filteredProjects.Select(ConvertToAzureVectorSearchViewModel).ToList();
+
                 var chatExplenation = await getChatExplanationAsync(chatrefinedQuery, filteredProjects);
                 r_logger.LogInformation("Chat explanation generated: Chat Explanation={Explanation}", chatExplenation);
 
-                var result = new ProjectMatchResultDto(filteredProjects, chatExplenation);
+                var result = new ProjectMatchResultDto(projectViewModels, chatExplenation);
                 // Replace the existing logging line with colored project names using ANSI escape codes for green
                 r_logger.LogInformation(
                     "Project matching completed successfully: FinalResultCount={FinalResultCount}, ProjectNames={ProjectNames}",
@@ -82,7 +85,7 @@ namespace GainIt.API.Services.Projects.Implementations
             }
         }
 
-        public async Task<IEnumerable<TemplateProject>> MatchProjectsByProfileAsync(Guid i_UserId, int i_ResultCount = 3)
+        public async Task<IEnumerable<AzureVectorSearchProjectViewModel>> MatchProjectsByProfileAsync(Guid i_UserId, int i_ResultCount = 3)
         {
             r_logger.LogInformation("Matching projects by profile: UserId={UserId}, ResultCount={ResultCount}", i_UserId, i_ResultCount);
 
@@ -123,7 +126,9 @@ namespace GainIt.API.Services.Projects.Implementations
                     string.Join(", ", filteredProjects.Select(p => $"\u001b[32m{p.ProjectName}\u001b[0m"))
                 );
 
-                return filteredProjects;
+                // Convert to AzureVectorSearchProjectViewModel
+                var projectViewModels = filteredProjects.Select(ConvertToAzureVectorSearchViewModel).ToList();
+                return projectViewModels;
             }
             catch (KeyNotFoundException)
             {
@@ -656,6 +661,52 @@ namespace GainIt.API.Services.Projects.Implementations
                     string.Join(",", matchedProjectIds), matchedProjectIds.Count);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Converts a TemplateProject (which can be either TemplateProject or UserProject) to AzureVectorSearchProjectViewModel
+        /// </summary>
+        /// <param name="project">The project to convert</param>
+        /// <returns>AzureVectorSearchProjectViewModel with all relevant fields populated</returns>
+        private AzureVectorSearchProjectViewModel ConvertToAzureVectorSearchViewModel(TemplateProject project)
+        {
+            var viewModel = new AzureVectorSearchProjectViewModel
+            {
+                ProjectId = project.ProjectId.ToString(),
+                ProjectName = project.ProjectName,
+                ProjectDescription = project.ProjectDescription,
+                DifficultyLevel = project.DifficultyLevel.ToString(),
+                DurationDays = (int)project.Duration.TotalDays,
+                Goals = project.Goals?.ToArray() ?? new string[0],
+                Technologies = project.Technologies?.ToArray() ?? new string[0],
+                RequiredRoles = project.RequiredRoles?.ToArray() ?? new string[0],
+                ProgrammingLanguages = project.ProgrammingLanguages?.ToArray() ?? new string[0],
+                RagContext = new RagContextViewModel
+                {
+                    SearchableText = project.RagContext?.SearchableText ?? string.Empty,
+                    Tags = project.RagContext?.Tags?.ToArray() ?? new string[0],
+                    SkillLevels = project.RagContext?.SkillLevels?.ToArray() ?? new string[0],
+                    ProjectType = project.RagContext?.ProjectType ?? string.Empty,
+                    Domain = project.RagContext?.Domain ?? string.Empty,
+                    LearningOutcomes = project.RagContext?.LearningOutcomes?.ToArray() ?? new string[0],
+                    ComplexityFactors = project.RagContext?.ComplexityFactors?.ToArray() ?? new string[0]
+                }
+            };
+
+            // If it's a UserProject, populate the additional fields
+            if (project is UserProject userProject)
+            {
+                viewModel.ProjectSource = userProject.ProjectSource.ToString();
+                viewModel.ProjectStatus = userProject.ProjectStatus.ToString();
+            }
+            else
+            {
+                // For TemplateProject, set these as null or default values
+                viewModel.ProjectSource = "Template";
+                viewModel.ProjectStatus = null;
+            }
+
+            return viewModel;
         }
     }
 }

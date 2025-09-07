@@ -1,14 +1,14 @@
-﻿using GainIt.API.Models.Projects;
+﻿using GainIt.API.DTOs.ViewModels.Projects;
 
 namespace GainIt.API.DTOs.Search
 {
     public class ProjectMatchResultDto
     {
-        public IEnumerable<TemplateProject> Projects { get; }
+        public IEnumerable<AzureVectorSearchProjectViewModel> Projects { get; }
         public string Explanation { get; }
 
         public ProjectMatchResultDto(
-            IEnumerable<TemplateProject> projects,
+            IEnumerable<AzureVectorSearchProjectViewModel> projects,
             string explanation)
         {
             Projects = projects;

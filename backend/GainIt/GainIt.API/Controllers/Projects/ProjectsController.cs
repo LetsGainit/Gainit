@@ -195,32 +195,32 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Retrieves all projects associated with a specific user.
+        /// Retrieves all projects associated with the current authenticated user.
         /// </summary>
-        /// <param name="userId">The ID of the user.</param>
         /// <returns>A list of projects associated with the user.</returns>
-        [HttpGet("user/{userId}")]
-        public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetProjectsByUserId(Guid userId)
+        [HttpGet("user/me")]
+        [Authorize(Policy = "RequireAccessAsUser")]
+        public async Task<ActionResult<IEnumerable<ConciseUserProjectViewModel>>> GetMyProjects()
         {
-            r_logger.LogInformation("Getting projects for user: {UserId}", userId);
-            
-            if (userId == Guid.Empty)
-            {
-                r_logger.LogWarning("Invalid user ID provided: {UserId}", userId);
-                return BadRequest(new { Message = "User ID cannot be empty." });
-            }
-
             try
             {
+                var userId = await GetCurrentUserIdAsync();
+                r_logger.LogInformation("Getting projects for user: {UserId}", userId);
+                
                 var projects = await r_ProjectService.GetProjectsByUserIdAsync(userId);
                 var conciseProjects = projects.Select(p => new ConciseUserProjectViewModel(p, userId)).ToList();
                 
                 r_logger.LogInformation("Successfully retrieved {Count} projects for user: {UserId}", conciseProjects.Count, userId);
                 return Ok(conciseProjects);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                r_logger.LogWarning("Unauthorized access: Error={Error}", ex.Message);
+                return Unauthorized(new { Message = ex.Message });
+            }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error retrieving projects for user: {UserId}", userId);
+                r_logger.LogError(ex, "Error retrieving projects for current user");
                 throw;
             }
         }
@@ -291,24 +291,25 @@ namespace GainIt.API.Controllers.Projects
 
         #region Template Actions
         /// <summary>
-        /// Starts a new project from a template and assigns the user as a team member.
+        /// Starts a new project from a template and assigns the current authenticated user as a team member.
         /// </summary>
         /// <param name="templateId">The ID of the template to use.</param>
-        /// <param name="userId">The ID of the user to assign to the project.</param>
         /// <returns>The newly created project details.</returns>
         [HttpPost("start-from-template")]
-        public async Task<ActionResult<UserProjectViewModel>> CreateProjectFromTemplate([FromQuery] Guid templateId, [FromQuery] Guid userId)
+        [Authorize(Policy = "RequireAccessAsUser")]
+        public async Task<ActionResult<UserProjectViewModel>> CreateProjectFromTemplate([FromQuery] Guid templateId)
         {
-            r_logger.LogInformation("Creating project from template: TemplateId={TemplateId}, UserId={UserId}", templateId, userId);
-            
-            if (templateId == Guid.Empty || userId == Guid.Empty)
-            {
-                r_logger.LogWarning("Invalid parameters provided: TemplateId={TemplateId}, UserId={UserId}", templateId, userId);
-                return BadRequest(new { Message = "Template ID and User ID cannot be empty." });
-            }
-
             try
             {
+                var userId = await GetCurrentUserIdAsync();
+                r_logger.LogInformation("Creating project from template: TemplateId={TemplateId}, UserId={UserId}", templateId, userId);
+                
+                if (templateId == Guid.Empty)
+                {
+                    r_logger.LogWarning("Invalid template ID provided: TemplateId={TemplateId}", templateId);
+                    return BadRequest(new { Message = "Template ID cannot be empty." });
+                }
+
                 UserProject o_Project = await r_ProjectService.StartProjectFromTemplateAsync(templateId, userId);
 
                 UserProjectViewModel projectViewModel = new UserProjectViewModel(o_Project);
@@ -322,14 +323,19 @@ namespace GainIt.API.Controllers.Projects
                     projectViewModel
                 );
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                r_logger.LogWarning("Unauthorized access: TemplateId={TemplateId}, Error={Error}", templateId, ex.Message);
+                return Unauthorized(new { Message = ex.Message });
+            }
             catch (KeyNotFoundException e)
             {
-                r_logger.LogWarning("Template or user not found: TemplateId={TemplateId}, UserId={UserId}, Error={Error}", templateId, userId, e.Message);
+                r_logger.LogWarning("Template or user not found: TemplateId={TemplateId}, Error={Error}", templateId, e.Message);
                 return NotFound(new { Message = e.Message });
             }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error creating project from template: TemplateId={TemplateId}, UserId={UserId}", templateId, userId);
+                r_logger.LogError(ex, "Error creating project from template: TemplateId={TemplateId}", templateId);
                 throw;
             }
         }
@@ -419,24 +425,25 @@ namespace GainIt.API.Controllers.Projects
         #region Team Members Management
 
         /// <summary>
-        /// Removes a team member from a project.
+        /// Removes the current authenticated user from a project team.
         /// </summary>
         /// <param name="projectId">The ID of the project.</param>
-        /// <param name="userId">The ID of the user to remove from the team.</param>
         /// <returns>The updated project details.</returns>
         [HttpDelete("{projectId}/team-members")]
-        public async Task<ActionResult<UserProjectViewModel>> RemoveTeamMember(Guid projectId, [FromQuery] Guid userId)
+        [Authorize(Policy = "RequireAccessAsUser")]
+        public async Task<ActionResult<UserProjectViewModel>> RemoveTeamMember(Guid projectId)
         {
-            r_logger.LogInformation("Removing team member from project: ProjectId={ProjectId}, UserId={UserId}", projectId, userId);
-            
-            if (projectId == Guid.Empty || userId == Guid.Empty)
-            {
-                r_logger.LogWarning("Invalid parameters provided: ProjectId={ProjectId}, UserId={UserId}", projectId, userId);
-                return BadRequest(new { Message = "Project ID and User ID cannot be empty." });
-            }
-
             try
             {
+                var userId = await GetCurrentUserIdAsync();
+                r_logger.LogInformation("Removing team member from project: ProjectId={ProjectId}, UserId={UserId}", projectId, userId);
+                
+                if (projectId == Guid.Empty)
+                {
+                    r_logger.LogWarning("Invalid project ID provided: ProjectId={ProjectId}", projectId);
+                    return BadRequest(new { Message = "Project ID cannot be empty." });
+                }
+
                 UserProject updatedProject = await r_ProjectService.RemoveTeamMemberAsync(projectId, userId);
 
                 UserProjectViewModel userProjectViewModel = new UserProjectViewModel(updatedProject);
@@ -445,19 +452,24 @@ namespace GainIt.API.Controllers.Projects
 
                 return Ok(userProjectViewModel);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                r_logger.LogWarning("Unauthorized access: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
+                return Unauthorized(new { Message = ex.Message });
+            }
             catch (KeyNotFoundException e)
             {
-                r_logger.LogWarning("Project or user not found: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", projectId, userId, e.Message);
+                r_logger.LogWarning("Project or user not found: ProjectId={ProjectId}, Error={Error}", projectId, e.Message);
                 return NotFound(new { Message = e.Message });
             }
             catch (InvalidOperationException e)
             {
-                r_logger.LogWarning("Invalid operation: ProjectId={ProjectId}, UserId={UserId}, Error={Error}", projectId, userId, e.Message);
+                r_logger.LogWarning("Invalid operation: ProjectId={ProjectId}, Error={Error}", projectId, e.Message);
                 return BadRequest(new { Message = e.Message });
             }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error removing team member from project: ProjectId={ProjectId}, UserId={UserId}", projectId, userId);
+                r_logger.LogError(ex, "Error removing team member from project: ProjectId={ProjectId}", projectId);
                 throw;
             }
         }
@@ -798,11 +810,9 @@ namespace GainIt.API.Controllers.Projects
             {
                 ProjectMatchResultDto resultDto = await r_ProjectMatchingService.MatchProjectsByTextAsync(query, count);
 
-                var projectViewModels = resultDto.Projects.Select(p => new TemplateProjectViewModel(p)).ToList();
+                ProjectMatchResultViewModel resultViewModel = new ProjectMatchResultViewModel(resultDto.Projects, resultDto.Explanation);
 
-                ProjectMatchResultViewModel resultViewModel = new ProjectMatchResultViewModel(projectViewModels, resultDto.Explanation);
-
-                r_logger.LogInformation("Vector search completed: Query={Query}, Results={Count}", query, projectViewModels.Count);
+                r_logger.LogInformation("Vector search completed: Query={Query}, Results={Count}", query, resultDto.Projects.Count());
                 return Ok(resultViewModel);
             }
             catch (Exception ex)
@@ -813,25 +823,19 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
-        /// Matches projects to a user’s profile (Gainer or Mentor).
+        /// Matches projects to the current authenticated user's profile (Gainer or Mentor).
         /// </summary>
-        /// <param name="userId">The ID of the user whose profile to match.</param>
         /// <param name="count">Max number of results (default 3).</param>
         [HttpGet("match/profile")]
-        public async Task<ActionResult<IEnumerable<TemplateProjectViewModel>>> MatchByProfile(
-             [FromQuery] Guid userId,
+        [Authorize(Policy = "RequireAccessAsUser")]
+        public async Task<ActionResult<IEnumerable<AzureVectorSearchProjectViewModel>>> MatchByProfile(
              [FromQuery] int count = 3)
         {
-            r_logger.LogInformation("Matching projects by profile: UserId={UserId}, Count={Count}", userId, count);
-            
-            if (userId == Guid.Empty)
-            {
-                r_logger.LogWarning("Invalid user ID provided: {UserId}", userId);
-                return BadRequest(new { Message = "User ID is required." });
-            }
-
             try 
             { 
+                var userId = await GetCurrentUserIdAsync();
+                r_logger.LogInformation("Matching projects by profile: UserId={UserId}, Count={Count}", userId, count);
+                
                 var matchedProjects = await r_ProjectMatchingService.MatchProjectsByProfileAsync(userId, count);
 
                 if (matchedProjects == null || !matchedProjects.Any())
@@ -840,19 +844,22 @@ namespace GainIt.API.Controllers.Projects
                     return NotFound(new { Message = "No projects matched for the given user profile." });
                 }
 
-                var matchedProjectViewModels = matchedProjects.Select(p => new TemplateProjectViewModel(p)).ToList();
-                
-                r_logger.LogInformation("Successfully matched {Count} projects for user profile: {UserId}", matchedProjectViewModels.Count, userId);
-                return Ok(matchedProjectViewModels);
+                r_logger.LogInformation("Successfully matched {Count} projects for user profile: {UserId}", matchedProjects.Count(), userId);
+                return Ok(matchedProjects);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                r_logger.LogWarning("Unauthorized access: Error={Error}", ex.Message);
+                return Unauthorized(new { Message = ex.Message });
             }
             catch (KeyNotFoundException ex)
             {
-                r_logger.LogWarning("User profile not found: {UserId}, Error={Error}", userId, ex.Message);
+                r_logger.LogWarning("User profile not found: Error={Error}", ex.Message);
                 return NotFound(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
-                r_logger.LogError(ex, "Error matching projects by profile: UserId={UserId}, Count={Count}", userId, count);
+                r_logger.LogError(ex, "Error matching projects by profile: Count={Count}", count);
                 throw;
             }
         }
