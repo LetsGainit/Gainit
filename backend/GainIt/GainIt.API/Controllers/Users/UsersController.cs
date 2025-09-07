@@ -247,6 +247,7 @@ namespace GainIt.API.Controllers.Users
         /// Can be used to get summary for current authenticated user or any specific user by providing userId.
         /// </summary>
         /// <param name="userId">Optional user ID. If not provided, uses the current authenticated user.</param>
+        /// <param name="forceRefresh">Force refresh the summary data, bypassing cache</param>
         /// <returns>AI-generated summary of user's platform activity</returns>
         [HttpGet("me/summary")]
         [Authorize(Policy = "RequireAccessAsUser")]
@@ -254,7 +255,7 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetMySummary([FromQuery] Guid? userId = null)
+        public async Task<IActionResult> GetMySummary([FromQuery] Guid? userId = null, [FromQuery] bool forceRefresh = false)
         {
             var correlationId = HttpContext.TraceIdentifier;
             var startTime = DateTimeOffset.UtcNow;
@@ -264,6 +265,16 @@ namespace GainIt.API.Controllers.Users
 
             try
             {
+                // Add cache-busting headers
+                Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                Response.Headers["Pragma"] = "no-cache";
+                Response.Headers["Expires"] = "0";
+                
+                if (forceRefresh)
+                {
+                    r_logger.LogInformation("Force refresh requested for user summary. CorrelationId={CorrelationId}", correlationId);
+                }
+                
                 User? user;
                 
                 if (userId.HasValue)
@@ -307,7 +318,7 @@ namespace GainIt.API.Controllers.Users
                     return StatusCode(500, new { Message = "An error occurred while retrieving user information." });
                 }
 
-                var summary = await r_userSummaryService.GetUserSummaryAsync(user.UserId);
+                var summary = await r_userSummaryService.GetUserSummaryAsync(user.UserId, forceRefresh);
                 
                 var processingTime = DateTimeOffset.UtcNow.Subtract(startTime).TotalMilliseconds;
                 r_logger.LogInformation("Successfully retrieved user summary. CorrelationId={CorrelationId}, UserId={UserId}, ProcessingTime={ProcessingTime}ms, SummaryLength={Length}, RemoteIP={RemoteIP}", 
@@ -334,6 +345,7 @@ namespace GainIt.API.Controllers.Users
         /// refactoring rates, skill distribution, collaboration activity, achievements, and community engagement.
         /// </summary>
         /// <param name="userId">The unique identifier of the user</param>
+        /// <param name="forceRefresh">Force refresh the dashboard data, bypassing any potential caching</param>
         /// <returns>Dashboard analytics data with raw counts and calculated percentages</returns>
         [HttpGet("{userId}/dashboard")]
         [Authorize(Policy = "RequireAccessAsUser")]
@@ -341,10 +353,20 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetUserDashboardData(Guid userId)
+        public async Task<IActionResult> GetUserDashboardData(Guid userId, [FromQuery] bool forceRefresh = false)
         {
             try
             {
+                // Add cache-busting headers
+                Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+                Response.Headers["Pragma"] = "no-cache";
+                Response.Headers["Expires"] = "0";
+                
+                if (forceRefresh)
+                {
+                    r_logger.LogInformation("Force refresh requested for user dashboard: UserId={UserId}", userId);
+                }
+                
                 var dashboard = await r_userSummaryService.GetUserDashboardAsync(userId);
                 return Ok(dashboard);
             }
@@ -1454,8 +1476,8 @@ namespace GainIt.API.Controllers.Users
                 }
 
                 // Set cache headers
-                Response.Headers.Add("Cache-Control", "public, max-age=3600");
-                Response.Headers.Add("ETag", $"\"{blobResult.Details.ETag}\"");
+                Response.Headers["Cache-Control"] = "public, max-age=3600";
+                Response.Headers["ETag"] = $"\"{blobResult.Details.ETag}\"";
 
                 // Stream the image
                 return File(blobResult.Content, blobResult.ContentType);
@@ -1506,8 +1528,8 @@ namespace GainIt.API.Controllers.Users
                 }
 
                 // Set cache headers for better performance
-                Response.Headers.Add("Cache-Control", "public, max-age=3600"); // 1 hour cache
-                Response.Headers.Add("ETag", $"\"{blobResult.Details.ETag}\"");
+                Response.Headers["Cache-Control"] = "public, max-age=3600"; // 1 hour cache
+                Response.Headers["ETag"] = $"\"{blobResult.Details.ETag}\"";
 
                 // Stream the image to the browser
                 return File(blobResult.Content, blobResult.ContentType);

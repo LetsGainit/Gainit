@@ -11,8 +11,18 @@ namespace GainIt.API.Controllers.Projects
 {
     /// <summary>
     /// GitHub integration controller for managing repository links, analytics, and data synchronization
-    /// Uses GitHub REST API for public repository access without authentication requirements
     /// </summary>
+    /// <remarks>
+    /// This controller provides comprehensive GitHub integration capabilities including:
+    /// - Repository linking and management
+    /// - Analytics and statistics tracking
+    /// - User contribution analysis
+    /// - Activity summaries and insights
+    /// - Data synchronization and validation
+    /// 
+    /// Uses GitHub REST API for public repository access without authentication requirements.
+    /// All endpoints support parallel data fetching for optimal performance.
+    /// </remarks>
     [ApiController]
     [Route("api/[controller]")]
     [AllowAnonymous] // Allow all endpoints for testing REST API integration
@@ -33,13 +43,19 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Links a GitHub repository to a project
         /// </summary>
-        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="projectId">The unique identifier of the project to link the repository to</param>
         /// <param name="request">Repository link request containing the GitHub repository URL</param>
         /// <returns>Repository information and link confirmation</returns>
         /// <response code="200">Repository successfully linked to the project</response>
         /// <response code="400">Invalid repository URL or request data</response>
         /// <response code="409">Repository already linked or conflict occurred</response>
         /// <response code="500">Internal server error during linking process</response>
+        /// <example>
+        /// POST /api/github/projects/12345678-1234-1234-1234-123456789012/link
+        /// {
+        ///   "repositoryUrl": "https://github.com/owner/repository"
+        /// }
+        /// </example>
         [HttpPost("projects/{projectId}/link")]
         [ProducesResponseType(typeof(GitHubRepositoryLinkResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
@@ -86,9 +102,18 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets the GitHub repository linked to a project
         /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <returns>Repository information including name, owner, description, and basic stats</returns>
+        /// <response code="200">Repository information retrieved successfully</response>
+        /// <response code="404">No repository linked to this project</response>
+        /// <response code="500">Internal server error during retrieval</response>
+        /// <example>
+        /// GET /api/github/projects/12345678-1234-1234-1234-123456789012/repository
+        /// </example>
         [HttpGet("projects/{projectId}/repository")]
         [ProducesResponseType(typeof(GitHubRepositoryInfoDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetLinkedRepository(Guid projectId)
         {
             _logger.LogDebug("GetLinkedRepository called for project {ProjectId}", projectId);
@@ -133,9 +158,18 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets repository statistics for a project
         /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <returns>Detailed repository statistics including stars, forks, issues, and contributors</returns>
+        /// <response code="200">Repository statistics retrieved successfully</response>
+        /// <response code="404">Repository statistics not found for this project</response>
+        /// <response code="500">Internal server error during retrieval</response>
+        /// <example>
+        /// GET /api/github/projects/12345678-1234-1234-1234-123456789012/stats
+        /// </example>
         [HttpGet("projects/{projectId}/stats")]
         [ProducesResponseType(typeof(GitHubRepositoryStatsDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetRepositoryStats(Guid projectId)
         {
             _logger.LogDebug("GetRepositoryStats called for project {ProjectId}", projectId);
@@ -165,9 +199,20 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets GitHub analytics for a project with automatic data refresh
         /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="daysPeriod">Number of days to analyze (1-365, default: 30)</param>
+        /// <param name="force">Force refresh of analytics data (default: false)</param>
+        /// <returns>Comprehensive analytics data including commits, issues, pull requests, and contributor activity</returns>
+        /// <response code="200">Analytics data retrieved or generated successfully</response>
+        /// <response code="400">Invalid days period parameter</response>
+        /// <response code="500">Failed to retrieve or generate analytics data</response>
+        /// <example>
+        /// GET /api/github/projects/12345678-1234-1234-1234-123456789012/analytics?daysPeriod=30&amp;force=false
+        /// </example>
         [HttpGet("projects/{projectId}/analytics")]
         [ProducesResponseType(typeof(GitHubProjectAnalyticsResponseDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetProjectAnalytics(Guid projectId, [FromQuery] int daysPeriod = 30, [FromQuery] bool force = false)
         {
             _logger.LogDebug("GetProjectAnalytics called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
@@ -212,8 +257,19 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets user contributions for a project
         /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="daysPeriod">Number of days to analyze (1-365, default: 30)</param>
+        /// <param name="force">Force refresh of contribution data (default: false)</param>
+        /// <returns>List of user contributions including commits, issues, pull requests, and reviews</returns>
+        /// <response code="200">User contributions retrieved successfully</response>
+        /// <response code="400">Invalid days period parameter</response>
+        /// <response code="500">Internal server error during retrieval</response>
+        /// <example>
+        /// GET /api/github/projects/12345678-1234-1234-1234-123456789012/contributions?daysPeriod=30&amp;force=false
+        /// </example>
         [HttpGet("projects/{projectId}/contributions")]
         [ProducesResponseType(typeof(GitHubUserContributionsResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUserContributions(Guid projectId, [FromQuery] int daysPeriod = 30, [FromQuery] bool force = false)
         {
@@ -264,9 +320,23 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets contribution analytics for a specific user in a project
         /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="userId">The unique identifier of the user</param>
+        /// <param name="daysPeriod">Number of days to analyze (1-365, default: 30)</param>
+        /// <param name="force">Force refresh of contribution data (default: false)</param>
+        /// <returns>Detailed contribution analytics for the specified user</returns>
+        /// <response code="200">User contribution analytics retrieved successfully</response>
+        /// <response code="400">Invalid days period parameter</response>
+        /// <response code="404">No contribution data available for this user</response>
+        /// <response code="500">Internal server error during retrieval</response>
+        /// <example>
+        /// GET /api/github/projects/12345678-1234-1234-1234-123456789012/users/87654321-4321-4321-4321-210987654321/contributions?daysPeriod=30
+        /// </example>
         [HttpGet("projects/{projectId}/users/{userId}/contributions")]
         [ProducesResponseType(typeof(GitHubUserContributionDetailResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUserContribution(Guid projectId, Guid userId, [FromQuery] int daysPeriod = 30, [FromQuery] bool force = false)
         {
             try
@@ -328,8 +398,19 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets user activity summary for AI context
         /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="userId">The unique identifier of the user</param>
+        /// <param name="daysPeriod">Number of days to analyze (1-365, default: 30)</param>
+        /// <returns>AI-generated activity summary for the specified user</returns>
+        /// <response code="200">User activity summary generated successfully</response>
+        /// <response code="400">Invalid days period parameter</response>
+        /// <response code="500">Internal server error during generation</response>
+        /// <example>
+        /// GET /api/github/projects/12345678-1234-1234-1234-123456789012/users/87654321-4321-4321-4321-210987654321/activity?daysPeriod=30
+        /// </example>
         [HttpGet("projects/{projectId}/users/{userId}/activity")]
         [ProducesResponseType(typeof(GitHubUserActivitySummaryResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUserActivitySummary(Guid projectId, Guid userId, [FromQuery] int daysPeriod = 30)
         {
@@ -362,8 +443,18 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets project activity summary for AI context
         /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="daysPeriod">Number of days to analyze (1-365, default: 30)</param>
+        /// <returns>AI-generated activity summary for the entire project</returns>
+        /// <response code="200">Project activity summary generated successfully</response>
+        /// <response code="400">Invalid days period parameter</response>
+        /// <response code="500">Internal server error during generation</response>
+        /// <example>
+        /// GET /api/github/projects/12345678-1234-1234-1234-123456789012/activity-summary?daysPeriod=30
+        /// </example>
         [HttpGet("projects/{projectId}/activity-summary")]
         [ProducesResponseType(typeof(GitHubActivitySummaryBaseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetProjectActivitySummary(Guid projectId, [FromQuery] int daysPeriod = 30)
         {
@@ -395,6 +486,16 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets personalized GitHub analytics insights based on a user's specific query
         /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="userQuery">The user's specific query for personalized insights</param>
+        /// <param name="daysPeriod">Number of days to analyze (1-365, default: 30)</param>
+        /// <returns>AI-generated personalized insights based on the user query</returns>
+        /// <response code="200">Personalized insights generated successfully</response>
+        /// <response code="400">Invalid query or days period parameter</response>
+        /// <response code="500">Internal server error during generation</response>
+        /// <example>
+        /// GET /api/github/projects/12345678-1234-1234-1234-123456789012/insights?userQuery=What are the most active contributors?&amp;daysPeriod=30
+        /// </example>
         [HttpGet("projects/{projectId}/insights")]
         [ProducesResponseType(typeof(GitHubActivitySummaryBaseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
@@ -434,6 +535,15 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Manually syncs GitHub data for a project
         /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="syncType">Type of sync to perform: 'repository', 'analytics', or 'all' (default: 'all')</param>
+        /// <returns>Sync operation result with status and message</returns>
+        /// <response code="200">Data synced successfully</response>
+        /// <response code="400">Invalid sync type or sync operation failed</response>
+        /// <response code="500">Internal server error during sync</response>
+        /// <example>
+        /// POST /api/github/projects/12345678-1234-1234-1234-123456789012/sync?syncType=all
+        /// </example>
         [HttpPost("projects/{projectId}/sync")]
         [ProducesResponseType(typeof(GitHubSyncResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
@@ -486,6 +596,14 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Gets the sync status for a project
         /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <returns>Current sync status including progress and any error messages</returns>
+        /// <response code="200">Sync status retrieved successfully</response>
+        /// <response code="404">No sync history found for this project</response>
+        /// <response code="500">Internal server error during retrieval</response>
+        /// <example>
+        /// GET /api/github/projects/12345678-1234-1234-1234-123456789012/sync-status
+        /// </example>
         [HttpGet("projects/{projectId}/sync-status")]
         [ProducesResponseType(typeof(SyncStatusResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
@@ -528,6 +646,17 @@ namespace GainIt.API.Controllers.Projects
         /// <summary>
         /// Validates a GitHub repository URL
         /// </summary>
+        /// <param name="request">Repository URL validation request</param>
+        /// <returns>Validation result indicating if the URL is valid and accessible</returns>
+        /// <response code="200">URL validation completed successfully</response>
+        /// <response code="400">Repository URL is required</response>
+        /// <response code="500">Internal server error during validation</response>
+        /// <example>
+        /// POST /api/github/validate-url
+        /// {
+        ///   "repositoryUrl": "https://github.com/owner/repository"
+        /// }
+        /// </example>
         [HttpPost("validate-url")]
         [ProducesResponseType(typeof(UrlValidationResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
@@ -560,11 +689,203 @@ namespace GainIt.API.Controllers.Projects
         }
 
         /// <summary>
+        /// Gets comprehensive GitHub project overview including repository, stats, analytics, contributions, and activity summary
+        /// </summary>
+        /// <param name="projectId">The unique identifier of the project</param>
+        /// <param name="daysPeriod">Number of days to analyze (1-365, default: 30)</param>
+        /// <returns>Comprehensive project overview with all GitHub-related data aggregated</returns>
+        /// <response code="200">Project overview generated successfully</response>
+        /// <response code="400">Invalid days period parameter</response>
+        /// <response code="404">No GitHub repository linked to this project</response>
+        /// <response code="500">Internal server error during generation</response>
+        /// <remarks>
+        /// This endpoint provides a comprehensive overview by fetching data from multiple sources in parallel:
+        /// - Repository information and basic stats
+        /// - Detailed repository statistics
+        /// - Project analytics and metrics
+        /// - User contributions and activity
+        /// - AI-generated activity summary
+        /// - Current sync status
+        /// 
+        /// All data is fetched concurrently for optimal performance.
+        /// </remarks>
+        /// <example>
+        /// GET /api/github/projects/12345678-1234-1234-1234-123456789012/overview?daysPeriod=30
+        /// </example>
+        [HttpGet("projects/{projectId}/overview")]
+        [ProducesResponseType(typeof(GitHubProjectOverviewResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetProjectOverview(Guid projectId, [FromQuery] int daysPeriod = 30)
+        {
+            _logger.LogDebug("GetProjectOverview called for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
+            
+            try
+            {
+                if (daysPeriod <= 0 || daysPeriod > 365)
+                {
+                    _logger.LogWarning("Invalid daysPeriod {DaysPeriod} for project {ProjectId}", daysPeriod, projectId);
+                    return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
+                }
+
+                // Get all data in parallel for better performance
+                var repositoryTask = _gitHubService.GetRepositoryAsync(projectId);
+                var statsTask = _gitHubService.GetRepositoryStatsAsync(projectId);
+                var analyticsTask = _gitHubService.GetProjectAnalyticsAsync(projectId, daysPeriod);
+                var contributionsTask = _gitHubService.ListProjectMembersContributionsAsync(projectId, daysPeriod);
+                var activitySummaryTask = _gitHubService.GetProjectActivitySummaryAsync(projectId, daysPeriod);
+                var syncStatusTask = _gitHubService.GetLastSyncStatusAsync(projectId);
+
+                await Task.WhenAll(repositoryTask, statsTask, analyticsTask, contributionsTask, activitySummaryTask, syncStatusTask);
+
+                var repository = await repositoryTask;
+                if (repository == null)
+                {
+                    _logger.LogWarning("No repository found for project {ProjectId}", projectId);
+                    return NotFound(new ErrorResponseDto { Error = "No GitHub repository linked to this project" });
+                }
+
+                var stats = await statsTask;
+                var analytics = await analyticsTask;
+                var contributions = await contributionsTask;
+                var activitySummary = await activitySummaryTask;
+                var syncStatus = await syncStatusTask;
+
+                // Create comprehensive overview response
+                var response = new GitHubProjectOverviewResponseDto
+                {
+                    ProjectId = projectId,
+                    DaysPeriod = daysPeriod,
+                    GeneratedAt = DateTime.UtcNow,
+                    
+                    // Repository information
+                    Repository = new GitHubRepositoryOverviewDto
+                    {
+                        RepositoryId = repository.RepositoryId,
+                        RepositoryName = repository.RepositoryName,
+                        OwnerName = repository.OwnerName,
+                        FullName = repository.FullName,
+                        Description = repository.Description,
+                        IsPublic = repository.IsPublic,
+                        PrimaryLanguage = repository.PrimaryLanguage,
+                        Languages = repository.Languages,
+                        StarsCount = repository.StarsCount ?? 0,
+                        ForksCount = repository.ForksCount ?? 0,
+                        OpenIssuesCount = repository.OpenIssuesCount ?? 0,
+                        OpenPullRequestsCount = repository.OpenPullRequestsCount ?? 0,
+                        DefaultBranch = repository.DefaultBranch,
+                        LastActivityAtUtc = repository.LastActivityAtUtc,
+                        LastSyncedAtUtc = repository.LastSyncedAtUtc,
+                        Branches = repository.Branches ?? new List<string>()
+                    },
+
+                    // Repository statistics
+                    Stats = stats != null ? new GitHubRepositoryStatsOverviewDto
+                    {
+                        StarsCount = stats.StarsCount ?? 0,
+                        ForksCount = stats.ForksCount ?? 0,
+                        IssueCount = stats.IssueCount,
+                        PullRequestCount = stats.PullRequestCount,
+                        BranchCount = stats.BranchCount,
+                        ReleaseCount = stats.ReleaseCount,
+                        Contributors = stats.Contributors,
+                        TopContributors = stats.TopContributors?.Select(tc => new TopContributorOverviewDto
+                        {
+                            GitHubUsername = tc.GitHubUsername,
+                            TotalCommits = tc.TotalCommits,
+                            TotalLinesChanged = tc.TotalLinesChanged,
+                            UniqueDaysWithCommits = tc.UniqueDaysWithCommits
+                        }).ToList() ?? new List<TopContributorOverviewDto>()
+                    } : null,
+
+                    // Analytics data
+                    Analytics = analytics != null ? new GitHubAnalyticsOverviewDto
+                    {
+                        CalculatedAt = analytics.CalculatedAtUtc,
+                        TotalCommits = analytics.TotalCommits,
+                        TotalAdditions = analytics.TotalAdditions,
+                        TotalDeletions = analytics.TotalDeletions,
+                        TotalLinesChanged = analytics.TotalLinesChanged,
+                        TotalIssues = analytics.TotalIssues,
+                        OpenIssues = analytics.OpenIssues,
+                        ClosedIssues = analytics.ClosedIssues,
+                        TotalPullRequests = analytics.TotalPullRequests,
+                        OpenPullRequests = analytics.OpenPullRequests,
+                        MergedPullRequests = analytics.MergedPullRequests,
+                        ClosedPullRequests = analytics.ClosedPullRequests,
+                        ActiveContributors = analytics.ActiveContributors,
+                        TotalContributors = analytics.TotalContributors,
+                        FirstCommitDate = analytics.FirstCommitDate,
+                        LastCommitDate = analytics.LastCommitDate,
+                        TotalStars = analytics.TotalStars,
+                        TotalForks = analytics.TotalForks,
+                        LanguageStats = analytics.LanguageStats,
+                        WeeklyCommits = analytics.WeeklyCommits,
+                        MonthlyCommits = analytics.MonthlyCommits
+                    } : null,
+
+                    // User contributions
+                    Contributions = contributions.Select(c => new GitHubContributionOverviewDto
+                    {
+                        UserId = c.UserId,
+                        GitHubUsername = c.GitHubUsername,
+                        TotalCommits = c.TotalCommits,
+                        TotalLinesChanged = c.TotalLinesChanged,
+                        TotalIssuesCreated = c.TotalIssuesCreated,
+                        TotalPullRequestsCreated = c.TotalPullRequestsCreated,
+                        TotalReviews = c.TotalReviews,
+                        UniqueDaysWithCommits = c.UniqueDaysWithCommits,
+                        FilesModified = c.FilesModified,
+                        LanguagesContributed = c.LanguagesContributed,
+                        LongestStreak = c.LongestStreak,
+                        CurrentStreak = c.CurrentStreak,
+                        CalculatedAtUtc = c.CalculatedAtUtc
+                    }).ToList(),
+
+                    // AI-generated activity summary
+                    ActivitySummary = activitySummary,
+
+                    // Sync status
+                    SyncStatus = syncStatus != null ? new GitHubSyncStatusOverviewDto
+                    {
+                        SyncType = syncStatus.SyncType,
+                        Status = syncStatus.Status,
+                        StartedAtUtc = syncStatus.StartedAtUtc,
+                        CompletedAtUtc = syncStatus.CompletedAtUtc,
+                        ItemsProcessed = syncStatus.ItemsProcessed ?? 0,
+                        TotalItems = syncStatus.TotalItems ?? 0,
+                        ErrorMessage = syncStatus.ErrorMessage
+                    } : null
+                };
+
+                _logger.LogInformation("Successfully generated comprehensive overview for project {ProjectId} with {ContributionsCount} contributions", 
+                    projectId, contributions.Count);
+                
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting project overview for project {ProjectId} with daysPeriod {DaysPeriod}", projectId, daysPeriod);
+                return StatusCode(500, new ErrorResponseDto { Error = "An error occurred while retrieving project overview" });
+            }
+        }
+
+        /// <summary>
         /// Resolves a GitHub repository (owner/name) to the linked projectId, if any
         /// </summary>
+        /// <param name="owner">The GitHub repository owner (username or organization)</param>
+        /// <param name="name">The GitHub repository name</param>
+        /// <returns>Project ID if the repository is linked to a project</returns>
+        /// <response code="200">Repository link resolved successfully</response>
+        /// <response code="404">Repository is not linked to any project</response>
+        /// <response code="500">Internal server error during resolution</response>
+        /// <example>
+        /// GET /api/github/repositories/microsoft/vscode/project
+        /// </example>
         [HttpGet("repositories/{owner}/{name}/project")]
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetLinkedProjectByRepository(string owner, string name)
         {
             try

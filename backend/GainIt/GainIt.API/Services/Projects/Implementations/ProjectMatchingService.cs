@@ -261,8 +261,8 @@ namespace GainIt.API.Services.Projects.Implementations
                 {
                     safeUserQuery = safeUserQuery
                         .Replace("timeline", "schedule", StringComparison.OrdinalIgnoreCase)
-                        .Replace("finish", "complete", StringComparison.OrdinalIgnoreCase)
-                        .Replace("when ", "", StringComparison.OrdinalIgnoreCase);
+                        .Replace("finish", "complete", StringComparison.OrdinalIgnoreCase);
+                    // Removed "when" replacement to preserve temporal questions
                 }
 
                 bool hasQuestion = !string.IsNullOrWhiteSpace(safeUserQuery);
@@ -291,10 +291,11 @@ namespace GainIt.API.Services.Projects.Implementations
                     default:
                         if (hasQuestion)
                         {
-                            systemPrompt = "You analyze GitHub repository activity and answer the user's question strictly from the provided data. " +
-                                           "Do not provide an overview. If unsupported (e.g., exact dates), reply: 'Timeline cannot be inferred from analytics.' " +
-                                           "Prefer last 7 days for 'this week'. Output at most 3 concise bullets (<=15 words).";
-                            userPrompt = $"User question: {safeUserQuery}\n\nGitHub Analytics (public data):\nPeriod: last {daysPeriod} days\n\n{safeSummary}\n\nAnswer only the question in up to 3 bullets. Include one bullet with the analysis period.";
+                            systemPrompt = "You analyze GitHub repository activity and answer the user's specific question using only the provided data. " +
+                                           "Focus directly on what the user asked - don't provide general information that doesn't relate to their question. " +
+                                           "If the data doesn't contain information to answer their question, say so clearly. " +
+                                           "Output 3-5 focused bullets that directly address their question, up to 25 words each.";
+                            userPrompt = $"User question: {safeUserQuery}\n\nGitHub Analytics (public data):\nPeriod: last {daysPeriod} days\n\n{safeSummary}\n\nAnswer ONLY the user's specific question. Include one bullet with the analysis period.";
                         }
                         else
                         {

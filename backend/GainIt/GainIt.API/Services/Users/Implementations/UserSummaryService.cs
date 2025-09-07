@@ -43,16 +43,23 @@ namespace GainIt.API.Services.Users.Implementations
             r_chatClient = openAIClient.GetChatClient(openAIOptionsAccessor.Value.ChatDeploymentName);
         }
 
-        public async Task<string> GetUserSummaryAsync(Guid userId)
+        public async Task<string> GetUserSummaryAsync(Guid userId, bool forceRefresh = false)
         {
             var cacheKey = $"user-summary:{userId}";
-            if (r_cache.TryGetValue(cacheKey, out string cached))
+            if (!forceRefresh && r_cache.TryGetValue(cacheKey, out string? cached))
             {
                 r_logger.LogDebug("User summary cache hit for UserId={UserId}", userId);
                 return cached ?? string.Empty;
             }
 
-            r_logger.LogInformation("Generating fresh user summary for UserId={UserId}", userId);
+            if (forceRefresh)
+            {
+                r_logger.LogInformation("Force refresh requested - generating fresh user summary for UserId={UserId}", userId);
+            }
+            else
+            {
+                r_logger.LogInformation("Generating fresh user summary for UserId={UserId}", userId);
+            }
 
             // 1) Load base user and platform activity (all-time)
             var user = await r_DbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
@@ -164,8 +171,8 @@ namespace GainIt.API.Services.Users.Implementations
 
             var bullets = await generateRecruiterSummaryAsync(facts.ToString());
 
-            // Cache 24h
-            r_cache.Set(cacheKey, bullets, TimeSpan.FromHours(24));
+            // Cache 1h
+            r_cache.Set(cacheKey, bullets, TimeSpan.FromHours(1));
             r_logger.LogInformation("User summary generated and cached for UserId={UserId}, SummaryLength={Length}", userId, bullets.Length);
             return bullets;
         }
@@ -429,10 +436,10 @@ namespace GainIt.API.Services.Users.Implementations
         {
             var userId = user.UserId;
             var cacheKey = $"user-github-fact:{userId}";
-            if (r_cache.TryGetValue(cacheKey, out string cached))
+            if (r_cache.TryGetValue(cacheKey, out string? cached))
             {
                 r_logger.LogDebug("GitHub fact cache hit for UserId={UserId}", userId);
-                return cached;
+                return cached ?? string.Empty;
             }
 
             r_logger.LogDebug("Generating fresh GitHub fact for UserId={UserId}, ProjectCount={ProjectCount}", userId, userProjectIds.Count);

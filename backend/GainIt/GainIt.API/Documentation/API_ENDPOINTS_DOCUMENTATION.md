@@ -66,6 +66,10 @@ This document provides a comprehensive overview of all API endpoints supported b
 **Response:** `UserProfileDto` (same structure as above)
 
 #### GET `/me/summary`
+**Query Parameters:**
+- `userId` (optional): User ID to get summary for (if not provided, uses current authenticated user)
+- `forceRefresh` (optional): Force refresh the summary data, bypassing cache (default: false)
+
 **Response:** object
 ```json
 {
@@ -73,7 +77,17 @@ This document provides a comprehensive overview of all API endpoints supported b
 }
 ```
 
+**Example Usage:**
+```
+GET /api/users/me/summary
+GET /api/users/me/summary?forceRefresh=true
+GET /api/users/me/summary?userId=12345678-1234-1234-1234-123456789012&forceRefresh=true
+```
+
 #### GET `/{userId}/dashboard`
+**Query Parameters:**
+- `forceRefresh` (optional): Force refresh the dashboard data, bypassing any potential caching (default: false)
+
 **Response:** object (analytics data used to build the dashboard)
 ```json
 {
@@ -120,6 +134,12 @@ This document provides a comprehensive overview of all API endpoints supported b
     "needsSetup": false
   }
 }
+```
+
+**Example Usage:**
+```
+GET /api/users/12345678-1234-1234-1234-123456789012/dashboard
+GET /api/users/12345678-1234-1234-1234-123456789012/dashboard?forceRefresh=true
 ```
 
 #### POST `/me/profile-picture`
@@ -417,8 +437,7 @@ projectPictureUrl: "https://example.com/image.jpg"
 ### Data Export
 | Method | Endpoint | Description | Authorization |
 |--------|----------|-------------|---------------|
-| GET | `/export-for-azure-vector-search` | Export data for Azure Vector Search | - |
-| POST | `/export-and-upload` | Export projects and upload to Azure Blob Storage | - |
+| POST | `/export-for-azure-vector-search` | Export data for Azure Vector Search and upload to blob storage | - |
 
 ---
 
@@ -812,6 +831,111 @@ projectPictureUrl: "https://example.com/image.jpg"
 }
 ```
 
+### Comprehensive Overview (Recommended)
+| Method | Endpoint | Description | Authorization |
+|--------|----------|-------------|---------------|
+| GET | `/projects/{projectId}/overview` | Get comprehensive GitHub project overview | - |
+
+#### GET `/projects/{projectId}/overview`
+**Query Parameters:**
+- `daysPeriod`: Number of days to analyze (1-365, default: 30)
+
+**Response:** `GitHubProjectOverviewResponseDto`
+```json
+{
+  "projectId": "guid",
+  "daysPeriod": "integer",
+  "generatedAt": "datetime",
+  "repository": {
+    "repositoryId": "guid",
+    "repositoryName": "string",
+    "ownerName": "string",
+    "fullName": "string",
+    "description": "string?",
+    "isPublic": "boolean",
+    "primaryLanguage": "string?",
+    "languages": ["string"],
+    "starsCount": "integer",
+    "forksCount": "integer",
+    "openIssuesCount": "integer",
+    "openPullRequestsCount": "integer",
+    "defaultBranch": "string?",
+    "lastActivityAtUtc": "datetime",
+    "lastSyncedAtUtc": "datetime",
+    "branches": ["string"]
+  },
+  "stats": {
+    "starsCount": "integer",
+    "forksCount": "integer",
+    "issueCount": "integer",
+    "pullRequestCount": "integer",
+    "branchCount": "integer",
+    "releaseCount": "integer",
+    "contributors": "integer",
+    "topContributors": [
+      {
+        "githubUsername": "string",
+        "totalCommits": "integer",
+        "totalLinesChanged": "integer",
+        "uniqueDaysWithCommits": "integer"
+      }
+    ]
+  },
+  "analytics": {
+    "calculatedAt": "datetime",
+    "totalCommits": "integer",
+    "totalAdditions": "integer",
+    "totalDeletions": "integer",
+    "totalLinesChanged": "integer",
+    "totalIssues": "integer",
+    "openIssues": "integer",
+    "closedIssues": "integer",
+    "totalPullRequests": "integer",
+    "openPullRequests": "integer",
+    "mergedPullRequests": "integer",
+    "closedPullRequests": "integer",
+    "activeContributors": "integer",
+    "totalContributors": "integer",
+    "firstCommitDate": "datetime?",
+    "lastCommitDate": "datetime?",
+    "totalStars": "integer",
+    "totalForks": "integer",
+    "languageStats": {"string": "integer"},
+    "weeklyCommits": {"string": "integer"},
+    "monthlyCommits": {"string": "integer"}
+  },
+  "contributions": [
+    {
+      "userId": "guid",
+      "githubUsername": "string?",
+      "totalCommits": "integer",
+      "totalLinesChanged": "integer",
+      "totalIssuesCreated": "integer",
+      "totalPullRequestsCreated": "integer",
+      "totalReviews": "integer",
+      "uniqueDaysWithCommits": "integer",
+      "filesModified": "integer",
+      "languagesContributed": ["string"],
+      "longestStreak": "integer",
+      "currentStreak": "integer",
+      "calculatedAtUtc": "datetime"
+    }
+  ],
+  "activitySummary": "string",
+  "syncStatus": {
+    "syncType": "string",
+    "status": "string",
+    "startedAtUtc": "datetime",
+    "completedAtUtc": "datetime?",
+    "itemsProcessed": "integer",
+    "totalItems": "integer",
+    "errorMessage": "string?"
+  }
+}
+```
+
+**Note:** This endpoint provides all GitHub data in a single call with parallel data fetching for optimal performance. Perfect for dashboard implementations.
+
 ### GitHub Analytics
 | Method | Endpoint | Description | Authorization |
 |--------|----------|-------------|---------------|
@@ -838,7 +962,16 @@ projectPictureUrl: "https://example.com/image.jpg"
 **Request Body:** `GitHubUrlValidationDto`
 ```json
 {
-  "url": "string"
+  "repositoryUrl": "string"
+}
+```
+
+**Response:** `UrlValidationResponseDto`
+```json
+{
+  "repositoryUrl": "string",
+  "isValid": "boolean",
+  "message": "string"
 }
 ```
 

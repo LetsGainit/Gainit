@@ -34,9 +34,17 @@ No GitHub App configuration is used. Access is to public repositories via REST.
 
 ## API Endpoints
 
+### Comprehensive Overview (Recommended)
+- `GET /api/github/projects/{projectId}/overview`: Get comprehensive GitHub project overview
+  - **Query Parameters:** `daysPeriod` (1-365, default: 30)
+  - **Returns:** All GitHub data in one call (repository, stats, analytics, contributions, activity summary, sync status)
+  - **Performance:** Parallel data fetching for optimal performance
+  - **Use Case:** Perfect for dashboard implementations
+
 ### Repository Management
 - `POST /api/github/projects/{projectId}/link`
 - `GET /api/github/projects/{projectId}/repository`
+- `GET /api/github/repositories/{owner}/{name}/project`
 - `POST /api/github/validate-url`
 
 ### Analytics & Contributions
@@ -45,7 +53,7 @@ No GitHub App configuration is used. Access is to public repositories via REST.
 - `GET /api/github/projects/{projectId}/users/{userId}/contributions`
 - `GET /api/github/projects/{projectId}/stats`
 
-### Summaries
+### Summaries & AI Insights
 - `GET /api/github/projects/{projectId}/users/{userId}/activity`
 - `GET /api/github/projects/{projectId}/activity-summary`
 - `GET /api/github/projects/{projectId}/insights?userQuery=...`
