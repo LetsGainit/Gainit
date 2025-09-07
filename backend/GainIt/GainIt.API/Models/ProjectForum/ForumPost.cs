@@ -8,7 +8,7 @@ namespace GainIt.API.Models.ProjectForum
     public class ForumPost
     {
         [Key]
-        public Guid PostId { get; set; }
+        public Guid PostId { get; set; } = Guid.NewGuid();
 
         [Required]
         public Guid ProjectId { get; set; }

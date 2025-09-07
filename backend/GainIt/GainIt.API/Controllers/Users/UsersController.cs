@@ -533,7 +533,7 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> AddExpertiseToGainer(Guid id, [FromBody] AddTechExpertiseDto expertiseDto)
+        public async Task<IActionResult> AddExpertiseToGainer([FromRoute] Guid id, [FromBody] AddTechExpertiseDto expertiseDto)
         {
             r_logger.LogInformation("Adding expertise to Gainer: UserId={UserId}", id);
             
@@ -584,7 +584,7 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> AddExpertiseToMentor(Guid id, [FromBody] AddTechExpertiseDto expertiseDto)
+        public async Task<IActionResult> AddExpertiseToMentor([FromRoute] Guid id, [FromBody] AddTechExpertiseDto expertiseDto)
         {
             r_logger.LogInformation("Adding expertise to Mentor: UserId={UserId}", id);
             
@@ -635,7 +635,7 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> AddExpertiseToNonprofit(Guid id, [FromBody] AddNonprofitExpertiseDto expertiseDto)
+        public async Task<IActionResult> AddExpertiseToNonprofit([FromRoute] Guid id, [FromBody] AddNonprofitExpertiseDto expertiseDto)
         {
             r_logger.LogInformation("Adding expertise to Nonprofit: NonprofitId={NonprofitId}", id);
             
@@ -690,7 +690,7 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> AddAchievementToGainer(Guid id, [FromBody] Guid achievementTemplateId)
+        public async Task<IActionResult> AddAchievementToGainer([FromRoute] Guid id, [FromBody] Guid achievementTemplateId)
         {
             r_logger.LogInformation("Adding achievement to Gainer: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", id, achievementTemplateId);
             
@@ -736,7 +736,7 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> AddAchievementToMentor(Guid id, [FromBody] Guid achievementTemplateId)
+        public async Task<IActionResult> AddAchievementToMentor([FromRoute] Guid id, [FromBody] Guid achievementTemplateId)
         {
             r_logger.LogInformation("Adding achievement to Mentor: UserId={UserId}, AchievementTemplateId={AchievementTemplateId}", id, achievementTemplateId);
             
@@ -781,7 +781,7 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> AddAchievementToNonprofit(Guid id, [FromBody] Guid achievementTemplateId)
+        public async Task<IActionResult> AddAchievementToNonprofit([FromRoute] Guid id, [FromBody] Guid achievementTemplateId)
         {
             r_logger.LogInformation("Adding achievement to Nonprofit: NonprofitId={NonprofitId}, AchievementTemplateId={AchievementTemplateId}", id, achievementTemplateId);
             
@@ -830,7 +830,7 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> UpdateGainerProfile(Guid id, [FromBody] GainerProfileUpdateDTO updateDto)
+        public async Task<IActionResult> UpdateGainerProfile([FromRoute] Guid id, [FromBody] GainerProfileUpdateDTO updateDto)
         {
             r_logger.LogInformation("Updating Gainer profile: UserId={UserId}", id);
             
@@ -895,7 +895,7 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> UpdateMentorProfile(Guid id, [FromBody] MentorProfileUpdateDTO updateDto)
+        public async Task<IActionResult> UpdateMentorProfile([FromRoute] Guid id, [FromBody] MentorProfileUpdateDTO updateDto)
         {
             r_logger.LogInformation("Updating Mentor profile: UserId={UserId}", id);
             
@@ -959,7 +959,7 @@ namespace GainIt.API.Controllers.Users
         [ProducesResponseType(typeof(object), 400)]
         [ProducesResponseType(typeof(object), 404)]
         [ProducesResponseType(500)]
-        public async Task<IActionResult> UpdateNonprofitProfile(Guid id, [FromBody] NonprofitProfileUpdateDTO updateDto)
+        public async Task<IActionResult> UpdateNonprofitProfile([FromRoute] Guid id, [FromBody] NonprofitProfileUpdateDTO updateDto)
         {
             r_logger.LogInformation("Updating Nonprofit profile: NonprofitId={NonprofitId}", id);
             

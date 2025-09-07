@@ -7,7 +7,7 @@ namespace GainIt.API.Models.Users
     public class AchievementTemplate
     {
         [Key]
-        public Guid Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
         [StringLength(200)]

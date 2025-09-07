@@ -6,7 +6,7 @@ namespace GainIt.API.Models.Users
     public class UserAchievement
     {
         [Key]
-        public Guid Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         // Reference to the achievement template
         [Required]

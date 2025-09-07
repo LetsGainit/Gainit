@@ -7,7 +7,7 @@ namespace GainIt.API.Models.Users.Expertise
     public abstract class UserExpertise
     {
         [Key]
-        public Guid ExpertiseId { get; set; }
+        public Guid ExpertiseId { get; set; } = Guid.NewGuid();
 
         [Required]
         [ForeignKey("UserId")]

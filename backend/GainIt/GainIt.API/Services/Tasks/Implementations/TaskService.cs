@@ -368,6 +368,12 @@ namespace GainIt.API.Services.Tasks.Implementations
                 {
                     var taskViewModel = await mapToTaskViewModelAsync(task);
                     await r_Notifications.TaskCompletedAsync(i_ProjectId, i_TaskId, oldStatus.ToString(), i_NewStatus.ToString());
+
+                    // Check if milestone should be auto-completed
+                    if (task.MilestoneId.HasValue)
+                    {
+                        await checkAndAutoCompleteMilestoneAsync(i_ProjectId, task.MilestoneId.Value);
+                    }
                 }
 
                 var resultViewModel = await mapToTaskViewModelAsync(task);
@@ -781,6 +787,12 @@ namespace GainIt.API.Services.Tasks.Implementations
 
                 await r_Db.SaveChangesAsync();
 
+                // Check if task should be auto-completed when all subtasks are done
+                if (i_IsDone)
+                {
+                    await checkAndAutoCompleteTaskAsync(i_ProjectId, i_TaskId);
+                }
+
                 var viewModel = new ProjectSubtaskViewModel
                 {
                     SubtaskId = subtask.SubtaskId,
@@ -916,5 +928,117 @@ namespace GainIt.API.Services.Tasks.Implementations
                 throw;
             }
         }
+
+        #region Auto-Completion Logic
+
+        /// <summary>
+        /// Checks if all subtasks are completed and automatically marks the parent task as done if so.
+        /// </summary>
+        /// <param name="projectId">The project ID.</param>
+        /// <param name="taskId">The task ID to check.</param>
+        /// <returns>True if the task was auto-completed, false otherwise.</returns>
+        private async Task<bool> checkAndAutoCompleteTaskAsync(Guid projectId, Guid taskId)
+        {
+            try
+            {
+                var task = await r_Db.ProjectTasks
+                    .Include(t => t.Subtasks)
+                    .FirstOrDefaultAsync(t => t.ProjectId == projectId && t.TaskId == taskId);
+
+                if (task == null || task.Status == eTaskStatus.Done)
+                    return false;
+
+                // Check if all subtasks are completed
+                var totalSubtasks = task.Subtasks.Count;
+                var completedSubtasks = task.Subtasks.Count(s => s.IsDone);
+
+                if (totalSubtasks > 0 && totalSubtasks == completedSubtasks)
+                {
+                    var oldStatus = task.Status;
+                    task.Status = eTaskStatus.Done;
+                    await r_Db.SaveChangesAsync();
+
+                    r_Log.LogInformation("Task auto-completed due to all subtasks being done: ProjectId={ProjectId}, TaskId={TaskId}, OldStatus={OldStatus}, NewStatus={NewStatus}", 
+                        projectId, taskId, oldStatus, eTaskStatus.Done);
+
+                    // Send notification for auto-completion
+                    await r_Notifications.TaskCompletedAsync(projectId, taskId, oldStatus.ToString(), eTaskStatus.Done.ToString());
+
+                    // Check if milestone should be auto-completed
+                    if (task.MilestoneId.HasValue)
+                    {
+                        await checkAndAutoCompleteMilestoneAsync(projectId, task.MilestoneId.Value);
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                r_Log.LogError(ex, "Error checking auto-completion for task: ProjectId={ProjectId}, TaskId={TaskId}", projectId, taskId);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if all tasks in a milestone are completed and automatically marks the milestone as completed if so.
+        /// </summary>
+        /// <param name="projectId">The project ID.</param>
+        /// <param name="milestoneId">The milestone ID to check.</param>
+        /// <returns>True if the milestone was auto-completed, false otherwise.</returns>
+        private async Task<bool> checkAndAutoCompleteMilestoneAsync(Guid projectId, Guid milestoneId)
+        {
+            try
+            {
+                var milestone = await r_Db.ProjectMilestones
+                    .FirstOrDefaultAsync(m => m.ProjectId == projectId && m.MilestoneId == milestoneId);
+
+                if (milestone == null || milestone.Status == eMilestoneStatus.Completed)
+                    return false;
+
+                // Check if all tasks in the milestone are completed
+                var totalTasks = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == projectId && t.MilestoneId == milestoneId);
+                var completedTasks = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == projectId && t.MilestoneId == milestoneId && t.Status == eTaskStatus.Done);
+
+                if (totalTasks > 0 && totalTasks == completedTasks)
+                {
+                    var oldStatus = milestone.Status;
+                    milestone.Status = eMilestoneStatus.Completed;
+                    await r_Db.SaveChangesAsync();
+
+                    r_Log.LogInformation("Milestone auto-completed due to all tasks being done: ProjectId={ProjectId}, MilestoneId={MilestoneId}, OldStatus={OldStatus}, NewStatus={NewStatus}", 
+                        projectId, milestoneId, oldStatus, eMilestoneStatus.Completed);
+
+                    // Create milestone view model for notification
+                    var milestoneViewModel = new ProjectMilestoneViewModel
+                    {
+                        MilestoneId = milestone.MilestoneId,
+                        Title = milestone.Title,
+                        Description = milestone.Description,
+                        Status = milestone.Status,
+                        OrderIndex = milestone.OrderIndex,
+                        TargetDateUtc = milestone.TargetDateUtc,
+                        TasksCount = totalTasks,
+                        DoneTasksCount = completedTasks
+                    };
+
+                    // Send notification for auto-completion
+                    await r_Notifications.MilestoneCompletedAsync(projectId, milestoneViewModel);
+
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                r_Log.LogError(ex, "Error checking auto-completion for milestone: ProjectId={ProjectId}, MilestoneId={MilestoneId}", projectId, milestoneId);
+                return false;
+            }
+        }
+
+        #endregion
     }
 }

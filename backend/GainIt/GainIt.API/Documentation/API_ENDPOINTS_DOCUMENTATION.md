@@ -552,6 +552,11 @@ projectPictureUrl: "https://example.com/image.jpg"
 "Todo" | "InProgress" | "Done" | "Blocked"
 ```
 
+**Auto-Completion Behavior:**
+- When a task is marked as `Done`, the system automatically checks if all tasks in the milestone are completed
+- If all tasks in a milestone are `Done`, the milestone is automatically marked as `Completed`
+- Notifications are sent for both task and milestone auto-completion
+
 ### Subtask Management
 | Method | Endpoint | Description | Authorization |
 |--------|----------|-------------|---------------|
@@ -560,6 +565,15 @@ projectPictureUrl: "https://example.com/image.jpg"
 | PUT | `/{i_TaskId}/subtasks/{subtaskId}` | Update subtask | - |
 | DELETE | `/{i_TaskId}/subtasks/{subtaskId}` | Delete subtask | - |
 | PUT | `/{i_TaskId}/subtasks/{subtaskId}/toggle` | Toggle subtask completion | - |
+
+#### PUT `/{i_TaskId}/subtasks/{subtaskId}/toggle`
+**Request Body:** `bool` - true to mark as done, false to mark as not done
+
+**Auto-Completion Behavior:**
+- When a subtask is marked as done, the system automatically checks if all subtasks in the parent task are completed
+- If all subtasks are `Done`, the parent task is automatically marked as `Done`
+- If the parent task becomes `Done` and all tasks in its milestone are `Done`, the milestone is automatically marked as `Completed`
+- Notifications are sent for task and milestone auto-completion
 
 ### Task Dependencies
 | Method | Endpoint | Description | Authorization |

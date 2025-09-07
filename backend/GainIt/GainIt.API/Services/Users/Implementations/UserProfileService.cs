@@ -80,7 +80,7 @@ namespace GainIt.API.Services.Users.Implementations
                     ExternalId = i_externalUserDto.ExternalId,
                     EmailAddress = email!,
                     FullName = fullName ?? "Unknown",
-                    Country =  null,
+                    Country = null,
                     GitHubUsername = null,
                     CreatedAt = DateTimeOffset.UtcNow,
                     LastLoginAt = DateTimeOffset.UtcNow
@@ -429,7 +429,7 @@ namespace GainIt.API.Services.Users.Implementations
 
                 // Update Gainer-specific properties
                 gainer.EducationStatus = i_updateDto.EducationStatus;
-                gainer.AreasOfInterest = i_updateDto.AreasOfInterest;   // we get it as List<string> so we need to think how to take it
+                gainer.AreasOfInterest = i_updateDto.AreasOfInterest;
 
                 // Upsert TechExpertise if expertise fields are provided
                 if (i_updateDto.ProgrammingLanguages != null || i_updateDto.Technologies != null || i_updateDto.Tools != null)
@@ -819,11 +819,14 @@ namespace GainIt.API.Services.Users.Implementations
                     r_logger.LogDebug("Gainer does not have TechExpertise. Creating new TechExpertise for Gainer: UserId={UserId}", userId);
                     gainer.TechExpertise = new TechExpertise
                     {
+                        UserId = userId, // Set the UserId explicitly
                         User = gainer, // Set the required 'User' property to the current gainer instance  
                         ProgrammingLanguages = new List<string>(),
                         Technologies = new List<string>(),
                         Tools = new List<string>()
                     };
+                    // Add the new entity to DbContext for proper tracking
+                    r_DbContext.TechExpertises.Add(gainer.TechExpertise);
                 }
 
                 // Clear existing and add new expertise (replaces instead of appending)
@@ -850,11 +853,6 @@ namespace GainIt.API.Services.Users.Implementations
 
 
 
-        // checked the methods above , from here need to go over
-
-
-
-
 
 
         public async Task<TechExpertise> AddExpertiseToMentorAsync(Guid userId, AddTechExpertiseDto expertiseDto)
@@ -873,11 +871,14 @@ namespace GainIt.API.Services.Users.Implementations
                     r_logger.LogDebug("Mentor does not have TechExpertise. Creating new TechExpertise for Mentor: UserId={UserId}", userId);
                     mentor.TechExpertise = new TechExpertise
                     {
+                        UserId = userId, // Set the UserId explicitly
                         User = mentor, // Set the required 'User' property to the current mentor instance  
                         ProgrammingLanguages = new List<string>(),
                         Technologies = new List<string>(),
                         Tools = new List<string>()
                     };
+                    // Add the new entity to DbContext for proper tracking
+                    r_DbContext.TechExpertises.Add(mentor.TechExpertise);
                 }
 
                 // Clear existing and add new expertise (replaces instead of appending)
@@ -918,10 +919,13 @@ namespace GainIt.API.Services.Users.Implementations
                     r_logger.LogDebug("Nonprofit does not have NonprofitExpertise. Creating new NonprofitExpertise for Nonprofit: UserId={UserId}", userId);
                     nonprofit.NonprofitExpertise = new NonprofitExpertise
                     {
+                        UserId = userId, // Set the UserId explicitly
                         User = nonprofit, // Set the required 'User' property to the current nonprofit instance  
                         FieldOfWork = expertiseDto.FieldOfWork,
                         MissionStatement = expertiseDto.MissionStatement
                     };
+                    // Add the new entity to DbContext for proper tracking
+                    r_DbContext.NonprofitExpertises.Add(nonprofit.NonprofitExpertise);
                 }
                 else
                 {
