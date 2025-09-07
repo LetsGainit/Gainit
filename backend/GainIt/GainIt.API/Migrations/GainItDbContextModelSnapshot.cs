@@ -320,15 +320,6 @@ namespace GainIt.API.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int>("IssuesAssigned")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("IssuesClosed")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("IssuesCommentedOn")
-                        .HasColumnType("integer");
-
                     b.Property<string>("LanguagesContributed")
                         .IsRequired()
                         .HasColumnType("text");

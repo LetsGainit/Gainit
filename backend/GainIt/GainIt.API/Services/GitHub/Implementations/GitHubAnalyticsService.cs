@@ -364,14 +364,49 @@ namespace GainIt.API.Services.GitHub.Implementations
                             contribution.LatestPullRequestCreatedAt = latestPr.CreatedAt;
                         }
 
-                        // Reviews made by the user on their own PRs (or in general, could be extended to all PRs)
+                        // Reviews made by the user on ALL PRs in the repository
                         int totalReviews = 0;
-                        foreach (var pr in userPrs.Take(MaxPrReviewsLookups)) // cap review lookups
+                        int reviewsApproved = 0;
+                        int reviewsRequestedChanges = 0;
+                        int reviewsCommented = 0;
+                        int pullRequestsReviewed = 0;
+                        int pullRequestsApproved = 0;
+                        int pullRequestsRequestedChanges = 0;
+
+                        var allPrs = pullRequests
+                            .Where(pr => pr.CreatedAt >= cutoff)
+                            .ToList();
+                        foreach (var pr in allPrs.Take(MaxPrReviewsLookups)) // cap review lookups
                         {
                             var reviews = await _gitHubApiClient.GetPullRequestReviewsAsync(repository.OwnerName, repository.RepositoryName, pr.Number);
-                            totalReviews += reviews.Count(r => string.Equals(r.User?.Login, username, StringComparison.OrdinalIgnoreCase));
+                            var userReviews = reviews.Where(r => string.Equals(r.User?.Login, username, StringComparison.OrdinalIgnoreCase)).ToList();
+                            
+                            if (userReviews.Any())
+                            {
+                                pullRequestsReviewed++;
+                                totalReviews += userReviews.Count;
+                                
+                                // Count review types
+                                reviewsApproved += userReviews.Count(r => string.Equals(r.State, "APPROVED", StringComparison.OrdinalIgnoreCase));
+                                reviewsRequestedChanges += userReviews.Count(r => string.Equals(r.State, "CHANGES_REQUESTED", StringComparison.OrdinalIgnoreCase));
+                                reviewsCommented += userReviews.Count(r => string.Equals(r.State, "COMMENTED", StringComparison.OrdinalIgnoreCase));
+                                
+                                // Check if user's review was the final decision (approved or requested changes)
+                                var hasApproved = userReviews.Any(r => string.Equals(r.State, "APPROVED", StringComparison.OrdinalIgnoreCase));
+                                var hasRequestedChanges = userReviews.Any(r => string.Equals(r.State, "CHANGES_REQUESTED", StringComparison.OrdinalIgnoreCase));
+                                
+                                if (hasApproved) pullRequestsApproved++;
+                                if (hasRequestedChanges) pullRequestsRequestedChanges++;
+                            }
                         }
+                        
                         contribution.TotalReviews = totalReviews;
+                        contribution.ReviewsApproved = reviewsApproved;
+                        contribution.ReviewsRequestedChanges = reviewsRequestedChanges;
+                        contribution.ReviewsCommented = reviewsCommented;
+                        contribution.PullRequestsReviewed = pullRequestsReviewed;
+                        contribution.PullRequestsApproved = pullRequestsApproved;
+                        contribution.PullRequestsRequestedChanges = pullRequestsRequestedChanges;
                         // If controller maps breakdowns, it can read them from DTO; core entity doesn't currently store
                     }
 
@@ -391,6 +426,14 @@ namespace GainIt.API.Services.GitHub.Implementations
                         var issuesClosed = userIssues.Count(i => string.Equals(i.State, "closed", StringComparison.OrdinalIgnoreCase));
                         contribution.OpenIssuesCreated = issuesOpened;
                         contribution.ClosedIssuesCreated = issuesClosed;
+
+                        // Note: Issue participation metrics (IssuesCommentedOn, IssuesAssigned, IssuesClosed) 
+                        // are not implemented due to API limitations. The GitHub REST API doesn't provide
+                        // easy access to issue comments, assignments, or close events without additional API calls.
+                        // These metrics remain at 0 until the API is enhanced.
+                        contribution.IssuesCommentedOn = 0;
+                        contribution.IssuesAssigned = 0;
+                        contribution.IssuesClosed = 0;
                     }
 
                     // Collaborators metric is simplistic: distinct authors appearing in commit set (excluding self)
