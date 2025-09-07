@@ -51,7 +51,7 @@ namespace GainIt.API.Controllers.Tasks
             try
             {
                 var userId = await GetCurrentUserIdAsync();
-                var milestones = await r_MilestoneService.GetMilestionesListAsync(projectId, userId);
+                var milestones = await r_MilestoneService.GetMilestonesListAsync(projectId, userId);
 
                 r_Logger.LogInformation("Milestones retrieved successfully: ProjectId={ProjectId}, Count={Count}", projectId, milestones.Count);
                 return Ok(milestones);

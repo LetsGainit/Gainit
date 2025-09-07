@@ -13,6 +13,9 @@ using Microsoft.Extensions.Logging;
 using GainIt.API.DTOs.Requests.Projects;
 using System.Text;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using GainIt.API.Data;
 
 namespace GainIt.API.Controllers.Projects
 {
@@ -25,19 +28,22 @@ namespace GainIt.API.Controllers.Projects
         private readonly IGitHubService r_GitHubService;
         private readonly IFileUploadService r_FileUploadService;
         private readonly ILogger<ProjectsController> r_logger;
+        private readonly GainItDbContext r_DbContext;
 
         public ProjectsController(
             IProjectService i_ProjectService, 
             IProjectMatchingService r_ProjectMatchingService,
             IGitHubService gitHubService,
             IFileUploadService fileUploadService,
-            ILogger<ProjectsController> logger)
+            ILogger<ProjectsController> logger,
+            GainItDbContext dbContext)
         {
             r_ProjectService = i_ProjectService;
             this.r_ProjectMatchingService = r_ProjectMatchingService;
             r_GitHubService = gitHubService;
             r_FileUploadService = fileUploadService;
             r_logger = logger;
+            r_DbContext = dbContext;
         }
 
         #region Project Retrieval
@@ -551,6 +557,161 @@ namespace GainIt.API.Controllers.Projects
                 throw;
             }
         }
+
+        /// <summary>
+        /// Updates project details including name, description, repository link, picture upload, and other properties.
+        /// </summary>
+        /// <param name="projectId">The ID of the project to update.</param>
+        /// <param name="updateDto">The project update data (supports multipart form data for file uploads).</param>
+        /// <returns>The updated project details.</returns>
+        [HttpPut("{projectId}/update")]
+        public async Task<ActionResult<UserProjectViewModel>> UpdateProject(
+            [FromRoute] Guid projectId, 
+            [FromForm] ProjectUpdateDto updateDto)
+        {
+            r_logger.LogInformation("Updating project: ProjectId={ProjectId}", projectId);
+            
+            if (projectId == Guid.Empty)
+            {
+                r_logger.LogWarning("Invalid project ID provided: {ProjectId}", projectId);
+                return BadRequest(new { Message = "Project ID cannot be empty." });
+            }
+
+            if (updateDto == null)
+            {
+                r_logger.LogWarning("Update DTO is null for project: {ProjectId}", projectId);
+                return BadRequest(new { Message = "Update data cannot be null." });
+            }
+
+            try
+            {
+                var userId = await GetCurrentUserIdAsync();
+                await ensureActorCanManageProjectAsync(projectId, userId);
+
+                // Parse form data for complex types if they come as strings
+                if (updateDto.Goals == null && !string.IsNullOrEmpty(Request.Form["Goals"]))
+                {
+                    var goalsString = Request.Form["Goals"].ToString();
+                    if (!string.IsNullOrEmpty(goalsString))
+                    {
+                        updateDto.Goals = goalsString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(g => g.Trim()).ToList();
+                    }
+                }
+
+                if (updateDto.Technologies == null && !string.IsNullOrEmpty(Request.Form["Technologies"]))
+                {
+                    var technologiesString = Request.Form["Technologies"].ToString();
+                    if (!string.IsNullOrEmpty(technologiesString))
+                    {
+                        updateDto.Technologies = technologiesString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(t => t.Trim()).ToList();
+                    }
+                }
+
+                if (updateDto.RequiredRoles == null && !string.IsNullOrEmpty(Request.Form["RequiredRoles"]))
+                {
+                    var rolesString = Request.Form["RequiredRoles"].ToString();
+                    if (!string.IsNullOrEmpty(rolesString))
+                    {
+                        updateDto.RequiredRoles = rolesString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(r => r.Trim()).ToList();
+                    }
+                }
+
+                if (updateDto.ProgrammingLanguages == null && !string.IsNullOrEmpty(Request.Form["ProgrammingLanguages"]))
+                {
+                    var languagesString = Request.Form["ProgrammingLanguages"].ToString();
+                    if (!string.IsNullOrEmpty(languagesString))
+                    {
+                        updateDto.ProgrammingLanguages = languagesString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(l => l.Trim()).ToList();
+                    }
+                }
+                
+                var updatedProject = await r_ProjectService.UpdateProjectAsync(projectId, updateDto);
+                var projectViewModel = new UserProjectViewModel(updatedProject);
+                
+                r_logger.LogInformation("Successfully updated project: ProjectId={ProjectId}, UserId={UserId}", projectId, userId);
+                return Ok(projectViewModel);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                r_logger.LogWarning("Unauthorized access: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
+                return Forbid(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                r_logger.LogWarning("Project not found: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                r_logger.LogWarning("Invalid argument provided: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                r_logger.LogWarning("Invalid operation: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error updating project: ProjectId={ProjectId}", projectId);
+                throw;
+            }
+        }
+
+
+        /// <summary>
+        /// Get a project's picture by project ID.
+        /// This endpoint acts as a proxy to serve images from private blob storage.
+        /// </summary>
+        /// <param name="projectId">The ID of the project.</param>
+        /// <returns>The project picture image.</returns>
+        [HttpGet("{projectId}/picture")]
+        public async Task<IActionResult> GetProjectPicture([FromRoute] Guid projectId)
+        {
+            try
+            {
+                // Get project to find picture URL
+                var project = await r_DbContext.Projects.FindAsync(projectId);
+                if (project == null)
+                {
+                    r_logger.LogWarning("Project not found when requesting picture: ProjectId={ProjectId}", projectId);
+                    return NotFound("Project not found");
+                }
+
+                if (string.IsNullOrEmpty(project.ProjectPictureUrl))
+                {
+                    r_logger.LogDebug("Project has no picture: ProjectId={ProjectId}", projectId);
+                    return NotFound("No project picture found");
+                }
+
+                r_logger.LogDebug("Retrieving project picture: ProjectId={ProjectId}, BlobUrl={BlobUrl}",
+                    projectId, project.ProjectPictureUrl);
+
+                // Fetch image from private blob storage
+                var blobResult = await r_FileUploadService.GetFileAsync(project.ProjectPictureUrl, "project-pictures");
+                if (blobResult == null)
+                {
+                    r_logger.LogWarning("Project picture blob not found: ProjectId={ProjectId}, BlobUrl={BlobUrl}",
+                        projectId, project.ProjectPictureUrl);
+                    return NotFound("Project picture not found");
+                }
+
+                // Set cache headers for better performance
+                Response.Headers.Add("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
+                Response.Headers.Add("ETag", $"\"{projectId}\"");
+
+                return File(blobResult.Content, blobResult.ContentType);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error retrieving project picture: ProjectId={ProjectId}", projectId);
+                return StatusCode(500, "An error occurred while retrieving the project picture");
+            }
+        }
         #endregion 
 
         #region Project Search and Filter
@@ -830,6 +991,74 @@ namespace GainIt.API.Controllers.Projects
             }
         }
 
+        #region Helper Methods
+
+        /// <summary>
+        /// Helper method to extract claim values from the user principal.
+        /// </summary>
+        /// <param name="user">The user principal.</param>
+        /// <param name="types">The claim types to try.</param>
+        /// <returns>The first non-empty claim value found, or null if none found.</returns>
+        private static string? tryGetClaim(ClaimsPrincipal user, params string[] types)
+        {
+            foreach (var t in types)
+            {
+                var v = user.FindFirstValue(t);
+                if (!string.IsNullOrWhiteSpace(v)) return v;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the current user ID from the JWT token claims.
+        /// </summary>
+        /// <returns>The current user ID from the database.</returns>
+        private async Task<Guid> GetCurrentUserIdAsync()
+        {
+            var externalId =
+                tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+            ?? tryGetClaim(User, "sub")
+            ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+            ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+            ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+            if (string.IsNullOrEmpty(externalId))
+                throw new UnauthorizedAccessException("User ID not found in token.");
+
+            // Find the user in the database by external ID
+            var user = await r_DbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.ExternalId == externalId);
+
+            if (user == null)
+                throw new UnauthorizedAccessException("User not found in database.");
+
+            return user.UserId;
+        }
+
+        /// <summary>
+        /// Ensures the actor can manage the project (is a project admin or mentor).
+        /// </summary>
+        /// <param name="projectId">The project ID.</param>
+        /// <param name="actorUserId">The actor user ID.</param>
+        private async Task ensureActorCanManageProjectAsync(Guid projectId, Guid actorUserId)
+        {
+            // Check if user is a mentor
+            var isMentor = await r_DbContext.Mentors.AnyAsync(m => m.UserId == actorUserId);
+            if (isMentor) return;
+
+            // Check if user is a project admin
+            var isProjectAdmin = await r_DbContext.ProjectMembers
+                .AnyAsync(pm => pm.ProjectId == projectId
+                             && pm.UserId == actorUserId
+                             && pm.IsAdmin
+                             && pm.LeftAtUtc == null);
+
+            if (!isProjectAdmin)
+                throw new UnauthorizedAccessException("Only project admins or mentors can update project details.");
+        }
+
+        #endregion
 
     }
 }

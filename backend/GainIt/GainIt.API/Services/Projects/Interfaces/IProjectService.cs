@@ -1,4 +1,5 @@
 ﻿using GainIt.API.DTOs.ViewModels.Projects;
+using GainIt.API.DTOs.Requests.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
 
@@ -41,6 +42,9 @@ namespace GainIt.API.Services.Projects.Interfaces
 
         // Update project repository link
         Task<UserProject> UpdateRepositoryLinkAsync(Guid i_ProjectId, string i_RepositoryLink);
+
+        // Update project details
+        Task<UserProject> UpdateProjectAsync(Guid i_ProjectId, ProjectUpdateDto i_UpdateDto);
 
         // Remove team member from project
         Task<UserProject> RemoveTeamMemberAsync(Guid i_ProjectId, Guid i_UserId);

@@ -297,12 +297,98 @@ This document provides a comprehensive overview of all API endpoints supported b
 | Method | Endpoint | Description | Authorization |
 |--------|----------|-------------|---------------|
 | POST | `/start-from-template` | Start a new project from template | - |
+| PUT | `/{projectId}/update` | Update project details (including picture upload) | Project Admin/Mentor |
 | PUT | `/{projectId}/mentor` | Update project mentor | - |
 | DELETE | `/{projectId}/mentor` | Remove project mentor | - |
 | POST | `/{projectId}/team-members` | Add team members to project | - |
 | DELETE | `/{projectId}/team-members` | Remove team members from project | - |
 | PUT | `/{projectId}/status` | Update project status | - |
 | PUT | `/{projectId}/repository` | Update project repository | - |
+| GET | `/{projectId}/picture` | Get project picture (proxy to blob storage) | - |
+
+#### PUT `/{projectId}/update`
+**Description:** Update project details including name, description, repository link, picture upload, and other properties. Supports multipart form data for file uploads.
+
+**Authorization:** Only project admins or mentors can update project details.
+
+**Request Body:** `ProjectUpdateDto` (multipart/form-data)
+```json
+{
+  "projectName": "string?",
+  "projectDescription": "string?",
+  "difficultyLevel": "Beginner|Intermediate|Advanced?",
+  "projectPictureUrl": "string?",
+  "projectPicture": "file?",
+  "repositoryLink": "string?",
+  "goals": ["string"]?,
+  "technologies": ["string"]?,
+  "requiredRoles": ["string"]?,
+  "programmingLanguages": ["string"]?,
+  "projectStatus": "NotActive|Pending|InProgress|Completed?"
+}
+```
+
+**Form Data Fields:**
+- `projectName`: Project name (max 200 characters)
+- `projectDescription`: Project description (max 1000 characters)
+- `difficultyLevel`: Difficulty level enum value
+- `projectPictureUrl`: Direct URL to project picture (max 500 characters)
+- `projectPicture`: Image file upload (overrides projectPictureUrl if provided)
+- `repositoryLink`: GitHub repository URL
+- `goals`: Comma-separated list of project goals
+- `technologies`: Comma-separated list of technologies
+- `requiredRoles`: Comma-separated list of required roles
+- `programmingLanguages`: Comma-separated list of programming languages
+- `projectStatus`: Project status enum value
+
+**File Upload Notes:**
+- **Supported formats**: JPG, JPEG, PNG, GIF, WebP
+- **Maximum size**: 10MB
+- **Storage**: Uploaded to private Azure Blob Storage in `project-pictures` container
+- **Priority**: File upload takes precedence over `projectPictureUrl` if both are provided
+
+**Response:** `UserProjectViewModel` (same structure as GET `/{projectId}`)
+
+**Example Request (with picture upload):**
+```http
+PUT /api/projects/{projectId}/update
+Content-Type: multipart/form-data
+
+projectName: "Updated Project Name"
+projectDescription: "Updated project description"
+projectPicture: [image file]
+technologies: "React,Node.js,TypeScript"
+goals: "Goal 1,Goal 2,Goal 3"
+```
+
+**Example Request (with picture URL):**
+```http
+PUT /api/projects/{projectId}/update
+Content-Type: multipart/form-data
+
+projectName: "Updated Project Name"
+projectPictureUrl: "https://example.com/image.jpg"
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid request data, validation errors, or invalid image file
+- `401 Unauthorized`: Missing or invalid authentication token
+- `403 Forbidden`: User is not a project admin or mentor
+- `404 Not Found`: Project not found
+- `500 Internal Server Error`: Server error during update
+
+#### GET `/{projectId}/picture`
+**Description:** Get a project's picture by project ID. This endpoint acts as a proxy to serve images from private Azure Blob Storage.
+
+**Authorization:** Public endpoint (no authentication required)
+
+**Response:** Image file stream with appropriate content type and cache headers
+
+**Cache Control:** 1 hour public cache with ETag support
+
+**Error Responses:**
+- `404 Not Found`: Project not found or no picture available
+- `500 Internal Server Error`: Server error retrieving image
 
 ### Project Search and Discovery
 | Method | Endpoint | Description | Authorization |
@@ -872,10 +958,14 @@ All endpoints include comprehensive logging with correlation IDs for request tra
 - Include proper authentication headers
 - Use appropriate HTTP methods for operations
 - Follow REST conventions for resource naming
+- For project updates with file uploads, use multipart/form-data content type
+- File uploads take precedence over URL fields when both are provided
 
 ### Azure Blob Storage Integration
 - **Profile Pictures**: Stored in private `profile-pictures` container
+- **Project Pictures**: Stored in private `project-pictures` container
 - **Project Exports**: Stored in private `projects` container
 - **Security**: All containers are private; images served via API proxy
 - **File Validation**: Supports JPG, JPEG, PNG, GIF, WebP formats up to 10MB
-- **Cache Control**: Profile pictures cached for 1 hour with ETag support
+- **Cache Control**: Profile and project pictures cached for 1 hour with ETag support
+- **Upload Integration**: Project pictures can be uploaded via the unified project update endpoint

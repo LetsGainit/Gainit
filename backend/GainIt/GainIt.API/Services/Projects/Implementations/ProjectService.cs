@@ -3,6 +3,7 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using GainIt.API.Data;
 using GainIt.API.DTOs.ViewModels.Projects;
+using GainIt.API.DTOs.Requests.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
 using GainIt.API.Options;
@@ -600,6 +601,90 @@ namespace GainIt.API.Services.Projects.Implementations
 
             r_logger.LogInformation("Successfully updated and re-linked GitHub repository: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", i_ProjectId, i_RepositoryLink);
             return project;
+        }
+
+        public async Task<UserProject> UpdateProjectAsync(Guid i_ProjectId, ProjectUpdateDto i_UpdateDto)
+        {
+            r_logger.LogInformation("Updating project details: ProjectId={ProjectId}", i_ProjectId);
+
+            try
+            {
+                var project = await r_DbContext.Projects
+                    .FirstOrDefaultAsync(p => p.ProjectId == i_ProjectId);
+
+                if (project == null)
+                {
+                    r_logger.LogWarning("Project not found: ProjectId={ProjectId}", i_ProjectId);
+                    throw new KeyNotFoundException($"Project with ID {i_ProjectId} not found");
+                }
+
+                // Update fields only if they are provided (not null)
+                if (!string.IsNullOrWhiteSpace(i_UpdateDto.ProjectName))
+                    project.ProjectName = i_UpdateDto.ProjectName;
+
+                if (!string.IsNullOrWhiteSpace(i_UpdateDto.ProjectDescription))
+                    project.ProjectDescription = i_UpdateDto.ProjectDescription;
+
+                if (i_UpdateDto.DifficultyLevel.HasValue)
+                    project.DifficultyLevel = i_UpdateDto.DifficultyLevel.Value;
+
+                // Handle project picture - file upload takes precedence over URL
+                if (i_UpdateDto.ProjectPicture != null)
+                {
+                    r_logger.LogInformation("Uploading project picture: ProjectId={ProjectId}, FileName={FileName}, Size={Size}KB",
+                        i_ProjectId, i_UpdateDto.ProjectPicture.FileName, i_UpdateDto.ProjectPicture.Length / 1024);
+
+                    // Validate file using image-specific validation
+                    if (!r_FileUploadService.IsValidImageFile(i_UpdateDto.ProjectPicture))
+                    {
+                        throw new ArgumentException("Invalid image file. Please ensure the file is a valid image format and under 10MB.");
+                    }
+
+                    // Upload to blob storage
+                    var blobUrl = await r_FileUploadService.UploadFileAsync(
+                        i_UpdateDto.ProjectPicture,
+                        "project-pictures",
+                        i_ProjectId.ToString());
+
+                    project.ProjectPictureUrl = blobUrl;
+                    r_logger.LogInformation("Project picture uploaded successfully: ProjectId={ProjectId}, BlobUrl={BlobUrl}", i_ProjectId, blobUrl);
+                }
+                else if (!string.IsNullOrWhiteSpace(i_UpdateDto.ProjectPictureUrl))
+                {
+                    project.ProjectPictureUrl = i_UpdateDto.ProjectPictureUrl;
+                }
+
+                if (i_UpdateDto.Goals != null && i_UpdateDto.Goals.Any())
+                    project.Goals = i_UpdateDto.Goals;
+
+                if (i_UpdateDto.Technologies != null && i_UpdateDto.Technologies.Any())
+                    project.Technologies = i_UpdateDto.Technologies;
+
+                if (i_UpdateDto.RequiredRoles != null && i_UpdateDto.RequiredRoles.Any())
+                    project.RequiredRoles = i_UpdateDto.RequiredRoles;
+
+                if (i_UpdateDto.ProgrammingLanguages != null && i_UpdateDto.ProgrammingLanguages.Any())
+                    project.ProgrammingLanguages = i_UpdateDto.ProgrammingLanguages;
+
+                if (i_UpdateDto.ProjectStatus.HasValue)
+                    project.ProjectStatus = i_UpdateDto.ProjectStatus.Value;
+
+                // Handle repository link update separately (includes GitHub validation and linking)
+                if (!string.IsNullOrWhiteSpace(i_UpdateDto.RepositoryLink))
+                {
+                    await UpdateRepositoryLinkAsync(i_ProjectId, i_UpdateDto.RepositoryLink);
+                }
+
+                await r_DbContext.SaveChangesAsync();
+
+                r_logger.LogInformation("Successfully updated project details: ProjectId={ProjectId}", i_ProjectId);
+                return project;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error updating project details: ProjectId={ProjectId}", i_ProjectId);
+                throw;
+            }
         }
 
         /// <summary>
