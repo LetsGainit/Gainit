@@ -106,6 +106,7 @@ namespace GainIt.API.Services.Tasks.Implementations
             {
                 var query = r_Db.ProjectTasks
                     .Include(t => t.Milestone)
+                    .Include(t => t.Subtasks.OrderBy(s => s.OrderIndex))
                     .Where(t => t.ProjectId == i_ProjectId);
 
                 // Apply filters
@@ -247,6 +248,11 @@ namespace GainIt.API.Services.Tasks.Implementations
                 await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
 
                 var task = await r_Db.ProjectTasks
+                    .Include(t => t.Milestone)
+                    .Include(t => t.Subtasks.OrderBy(s => s.OrderIndex))
+                    .Include(t => t.References)
+                    .Include(t => t.Dependencies)
+                        .ThenInclude(d => d.DependsOn)
                     .FirstOrDefaultAsync(t => t.ProjectId == i_ProjectId && t.TaskId == i_TaskId)
                     ?? throw new KeyNotFoundException("Task not found.");
 
@@ -301,6 +307,11 @@ namespace GainIt.API.Services.Tasks.Implementations
                 await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
 
                 var task = await r_Db.ProjectTasks
+                    .Include(t => t.Milestone)
+                    .Include(t => t.Subtasks.OrderBy(s => s.OrderIndex))
+                    .Include(t => t.References)
+                    .Include(t => t.Dependencies)
+                        .ThenInclude(d => d.DependsOn)
                     .FirstOrDefaultAsync(t => t.ProjectId == i_ProjectId && t.TaskId == i_TaskId)
                     ?? throw new KeyNotFoundException("Task not found.");
 
@@ -327,6 +338,11 @@ namespace GainIt.API.Services.Tasks.Implementations
                 await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
 
                 var task = await r_Db.ProjectTasks
+                    .Include(t => t.Milestone)
+                    .Include(t => t.Subtasks.OrderBy(s => s.OrderIndex))
+                    .Include(t => t.References)
+                    .Include(t => t.Dependencies)
+                        .ThenInclude(d => d.DependsOn)
                     .FirstOrDefaultAsync(t => t.ProjectId == i_ProjectId && t.TaskId == i_TaskId)
                     ?? throw new KeyNotFoundException("Task not found.");
 
@@ -376,6 +392,11 @@ namespace GainIt.API.Services.Tasks.Implementations
                 await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
 
                 var task = await r_Db.ProjectTasks
+                    .Include(t => t.Milestone)
+                    .Include(t => t.Subtasks.OrderBy(s => s.OrderIndex))
+                    .Include(t => t.References)
+                    .Include(t => t.Dependencies)
+                        .ThenInclude(d => d.DependsOn)
                     .FirstOrDefaultAsync(t => t.ProjectId == i_ProjectId && t.TaskId == i_TaskId)
                     ?? throw new KeyNotFoundException("Task not found.");
 
@@ -439,6 +460,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                 AssignedUserId = task.AssignedUserId,
                 MilestoneId = task.MilestoneId,
                 MilestoneTitle = task.Milestone?.Title,
+                SubtaskCount = task.Subtasks?.Count ?? 0,
+                CompletedSubtaskCount = task.Subtasks?.Count(s => s.IsDone) ?? 0,
                 Subtasks = task.Subtasks.Select(s => new ProjectSubtaskViewModel
                 {
                     SubtaskId = s.SubtaskId,
@@ -503,6 +526,11 @@ namespace GainIt.API.Services.Tasks.Implementations
 
                 // Validate both tasks exist and belong to the project
                 var task = await r_Db.ProjectTasks
+                    .Include(t => t.Milestone)
+                    .Include(t => t.Subtasks.OrderBy(s => s.OrderIndex))
+                    .Include(t => t.References)
+                    .Include(t => t.Dependencies)
+                        .ThenInclude(d => d.DependsOn)
                     .FirstOrDefaultAsync(t => t.ProjectId == i_ProjectId && t.TaskId == i_TaskId)
                     ?? throw new KeyNotFoundException("Task not found.");
 
@@ -615,6 +643,11 @@ namespace GainIt.API.Services.Tasks.Implementations
                 await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
 
                 var task = await r_Db.ProjectTasks
+                    .Include(t => t.Milestone)
+                    .Include(t => t.Subtasks.OrderBy(s => s.OrderIndex))
+                    .Include(t => t.References)
+                    .Include(t => t.Dependencies)
+                        .ThenInclude(d => d.DependsOn)
                     .FirstOrDefaultAsync(t => t.ProjectId == i_ProjectId && t.TaskId == i_TaskId)
                     ?? throw new KeyNotFoundException("Task not found.");
 
@@ -814,6 +847,11 @@ namespace GainIt.API.Services.Tasks.Implementations
                 await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
 
                 var task = await r_Db.ProjectTasks
+                    .Include(t => t.Milestone)
+                    .Include(t => t.Subtasks.OrderBy(s => s.OrderIndex))
+                    .Include(t => t.References)
+                    .Include(t => t.Dependencies)
+                        .ThenInclude(d => d.DependsOn)
                     .FirstOrDefaultAsync(t => t.ProjectId == i_ProjectId && t.TaskId == i_TaskId)
                     ?? throw new KeyNotFoundException("Task not found.");
 

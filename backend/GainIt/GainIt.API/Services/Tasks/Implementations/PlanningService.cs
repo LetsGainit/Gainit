@@ -509,7 +509,7 @@ Project Context:
 - Technologies: [{string.Join(", ", task.Project.Technologies ?? new List<string>())}]
 - Goals: [{string.Join(", ", task.Project.Goals ?? new List<string>())}]
 
-User Request: {elaborationRequest.AdditionalContext ?? "Provide detailed guidance for this task"}
+User Request: {elaborationRequest.UserQuestion ?? "Provide detailed guidance for this task"}
 
 Please provide detailed guidance including:
 1. Step-by-step instructions

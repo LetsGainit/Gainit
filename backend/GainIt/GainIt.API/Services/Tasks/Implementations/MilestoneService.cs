@@ -57,6 +57,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                     Title = entity.Title,
                     Description = entity.Description,
                     Status = entity.Status,
+                    OrderIndex = entity.OrderIndex,
+                    TargetDateUtc = entity.TargetDateUtc,
                     TasksCount = 0,
                     DoneTasksCount = 0
                 };
@@ -77,112 +79,184 @@ namespace GainIt.API.Services.Tasks.Implementations
 
         public async Task DeleteAsync(Guid i_ProjectId, Guid i_MilestoneId, Guid i_ActorUserId)
         {
-            await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
-            await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
+            r_Logger.LogInformation("Deleting milestone: ProjectId={ProjectId}, MilestoneId={MilestoneId}, ActorUserId={ActorUserId}", 
+                i_ProjectId, i_MilestoneId, i_ActorUserId);
 
-            var entity = await r_Db.ProjectMilestones
-                .FirstOrDefaultAsync(m => m.ProjectId == i_ProjectId && m.MilestoneId == i_MilestoneId)
-                ?? throw new KeyNotFoundException("Milestone not found.");
+            try
+            {
+                await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
+                await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
 
-            var tasks = await r_Db.ProjectTasks
-                .Where(t => t.ProjectId == i_ProjectId && t.MilestoneId == i_MilestoneId)
-                .ToListAsync();
+                var entity = await r_Db.ProjectMilestones
+                    .FirstOrDefaultAsync(m => m.ProjectId == i_ProjectId && m.MilestoneId == i_MilestoneId)
+                    ?? throw new KeyNotFoundException("Milestone not found.");
 
-            foreach (var t in tasks)
-                t.MilestoneId = null;
+                var tasks = await r_Db.ProjectTasks
+                    .Where(t => t.ProjectId == i_ProjectId && t.MilestoneId == i_MilestoneId)
+                    .ToListAsync();
 
-            r_Db.ProjectMilestones.Remove(entity);
-            await r_Db.SaveChangesAsync();
+                foreach (var t in tasks)
+                    t.MilestoneId = null;
+
+                r_Db.ProjectMilestones.Remove(entity);
+                await r_Db.SaveChangesAsync();
+
+                r_Logger.LogInformation("Milestone deleted successfully: ProjectId={ProjectId}, MilestoneId={MilestoneId}", 
+                    i_ProjectId, i_MilestoneId);
+            }
+            catch (Exception ex)
+            {
+                r_Logger.LogError(ex, "Error deleting milestone: ProjectId={ProjectId}, MilestoneId={MilestoneId}, ActorUserId={ActorUserId}", 
+                    i_ProjectId, i_MilestoneId, i_ActorUserId);
+                throw;
+            }
         }
 
 
-        public async Task<IReadOnlyList<ProjectMilestoneViewModel>> GetMilestionesListAsync(Guid i_ProjectId, Guid i_ActorUserId)
+        public async Task<IReadOnlyList<ProjectMilestoneViewModel>> GetMilestonesListAsync(Guid i_ProjectId, Guid i_ActorUserId)
         {
-            // Only members can view
-            await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
+            r_Logger.LogInformation("Getting milestones list: ProjectId={ProjectId}, ActorUserId={ActorUserId}", 
+                i_ProjectId, i_ActorUserId);
 
-            var list = await r_Db.ProjectMilestones
-                .Where(m => m.ProjectId == i_ProjectId)
-                .Select(m => new ProjectMilestoneViewModel
-                {
-                    MilestoneId = m.MilestoneId,
-                    Title = m.Title,
-                    Description = m.Description,
-                    Status = m.Status,
-                    TasksCount = r_Db.ProjectTasks.Count(t => t.ProjectId == i_ProjectId && t.MilestoneId == m.MilestoneId),
-                    DoneTasksCount = r_Db.ProjectTasks.Count(t => t.ProjectId == i_ProjectId && t.MilestoneId == m.MilestoneId && t.Status == eTaskStatus.Done)
-                })
-                .OrderBy(vm => vm.Title)
-                .ToListAsync();
+            try
+            {
+                // Only members can view
+                await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
 
-            return list;
+                var list = await r_Db.ProjectMilestones
+                    .Where(m => m.ProjectId == i_ProjectId)
+                    .Select(m => new ProjectMilestoneViewModel
+                    {
+                        MilestoneId = m.MilestoneId,
+                        Title = m.Title,
+                        Description = m.Description,
+                        Status = m.Status,
+                        OrderIndex = m.OrderIndex,
+                        TargetDateUtc = m.TargetDateUtc,
+                        TasksCount = r_Db.ProjectTasks.Count(t => t.ProjectId == i_ProjectId && t.MilestoneId == m.MilestoneId),
+                        DoneTasksCount = r_Db.ProjectTasks.Count(t => t.ProjectId == i_ProjectId && t.MilestoneId == m.MilestoneId && t.Status == eTaskStatus.Done)
+                    })
+                    .OrderBy(vm => vm.OrderIndex)
+                    .ThenBy(vm => vm.Title)
+                    .ToListAsync();
+
+                r_Logger.LogInformation("Milestones list retrieved: ProjectId={ProjectId}, Count={Count}", 
+                    i_ProjectId, list.Count);
+
+                return list;
+            }
+            catch (Exception ex)
+            {
+                r_Logger.LogError(ex, "Error getting milestones list: ProjectId={ProjectId}, ActorUserId={ActorUserId}", 
+                    i_ProjectId, i_ActorUserId);
+                throw;
+            }
         }
 
         public async Task<ProjectMilestoneViewModel?> GetMilestoneAsync(Guid i_ProjectId, Guid i_MilestoneId, Guid i_ActorUserId)
         {
-            // Only members can view
-            await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
+            r_Logger.LogInformation("Getting milestone: ProjectId={ProjectId}, MilestoneId={MilestoneId}, ActorUserId={ActorUserId}", 
+                i_ProjectId, i_MilestoneId, i_ActorUserId);
 
-            var milestone = await r_Db.ProjectMilestones
-                .AsNoTracking()
-                .FirstOrDefaultAsync(m => m.ProjectId == i_ProjectId && m.MilestoneId == i_MilestoneId);
-
-            if (milestone == null) return null;
-
-            var tasksCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == milestone.MilestoneId);
-            var doneCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == milestone.MilestoneId && t.Status == eTaskStatus.Done);
-
-            return new ProjectMilestoneViewModel
+            try
             {
-                MilestoneId = milestone.MilestoneId,
-                Title = milestone.Title,
-                Description = milestone.Description,
-                Status = milestone.Status,
-                TasksCount = tasksCount,
-                DoneTasksCount = doneCount
-            };
+                // Only members can view
+                await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
+
+                var milestone = await r_Db.ProjectMilestones
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(m => m.ProjectId == i_ProjectId && m.MilestoneId == i_MilestoneId);
+
+                if (milestone == null)
+                {
+                    r_Logger.LogWarning("Milestone not found: ProjectId={ProjectId}, MilestoneId={MilestoneId}", 
+                        i_ProjectId, i_MilestoneId);
+                    return null;
+                }
+
+                var tasksCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == milestone.MilestoneId);
+                var doneCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == milestone.MilestoneId && t.Status == eTaskStatus.Done);
+
+                r_Logger.LogInformation("Milestone retrieved successfully: ProjectId={ProjectId}, MilestoneId={MilestoneId}", 
+                    i_ProjectId, i_MilestoneId);
+
+                return new ProjectMilestoneViewModel
+                {
+                    MilestoneId = milestone.MilestoneId,
+                    Title = milestone.Title,
+                    Description = milestone.Description,
+                    Status = milestone.Status,
+                    OrderIndex = milestone.OrderIndex,
+                    TargetDateUtc = milestone.TargetDateUtc,
+                    TasksCount = tasksCount,
+                    DoneTasksCount = doneCount
+                };
+            }
+            catch (Exception ex)
+            {
+                r_Logger.LogError(ex, "Error getting milestone: ProjectId={ProjectId}, MilestoneId={MilestoneId}, ActorUserId={ActorUserId}", 
+                    i_ProjectId, i_MilestoneId, i_ActorUserId);
+                throw;
+            }
         }
 
         public async Task<ProjectMilestoneViewModel> UpdateAsync(Guid i_ProjectId, Guid i_MilestoneId, ProjectMilestoneUpdateDto i_MilestoneUpdateRequest, Guid i_ActorUserId)
         {
-            await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
-            await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
+            r_Logger.LogInformation("Updating milestone: ProjectId={ProjectId}, MilestoneId={MilestoneId}, ActorUserId={ActorUserId}", 
+                i_ProjectId, i_MilestoneId, i_ActorUserId);
 
-            var entity = await r_Db.ProjectMilestones
-                .FirstOrDefaultAsync(m => m.ProjectId == i_ProjectId && m.MilestoneId == i_MilestoneId)
-                ?? throw new KeyNotFoundException("Milestone not found.");
-
-            var oldStatus = entity.Status;
-
-            if (i_MilestoneUpdateRequest.Title is { Length: > 0 })
-                entity.Title = i_MilestoneUpdateRequest.Title!;
-            if (i_MilestoneUpdateRequest.Description != null)
-                entity.Description = i_MilestoneUpdateRequest.Description;
-            if (i_MilestoneUpdateRequest.Status.HasValue)
-                entity.Status = i_MilestoneUpdateRequest.Status.Value;
-
-            await r_Db.SaveChangesAsync();
-
-            var tasksCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == entity.MilestoneId);
-            var doneCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == entity.MilestoneId && t.Status == eTaskStatus.Done);
-
-            var milestoneViewModel =  new ProjectMilestoneViewModel
+            try
             {
-                MilestoneId = entity.MilestoneId,
-                Title = entity.Title,
-                Description = entity.Description,
-                Status = entity.Status,
-                TasksCount = tasksCount,
-                DoneTasksCount = doneCount
-            };
+                await ensureActorInProjectAsync(i_ProjectId, i_ActorUserId);
+                await ensureActorCanManagePlanningAsync(i_ProjectId, i_ActorUserId);
 
-            // notify on first transition to Completed
-            if (oldStatus != eMilestoneStatus.Completed && entity.Status == eMilestoneStatus.Completed)
-            {
-                await r_Notifications.MilestoneCompletedAsync(i_ProjectId, milestoneViewModel);
+                var entity = await r_Db.ProjectMilestones
+                    .FirstOrDefaultAsync(m => m.ProjectId == i_ProjectId && m.MilestoneId == i_MilestoneId)
+                    ?? throw new KeyNotFoundException("Milestone not found.");
+
+                var oldStatus = entity.Status;
+
+                if (i_MilestoneUpdateRequest.Title is { Length: > 0 })
+                    entity.Title = i_MilestoneUpdateRequest.Title!;
+                if (i_MilestoneUpdateRequest.Description != null)
+                    entity.Description = i_MilestoneUpdateRequest.Description;
+                if (i_MilestoneUpdateRequest.Status.HasValue)
+                    entity.Status = i_MilestoneUpdateRequest.Status.Value;
+
+                await r_Db.SaveChangesAsync();
+
+                var tasksCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == entity.MilestoneId);
+                var doneCount = await r_Db.ProjectTasks.CountAsync(t => t.ProjectId == i_ProjectId && t.MilestoneId == entity.MilestoneId && t.Status == eTaskStatus.Done);
+
+                var milestoneViewModel =  new ProjectMilestoneViewModel
+                {
+                    MilestoneId = entity.MilestoneId,
+                    Title = entity.Title,
+                    Description = entity.Description,
+                    Status = entity.Status,
+                    OrderIndex = entity.OrderIndex,
+                    TargetDateUtc = entity.TargetDateUtc,
+                    TasksCount = tasksCount,
+                    DoneTasksCount = doneCount
+                };
+
+                // notify on first transition to Completed
+                if (oldStatus != eMilestoneStatus.Completed && entity.Status == eMilestoneStatus.Completed)
+                {
+                    await r_Notifications.MilestoneCompletedAsync(i_ProjectId, milestoneViewModel);
+                }
+
+                r_Logger.LogInformation("Milestone updated successfully: ProjectId={ProjectId}, MilestoneId={MilestoneId}", 
+                    i_ProjectId, i_MilestoneId);
+
+                return milestoneViewModel;
             }
-
-            return milestoneViewModel;
+            catch (Exception ex)
+            {
+                r_Logger.LogError(ex, "Error updating milestone: ProjectId={ProjectId}, MilestoneId={MilestoneId}, ActorUserId={ActorUserId}", 
+                    i_ProjectId, i_MilestoneId, i_ActorUserId);
+                throw;
+            }
         }
 
         public async Task<ProjectMilestoneViewModel> ChangeStatusAsync(Guid i_ProjectId, Guid i_MilestoneId, eMilestoneStatus i_NewStatus, Guid i_ActorUserId)
@@ -213,6 +287,8 @@ namespace GainIt.API.Services.Tasks.Implementations
                     Title = entity.Title,
                     Description = entity.Description,
                     Status = entity.Status,
+                    OrderIndex = entity.OrderIndex,
+                    TargetDateUtc = entity.TargetDateUtc,
                     TasksCount = tasksCount,
                     DoneTasksCount = doneCount
                 };

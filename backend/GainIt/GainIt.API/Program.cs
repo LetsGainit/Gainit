@@ -113,7 +113,8 @@ try
     // builder.Services.AddApplicationInsightsTelemetry(); // DISABLED to prevent conflicts
 
     builder.Services.AddDbContext<GainItDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("GainItPostgresDb")));
+        options.UseNpgsql(builder.Configuration.GetConnectionString("GainItPostgresDb"), 
+            npgsqlOptions => npgsqlOptions.EnableRetryOnFailure()));
 
     builder.Services.Configure<AzureSearchOptions>(
         builder.Configuration.GetSection("AzureSearch"));
@@ -194,7 +195,7 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v6 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v1 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
