@@ -11,29 +11,6 @@ GET /api/github/projects/{projectId}/overview?daysPeriod=30
 **Use this for:** Main dashboard, complete project view
 **Returns:** All GitHub data in one call (repository, stats, analytics, contributions, activity summary, sync status)
 
-### 2. Link Repository
-```http
-POST /api/github/projects/{projectId}/link
-Content-Type: application/json
-
-{
-  "repositoryUrl": "https://github.com/owner/repository"
-}
-```
-**Use this for:** Initial repository setup
-**Returns:** Link confirmation and repository details
-
-### 3. Validate Repository URL
-```http
-POST /api/github/validate-url
-Content-Type: application/json
-
-{
-  "repositoryUrl": "https://github.com/owner/repository"
-}
-```
-**Use this for:** Pre-validation before linking
-**Returns:** Validation result with success/error message
 
 ## 📊 Data-Specific Endpoints
 
