@@ -732,7 +732,7 @@ namespace GainIt.API.Controllers.Projects
                 var repositoryTask = _gitHubService.GetRepositoryAsync(projectId);
                 var statsTask = _gitHubService.GetRepositoryStatsAsync(projectId);
                 var analyticsTask = _gitHubService.GetProjectAnalyticsAsync(projectId, daysPeriod);
-                var contributionsTask = _gitHubService.ListProjectMembersContributionsAsync(projectId, daysPeriod);
+                var contributionsTask = _gitHubService.ListProjectMembersContributionsAsync(projectId, daysPeriod, true);
                 var activitySummaryTask = _gitHubService.GetProjectActivitySummaryAsync(projectId, daysPeriod);
                 var syncStatusTask = _gitHubService.GetLastSyncStatusAsync(projectId);
 
