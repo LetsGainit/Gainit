@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using GainIt.API.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GainIt.API.Controllers.Projects
 {

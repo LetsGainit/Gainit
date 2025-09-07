@@ -4,6 +4,8 @@ using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using GainIt.API.Data;
 using GainIt.API.DTOs.Search;
+using GainIt.API.DTOs.ViewModels.Projects;
+using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
 using GainIt.API.Models.Users.Gainers;
@@ -64,7 +66,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 r_logger.LogInformation("Projects filtered with chat: FilteredCount={FilteredCount}", filteredProjects.Count);
 
                 // Convert to AzureVectorSearchProjectViewModel
-                var projectViewModels = filteredProjects.Select(ConvertToAzureVectorSearchViewModel).ToList();
+                var projectViewModels = filteredProjects.Select(ConvertToAzureVectorSearchViewModel);
 
                 var chatExplenation = await getChatExplanationAsync(chatrefinedQuery, filteredProjects);
                 r_logger.LogInformation("Chat explanation generated: Chat Explanation={Explanation}", chatExplenation);
@@ -127,7 +129,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 );
 
                 // Convert to AzureVectorSearchProjectViewModel
-                var projectViewModels = filteredProjects.Select(ConvertToAzureVectorSearchViewModel).ToList();
+                var projectViewModels = filteredProjects.Select(ConvertToAzureVectorSearchViewModel);
                 return projectViewModels;
             }
             catch (KeyNotFoundException)
@@ -680,7 +682,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 Goals = project.Goals?.ToArray() ?? new string[0],
                 Technologies = project.Technologies?.ToArray() ?? new string[0],
                 RequiredRoles = project.RequiredRoles?.ToArray() ?? new string[0],
-                ProgrammingLanguages = project.ProgrammingLanguages?.ToArray() ?? new string[0],
+                ProgrammingLanguages = new string[0], // Default for TemplateProject
                 RagContext = new RagContextViewModel
                 {
                     SearchableText = project.RagContext?.SearchableText ?? string.Empty,
@@ -698,12 +700,13 @@ namespace GainIt.API.Services.Projects.Implementations
             {
                 viewModel.ProjectSource = userProject.ProjectSource.ToString();
                 viewModel.ProjectStatus = userProject.ProjectStatus.ToString();
+                viewModel.ProgrammingLanguages = userProject.ProgrammingLanguages?.ToArray() ?? new string[0];
             }
             else
             {
-                // For TemplateProject, set these as null or default values
+                // For TemplateProject, set these as default values
                 viewModel.ProjectSource = "Template";
-                viewModel.ProjectStatus = null;
+                viewModel.ProjectStatus = eProjectStatus.NotActive.ToString();
             }
 
             return viewModel;
