@@ -444,13 +444,13 @@ namespace GainIt.API.Services.Users.Implementations
 
             r_logger.LogDebug("Generating fresh GitHub fact for UserId={UserId}, ProjectCount={ProjectCount}", userId, userProjectIds.Count);
 
-            // Only consider projects with a repo link
-            var repoProjects = await r_DbContext.Projects
-                .Where(p => userProjectIds.Contains(p.ProjectId) && !string.IsNullOrWhiteSpace(p.RepositoryLink))
-                .Select(p => p.ProjectId)
+            // Only consider projects with GitHub repositories
+            var repoProjectIds = await r_DbContext.GitHubRepositories
+                .Where(gr => userProjectIds.Contains(gr.ProjectId))
+                .Select(gr => gr.ProjectId)
                 .ToListAsync();
 
-            if (string.IsNullOrWhiteSpace(user.GitHubUsername) && !repoProjects.Any())
+            if (string.IsNullOrWhiteSpace(user.GitHubUsername) && !repoProjectIds.Any())
             {
                 r_cache.Set(cacheKey, string.Empty, TimeSpan.FromHours(24));
                 return string.Empty;
@@ -458,7 +458,7 @@ namespace GainIt.API.Services.Users.Implementations
 
             // Build fresh impact lines per repo using GitHubService (up-to-date analytics + contributions)
             var perRepo = new List<string>();
-            foreach (var pid in repoProjects.Take(3)) // limit to first 3 for brevity
+            foreach (var pid in repoProjectIds.Take(3)) // limit to first 3 for brevity
             {
                 try
                 {

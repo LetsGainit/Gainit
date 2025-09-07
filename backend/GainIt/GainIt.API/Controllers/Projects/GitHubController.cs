@@ -728,28 +728,19 @@ namespace GainIt.API.Controllers.Projects
                     return BadRequest(new ErrorResponseDto { Error = "Days period must be between 1 and 365" });
                 }
 
-                // Get all data in parallel for better performance
-                var repositoryTask = _gitHubService.GetRepositoryAsync(projectId);
-                var statsTask = _gitHubService.GetRepositoryStatsAsync(projectId);
-                var analyticsTask = _gitHubService.GetProjectAnalyticsAsync(projectId, daysPeriod);
-                var contributionsTask = _gitHubService.ListProjectMembersContributionsAsync(projectId, daysPeriod, true);
-                var activitySummaryTask = _gitHubService.GetProjectActivitySummaryAsync(projectId, daysPeriod);
-                var syncStatusTask = _gitHubService.GetLastSyncStatusAsync(projectId);
-
-                await Task.WhenAll(repositoryTask, statsTask, analyticsTask, contributionsTask, activitySummaryTask, syncStatusTask);
-
-                var repository = await repositoryTask;
+                // Get data sequentially to avoid DbContext concurrency issues
+                var repository = await _gitHubService.GetRepositoryAsync(projectId);
                 if (repository == null)
                 {
                     _logger.LogWarning("No repository found for project {ProjectId}", projectId);
                     return NotFound(new ErrorResponseDto { Error = "No GitHub repository linked to this project" });
                 }
 
-                var stats = await statsTask;
-                var analytics = await analyticsTask;
-                var contributions = await contributionsTask;
-                var activitySummary = await activitySummaryTask;
-                var syncStatus = await syncStatusTask;
+                var stats = await _gitHubService.GetRepositoryStatsAsync(projectId);
+                var analytics = await _gitHubService.GetProjectAnalyticsAsync(projectId, daysPeriod);
+                var contributions = await _gitHubService.ListProjectMembersContributionsAsync(projectId, daysPeriod, true);
+                var activitySummary = await _gitHubService.GetProjectActivitySummaryAsync(projectId, daysPeriod);
+                var syncStatus = await _gitHubService.GetLastSyncStatusAsync(projectId);
 
                 _logger.LogDebug("Overview data retrieved - Contributions count: {ContributionsCount}", contributions.Count);
 
