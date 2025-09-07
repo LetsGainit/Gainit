@@ -286,6 +286,13 @@ namespace GainIt.API.Services.Users.Implementations
                     throw new KeyNotFoundException($"Gainer with ID {i_userId} not found");
                 }
 
+                // Manually attach TechExpertise because the nav is ignored in the model mapping
+                var gainerTech = await r_DbContext.TechExpertises.FirstOrDefaultAsync(t => t.UserId == i_userId);
+                if (gainerTech != null)
+                {
+                    gainer.TechExpertise = gainerTech;
+                }
+
                 r_logger.LogInformation("Successfully retrieved Gainer: UserId={UserId}", i_userId);
                 return gainer;
             }
@@ -337,8 +344,7 @@ namespace GainIt.API.Services.Users.Implementations
                     throw new KeyNotFoundException($"Mentor with ID {i_userId} not found");
                 }
 
-                // Load collections separately to avoid the warning
-                // TechExpertise navigation is ignored in the model; skip loading it here
+                // Load collections separately. Attach TechExpertise manually from DbSet
 
                 await r_DbContext.Entry(mentor)
                     .Collection(m => m.MentoredProjects)
@@ -347,6 +353,12 @@ namespace GainIt.API.Services.Users.Implementations
                 await r_DbContext.Entry(mentor)
                     .Collection(m => m.Achievements)
                     .LoadAsync();
+
+                var mentorTech = await r_DbContext.TechExpertises.FirstOrDefaultAsync(t => t.UserId == i_userId);
+                if (mentorTech != null)
+                {
+                    mentor.TechExpertise = mentorTech;
+                }
 
                 r_logger.LogInformation("Successfully retrieved Mentor: UserId={UserId}", i_userId);
                 return mentor;
