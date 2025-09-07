@@ -38,7 +38,7 @@ namespace GainIt.API.Controllers.Tasks
         /// <param name="projectId">The project ID.</param>
         /// <returns>List of milestones for the project.</returns>
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<ProjectMilestoneViewModel>>> GetMilestones(Guid projectId)
+        public async Task<ActionResult<IReadOnlyList<ProjectMilestoneViewModel>>> GetMilestones([FromRoute] Guid projectId)
         {
             r_Logger.LogInformation("Getting milestones: ProjectId={ProjectId}", projectId);
 
@@ -70,7 +70,7 @@ namespace GainIt.API.Controllers.Tasks
         /// <param name="milestoneId">The milestone ID.</param>
         /// <returns>The milestone details.</returns>
         [HttpGet("{milestoneId}")]
-        public async Task<ActionResult<ProjectMilestoneViewModel>> GetMilestone(Guid projectId, Guid milestoneId)
+        public async Task<ActionResult<ProjectMilestoneViewModel>> GetMilestone([FromRoute] Guid projectId, [FromRoute] Guid milestoneId)
         {
             r_Logger.LogInformation("Getting milestone: ProjectId={ProjectId}, MilestoneId={MilestoneId}", projectId, milestoneId);
 
@@ -108,49 +108,49 @@ namespace GainIt.API.Controllers.Tasks
         /// <summary>
         /// Creates a new milestone.
         /// </summary>
-        /// <param name="i_ProjectId">The project ID.</param>
+        /// <param name="projectId">The project ID.</param>
         /// <param name="milestoneCreateDto">The milestone creation data.</param>
         /// <returns>The created milestone.</returns>
         [HttpPost]
-        public async Task<ActionResult<ProjectMilestoneViewModel>> CreateMilestone(Guid i_ProjectId, [FromBody] ProjectMilestoneCreateDto milestoneCreateDto)
+        public async Task<ActionResult<ProjectMilestoneViewModel>> CreateMilestone([FromRoute] Guid projectId, [FromBody] ProjectMilestoneCreateDto milestoneCreateDto)
         {
-            r_Logger.LogInformation("Creating milestone: ProjectId={ProjectId}, Title={Title}", i_ProjectId, milestoneCreateDto.Title);
+            r_Logger.LogInformation("Creating milestone: ProjectId={ProjectId}, Title={Title}", projectId, milestoneCreateDto.Title);
 
-            if (i_ProjectId == Guid.Empty)
+            if (projectId == Guid.Empty)
             {
-                r_Logger.LogWarning("Invalid project ID: ProjectId={ProjectId}", i_ProjectId);
+                r_Logger.LogWarning("Invalid project ID: ProjectId={ProjectId}", projectId);
                 return BadRequest(new { Message = "Project ID cannot be empty." });
             }
 
             if (!ModelState.IsValid)
             {
-                r_Logger.LogWarning("Invalid model state for milestone creation: ProjectId={ProjectId}", i_ProjectId);
+                r_Logger.LogWarning("Invalid model state for milestone creation: ProjectId={ProjectId}", projectId);
                 return BadRequest(ModelState);
             }
 
             try
             {
                 var userId = await GetCurrentUserIdAsync();
-                var milestone = await r_MilestoneService.CreateAsync(i_ProjectId, milestoneCreateDto, userId);
+                var milestone = await r_MilestoneService.CreateAsync(projectId, milestoneCreateDto, userId);
 
                 r_Logger.LogInformation("Milestone created successfully: ProjectId={ProjectId}, MilestoneId={MilestoneId}, Title={Title}", 
-                    i_ProjectId, milestone.MilestoneId, milestone.Title);
+                    projectId, milestone.MilestoneId, milestone.Title);
 
-                return CreatedAtAction(nameof(GetMilestone), new { projectId = i_ProjectId, milestoneId = milestone.MilestoneId }, milestone);
+                return CreatedAtAction(nameof(GetMilestone), new { projectId = projectId, milestoneId = milestone.MilestoneId }, milestone);
             }
             catch (UnauthorizedAccessException ex)
             {
-                r_Logger.LogWarning("Unauthorized access: ProjectId={ProjectId}, Error={Error}", i_ProjectId, ex.Message);
+                r_Logger.LogWarning("Unauthorized access: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
                 return Unauthorized(new { Message = ex.Message });
             }
             catch (KeyNotFoundException ex)
             {
-                r_Logger.LogWarning("Resource not found: ProjectId={ProjectId}, Error={Error}", i_ProjectId, ex.Message);
+                r_Logger.LogWarning("Resource not found: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
                 return NotFound(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
-                r_Logger.LogError(ex, "Error creating milestone: ProjectId={ProjectId}, Title={Title}", i_ProjectId, milestoneCreateDto.Title);
+                r_Logger.LogError(ex, "Error creating milestone: ProjectId={ProjectId}, Title={Title}", projectId, milestoneCreateDto.Title);
                 return StatusCode(500, new { Message = "An unexpected error occurred while creating the milestone." });
             }
         }
@@ -163,7 +163,7 @@ namespace GainIt.API.Controllers.Tasks
         /// <param name="milestoneUpdateDto">The milestone update data.</param>
         /// <returns>The updated milestone.</returns>
         [HttpPut("{milestoneId}")]
-        public async Task<ActionResult<ProjectMilestoneViewModel>> UpdateMilestone(Guid projectId, Guid milestoneId, [FromBody] ProjectMilestoneUpdateDto milestoneUpdateDto)
+        public async Task<ActionResult<ProjectMilestoneViewModel>> UpdateMilestone([FromRoute] Guid projectId, [FromRoute] Guid milestoneId, [FromBody] ProjectMilestoneUpdateDto milestoneUpdateDto)
         {
             r_Logger.LogInformation("Updating milestone: ProjectId={ProjectId}, MilestoneId={MilestoneId}", projectId, milestoneId);
 
@@ -211,7 +211,7 @@ namespace GainIt.API.Controllers.Tasks
         /// <param name="milestoneId">The milestone ID.</param>
         /// <returns>No content on success.</returns>
         [HttpDelete("{milestoneId}")]
-        public async Task<ActionResult> DeleteMilestone(Guid projectId, Guid milestoneId)
+        public async Task<ActionResult> DeleteMilestone([FromRoute] Guid projectId, [FromRoute] Guid milestoneId)
         {
             r_Logger.LogInformation("Deleting milestone: ProjectId={ProjectId}, MilestoneId={MilestoneId}", projectId, milestoneId);
 
@@ -258,7 +258,7 @@ namespace GainIt.API.Controllers.Tasks
         /// <param name="newStatus">The new status.</param>
         /// <returns>The updated milestone.</returns>
         [HttpPut("{milestoneId}/status")]
-        public async Task<ActionResult<ProjectMilestoneViewModel>> ChangeMilestoneStatus(Guid projectId, Guid milestoneId, [FromBody] eMilestoneStatus newStatus)
+        public async Task<ActionResult<ProjectMilestoneViewModel>> ChangeMilestoneStatus([FromRoute] Guid projectId, [FromRoute] Guid milestoneId, [FromBody] eMilestoneStatus newStatus)
         {
             r_Logger.LogInformation("Changing milestone status: ProjectId={ProjectId}, MilestoneId={MilestoneId}, NewStatus={NewStatus}", 
                 projectId, milestoneId, newStatus);
@@ -303,14 +303,34 @@ namespace GainIt.API.Controllers.Tasks
         #region Helper Methods
 
         /// <summary>
+        /// Helper method to extract claim values from the user principal.
+        /// </summary>
+        /// <param name="user">The user principal.</param>
+        /// <param name="types">The claim types to try.</param>
+        /// <returns>The first non-empty claim value found, or null if none found.</returns>
+        private static string? tryGetClaim(ClaimsPrincipal user, params string[] types)
+        {
+            foreach (var t in types)
+            {
+                var v = user.FindFirstValue(t);
+                if (!string.IsNullOrWhiteSpace(v)) return v;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Gets the current user ID from the authentication context.
         /// Extracts the external ID from JWT claims and maps it to the database User ID.
         /// </summary>
         /// <returns>The current user ID from the database.</returns>
         private async Task<Guid> GetCurrentUserIdAsync()
         {
-            var externalId = User.FindFirst("oid")?.Value
-                  ?? User.FindFirst("sub")?.Value;
+            var externalId =
+                tryGetClaim(User, "oid", ClaimTypes.NameIdentifier)
+            ?? tryGetClaim(User, "sub")
+            ?? tryGetClaim(User, ClaimTypes.NameIdentifier)
+            ?? tryGetClaim(User, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+            ?? tryGetClaim(User, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
 
             if (string.IsNullOrEmpty(externalId))
                 throw new UnauthorizedAccessException("User ID not found in token.");

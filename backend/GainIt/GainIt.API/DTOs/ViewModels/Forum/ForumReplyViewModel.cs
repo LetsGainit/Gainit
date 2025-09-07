@@ -18,10 +18,11 @@ namespace GainIt.API.DTOs.ViewModels.Forum
         public DateTime? UpdatedAtUtc { get; set; }
         public int LikeCount { get; set; }
         public bool IsLikedByCurrentUser { get; set; }
+        public bool CanEdit { get; set; }
 
         public ForumReplyViewModel() { }
 
-        public ForumReplyViewModel(ForumReply reply, bool isLikedByCurrentUser = false, string? projectRole = null)
+        public ForumReplyViewModel(ForumReply reply, bool isLikedByCurrentUser = false, string? projectRole = null, bool canEdit = false)
         {
             ReplyId = reply.ReplyId;
             PostId = reply.PostId;
@@ -33,6 +34,7 @@ namespace GainIt.API.DTOs.ViewModels.Forum
             UpdatedAtUtc = reply.UpdatedAtUtc;
             LikeCount = reply.LikeCount;
             IsLikedByCurrentUser = isLikedByCurrentUser;
+            CanEdit = canEdit;
         }
 
         private string GetUserRole(User user, string? projectRole = null)

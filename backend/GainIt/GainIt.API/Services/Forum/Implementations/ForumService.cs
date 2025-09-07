@@ -58,7 +58,7 @@ namespace GainIt.API.Services.Forum.Implementations
                 var authorProjectRole = await getUserProjectRoleAsync(i_CreateDto.ProjectId, i_AuthorId);
 
                 r_Logger.LogInformation("Successfully created forum post: PostId={PostId}", post.PostId);
-                return new ForumPostViewModel(createdPost!, false, authorProjectRole);
+                return new ForumPostViewModel(createdPost!, false, authorProjectRole, true);
             }
             catch (Exception ex)
             {
@@ -100,15 +100,17 @@ namespace GainIt.API.Services.Forum.Implementations
 
                 // Check if current user liked the post
                 var isLikedByCurrentUser = post.Likes.Any(l => l.UserId == i_CurrentUserId);
+                var canEditPost = post.AuthorId == i_CurrentUserId;
 
                 // Create a custom ForumPostViewModel with complete reply data
-                var postViewModel = new ForumPostViewModel(post, isLikedByCurrentUser, authorProjectRole);
+                var postViewModel = new ForumPostViewModel(post, isLikedByCurrentUser, authorProjectRole, canEditPost);
                 
                 // Update replies with proper like information
                 postViewModel.Replies = post.Replies.Select(reply =>
                 {
                     var replyIsLikedByCurrentUser = reply.Likes.Any(l => l.UserId == i_CurrentUserId);
-                    return new ForumReplyViewModel(reply, replyIsLikedByCurrentUser, authorProjectRole);
+                    var canEditReply = reply.AuthorId == i_CurrentUserId;
+                    return new ForumReplyViewModel(reply, replyIsLikedByCurrentUser, authorProjectRole, canEditReply);
                 }).ToList();
 
                 r_Logger.LogInformation("Successfully retrieved forum post: PostId={PostId}", i_PostId);
@@ -150,15 +152,17 @@ namespace GainIt.API.Services.Forum.Implementations
                 {
                     var isLikedByCurrentUser = post.Likes.Any(l => l.UserId == i_CurrentUserId);
                     var authorProjectRole = await getUserProjectRoleAsync(i_ProjectId, post.AuthorId);
+                    var canEditPost = post.AuthorId == i_CurrentUserId;
                     
                     // Create a custom ForumPostViewModel with complete reply data
-                    var postViewModel = new ForumPostViewModel(post, isLikedByCurrentUser, authorProjectRole);
+                    var postViewModel = new ForumPostViewModel(post, isLikedByCurrentUser, authorProjectRole, canEditPost);
                     
                     // Update replies with proper like information
                     postViewModel.Replies = post.Replies.Select(reply =>
                     {
                         var replyIsLikedByCurrentUser = reply.Likes.Any(l => l.UserId == i_CurrentUserId);
-                        return new ForumReplyViewModel(reply, replyIsLikedByCurrentUser, authorProjectRole);
+                        var canEditReply = reply.AuthorId == i_CurrentUserId;
+                        return new ForumReplyViewModel(reply, replyIsLikedByCurrentUser, authorProjectRole, canEditReply);
                     }).ToList();
                     
                     postViewModels.Add(postViewModel);
@@ -208,14 +212,16 @@ namespace GainIt.API.Services.Forum.Implementations
 
                 // Get project role for the post author
                 var authorProjectRole = await getUserProjectRoleAsync(post.ProjectId, post.AuthorId);
+                var canEditPost = post.AuthorId == i_AuthorId;
 
                 // Create a custom ForumPostViewModel with complete reply data
-                var postViewModel = new ForumPostViewModel(post, false, authorProjectRole);
+                var postViewModel = new ForumPostViewModel(post, false, authorProjectRole, canEditPost);
                 
                 // Update replies with proper like information (no current user context for updates)
                 postViewModel.Replies = post.Replies.Select(reply =>
                 {
-                    return new ForumReplyViewModel(reply, false, authorProjectRole);
+                    var canEditReply = reply.AuthorId == i_AuthorId;
+                    return new ForumReplyViewModel(reply, false, authorProjectRole, canEditReply);
                 }).ToList();
 
                 r_Logger.LogInformation("Successfully updated forum post: PostId={PostId}", i_PostId);
@@ -315,7 +321,7 @@ namespace GainIt.API.Services.Forum.Implementations
                 // Get project role for the reply author
                 var authorProjectRole = await getUserProjectRoleAsync(post.ProjectId, i_AuthorId);
 
-                var replyViewModel = new ForumReplyViewModel(createdReply!, false, authorProjectRole);
+                var replyViewModel = new ForumReplyViewModel(createdReply!, false, authorProjectRole, true);
 
                 // Send notification to post author
                 await r_NotificationService.PostRepliedAsync(i_CreateDto.PostId, replyViewModel);
@@ -360,9 +366,10 @@ namespace GainIt.API.Services.Forum.Implementations
 
                 // Get project role for the reply author
                 var authorProjectRole = await getUserProjectRoleAsync(reply.Post.ProjectId, reply.AuthorId);
+                var canEditReply = reply.AuthorId == i_AuthorId;
 
                 r_Logger.LogInformation("Successfully updated forum reply: ReplyId={ReplyId}", i_ReplyId);
-                return new ForumReplyViewModel(reply, false, authorProjectRole);
+                return new ForumReplyViewModel(reply, false, authorProjectRole, canEditReply);
             }
             catch (Exception ex)
             {
