@@ -32,10 +32,9 @@ namespace GainIt.API.Services.Forum.Implementations
         {
             try
             {
-                // Get the post with author and project information
+                // Get the post with author information (avoiding Project to prevent interval type issues)
                 var post = await r_Db.ForumPosts
                     .Include(p => p.Author)
-                    .Include(p => p.Project)
                     .AsNoTracking()
                     .FirstOrDefaultAsync(p => p.PostId == i_PostId);
 
@@ -44,6 +43,12 @@ namespace GainIt.API.Services.Forum.Implementations
                     r_Log.LogWarning("Post not found for reply notification: PostId={PostId}", i_PostId);
                     return;
                 }
+
+                // Get project name separately to avoid interval type issues
+                var projectName = await r_Db.Projects
+                    .Where(p => p.ProjectId == post.ProjectId)
+                    .Select(p => p.ProjectName)
+                    .FirstOrDefaultAsync() ?? "Unknown Project";
 
                 // Don't notify if the reply author is the same as the post author
                 if (post.AuthorId == i_Reply.AuthorId)
@@ -74,7 +79,7 @@ namespace GainIt.API.Services.Forum.Implementations
                             {
                                 PostId = post.PostId,
                                 ProjectId = post.ProjectId,
-                                ProjectName = post.Project.ProjectName ?? "Unknown Project",
+                                ProjectName = projectName,
                                 ReplyId = i_Reply.ReplyId,
                                 ReplyContent = i_Reply.Content ?? "",
                                 ReplyAuthorName = i_Reply.AuthorName ?? "Unknown User",
@@ -100,8 +105,8 @@ namespace GainIt.API.Services.Forum.Implementations
                 // Send email notification to post author
                 await r_Email.SendAsync(
                     post.Author.EmailAddress,
-                    $"GainIt Notifications: New reply to your post in {post.Project.ProjectName}",
-                    $"Hi {post.Author.FullName},\n\n{replyAuthor.FullName} replied to your post in project '{post.Project.ProjectName}'.\n\nReply: {i_Reply.Content}\n\nYou can view the full discussion in your project forum.",
+                    $"GainIt Notifications: New reply to your post in {projectName}",
+                    $"Hi {post.Author.FullName},\n\n{replyAuthor.FullName} replied to your post in project '{projectName}'.\n\nReply: {i_Reply.Content}\n\nYou can view the full discussion in your project forum.",
                     null
                 );
 
@@ -119,18 +124,23 @@ namespace GainIt.API.Services.Forum.Implementations
         {
             try
             {
-                // Get the post with author and project information
+                // Get the post with author information (avoiding Project to prevent interval type issues)
                 var post = await r_Db.ForumPosts
                     .Include(p => p.Author)
-                    .Include(p => p.Project)
                     .AsNoTracking()
                     .FirstOrDefaultAsync(p => p.PostId == i_PostId);
 
-                if (post?.Project == null)
+                if (post == null)
                 {
-                    r_Log.LogWarning("Post or project not found for like notification: PostId={PostId}", i_PostId);
+                    r_Log.LogWarning("Post not found for like notification: PostId={PostId}", i_PostId);
                     return;
                 }
+
+                // Get project name separately to avoid interval type issues
+                var projectName = await r_Db.Projects
+                    .Where(p => p.ProjectId == post.ProjectId)
+                    .Select(p => p.ProjectName)
+                    .FirstOrDefaultAsync() ?? "Unknown Project";
 
                 // Don't notify if the like author is the same as the post author
                 if (post.AuthorId == i_LikedByUserId)
@@ -161,7 +171,7 @@ namespace GainIt.API.Services.Forum.Implementations
                             {
                                 PostId = post.PostId,
                                 ProjectId = post.ProjectId,
-                                ProjectName = post.Project.ProjectName ?? "Unknown Project",
+                                ProjectName = projectName,
                                 LikedByUserName = likedByUser.FullName ?? "Unknown User",
                                 LikedByUserId = i_LikedByUserId,
                                 LikedAtUtc = DateTime.UtcNow
@@ -193,19 +203,24 @@ namespace GainIt.API.Services.Forum.Implementations
         {
             try
             {
-                // Get the reply with author and post information
+                // Get the reply with author and post information (avoiding Project to prevent interval type issues)
                 var reply = await r_Db.ForumReplies
                     .Include(r => r.Author)
                     .Include(r => r.Post)
-                    .ThenInclude(p => p.Project)
                     .AsNoTracking()
                     .FirstOrDefaultAsync(r => r.ReplyId == i_ReplyId);
 
-                if (reply?.Post?.Project == null)
+                if (reply?.Post == null)
                 {
-                    r_Log.LogWarning("Reply, post, or project not found for like notification: ReplyId={ReplyId}", i_ReplyId);
+                    r_Log.LogWarning("Reply or post not found for like notification: ReplyId={ReplyId}", i_ReplyId);
                     return;
                 }
+
+                // Get project name separately to avoid interval type issues
+                var projectName = await r_Db.Projects
+                    .Where(p => p.ProjectId == reply.Post.ProjectId)
+                    .Select(p => p.ProjectName)
+                    .FirstOrDefaultAsync() ?? "Unknown Project";
 
                 // Don't notify if the like author is the same as the reply author
                 if (reply.AuthorId == i_LikedByUserId)
@@ -236,7 +251,7 @@ namespace GainIt.API.Services.Forum.Implementations
                             {
                                 ReplyId = reply.ReplyId,
                                 PostId = reply.PostId,
-                                ProjectName = reply.Post.Project.ProjectName ?? "Unknown Project",
+                                ProjectName = projectName,
                                 LikedByUserName = likedByUser.FullName ?? "Unknown User",
                                 LikedByUserId = i_LikedByUserId,
                                 LikedAtUtc = DateTime.UtcNow
