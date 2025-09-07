@@ -706,9 +706,18 @@ namespace GainIt.API.Services.GitHub.Implementations
                 // Filter contributions by the specified period (handle possible null after reload)
                 var cutoffDate = DateTime.UtcNow.AddDays(-daysPeriod);
                 var contributionsList = repository?.Contributions ?? new List<GitHubContribution>();
-                return contributionsList
+                
+                _logger.LogDebug("Filtering contributions for project {ProjectId}: Total={Total}, CutoffDate={CutoffDate}", 
+                    projectId, contributionsList.Count, cutoffDate);
+                
+                var filteredContributions = contributionsList
                     .Where(c => c.CalculatedAtUtc >= cutoffDate)
                     .ToList();
+                    
+                _logger.LogDebug("Filtered contributions for project {ProjectId}: Filtered={Filtered}", 
+                    projectId, filteredContributions.Count);
+                
+                return filteredContributions;
             }
             catch (Exception ex)
             {

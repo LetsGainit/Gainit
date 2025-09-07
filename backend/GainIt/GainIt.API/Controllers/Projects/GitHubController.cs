@@ -751,6 +751,8 @@ namespace GainIt.API.Controllers.Projects
                 var activitySummary = await activitySummaryTask;
                 var syncStatus = await syncStatusTask;
 
+                _logger.LogDebug("Overview data retrieved - Contributions count: {ContributionsCount}", contributions.Count);
+
                 // Create comprehensive overview response
                 var response = new GitHubProjectOverviewResponseDto
                 {

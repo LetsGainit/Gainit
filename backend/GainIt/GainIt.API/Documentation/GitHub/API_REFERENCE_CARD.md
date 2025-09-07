@@ -1,5 +1,7 @@
 # GitHub API Reference Card
 
+
+
 Quick reference for frontend developers integrating with the GitHub controller.
 
 ## 🚀 Essential Endpoints

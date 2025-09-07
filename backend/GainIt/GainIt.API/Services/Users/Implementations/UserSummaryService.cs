@@ -260,9 +260,9 @@ namespace GainIt.API.Services.Users.Implementations
             var skillDistribution = CalculateSkillDistribution(languages, technologies);
 
             var userProjectIds = projTechData.Select(p => p.ProjectId).ToList();
-            var repoProjectIds = await r_DbContext.Projects
-                .Where(p => userProjectIds.Contains(p.ProjectId) && !string.IsNullOrWhiteSpace(p.RepositoryLink))
-                .Select(p => p.ProjectId)
+            var repoProjectIds = await r_DbContext.GitHubRepositories
+                .Where(gr => userProjectIds.Contains(gr.ProjectId))
+                .Select(gr => gr.ProjectId)
                 .ToListAsync();
 
             var contributions = await r_DbContext.GitHubContributions
