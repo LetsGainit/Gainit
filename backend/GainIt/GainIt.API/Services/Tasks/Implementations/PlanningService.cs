@@ -181,13 +181,14 @@ Please create a comprehensive roadmap with milestones and tasks that:
 1. Creates TEAM-LEVEL MILESTONES that represent major project phases (all team members work toward these)
 2. Assigns PERSONAL TASKS to specific team member roles (each task is owned by one person)
 3. Includes PERSONAL SUBTASKS for complex tasks (owned by the same person as the parent task)
-4. Includes realistic timeframes and dependencies
+4. Uses realistic timeframes based on the project duration ({project.Duration.TotalDays} days total)
 5. Covers all aspects of the project (planning, development, testing, deployment)
 6. Considers the project's difficulty level and actual team composition
 7. Uses appropriate task types (Feature, Research, Infra, Docs, Refactor)
 8. Sets realistic priorities based on dependencies and importance
 9. Distributes work evenly among available team members
-10. Ensures each task has a clear owner (assignedRole) and subtasks belong to the same owner";
+10. Ensures each task has a clear owner (assignedRole) and subtasks belong to the same owner
+11. Uses daysFromStart values that fit within the project duration (0 to {project.Duration.TotalDays} days)";
 
             r_logger.LogInformation("Project context built successfully: ProjectId={ProjectId}, ContextLength={ContextLength}", 
                 project.ProjectId, context.Length);
@@ -211,7 +212,7 @@ Please create a comprehensive roadmap with milestones and tasks that:
                         "      \"title\": \"string\",\n" +
                         "      \"description\": \"string\",\n" +
                         "      \"orderIndex\": number,\n" +
-                        "      \"targetDateUtc\": \"YYYY-MM-DD\"\n" +
+                        "      \"daysFromStart\": number (days from project start)\n" +
                         "    }\n" +
                         "  ],\n" +
                         "  \"tasks\": [\n" +
@@ -223,7 +224,7 @@ Please create a comprehensive roadmap with milestones and tasks that:
                         "      \"milestoneId\": number (index of milestone in array),\n" +
                         "      \"assignedRole\": \"string\",\n" +
                         "      \"orderIndex\": number,\n" +
-                        "      \"dueAtUtc\": \"YYYY-MM-DD\",\n" +
+                        "      \"daysFromStart\": number (days from project start),\n" +
                         "      \"subtasks\": [\n" +
                         "        {\n" +
                         "          \"title\": \"string\",\n" +
@@ -238,7 +239,7 @@ Please create a comprehensive roadmap with milestones and tasks that:
                         "1. Create 3-6 TEAM-LEVEL milestones that represent major project phases (all team works toward these)\n" +
                         "2. Create 10-25 PERSONAL tasks distributed across milestones (each task assigned to ONE specific role)\n" +
                         "3. Include PERSONAL subtasks for complex tasks (2-5 subtasks per task, same owner as parent task)\n" +
-                        "4. Use realistic dates and timeframes\n" +
+                        "4. Use realistic timeframes based on days from project start (0 = project start day)\n" +
                         "5. Assign each task to ONE specific team member role (assignedRole field)\n" +
                         "6. Ensure task dependencies make sense\n" +
                         "7. Distribute work evenly among available team members\n" +
@@ -317,6 +318,11 @@ Please create a comprehensive roadmap with milestones and tasks that:
 
                 // Create milestones
                 var createdMilestones = new List<ProjectMilestone>();
+                var projectStartDate = project.CreatedAtUtc;
+                
+                r_logger.LogInformation("Calculating dates from project start: ProjectId={ProjectId}, StartDate={StartDate}, Duration={Duration}days", 
+                    project.ProjectId, projectStartDate, project.Duration.TotalDays);
+                
                 foreach (var milestoneData in roadmap.Milestones.OrderBy(m => m.OrderIndex))
                 {
                     var milestone = new ProjectMilestone
@@ -326,7 +332,7 @@ Please create a comprehensive roadmap with milestones and tasks that:
                         Title = milestoneData.Title,
                         Description = milestoneData.Description,
                         OrderIndex = milestoneData.OrderIndex,
-                        TargetDateUtc = DateTime.Parse(milestoneData.TargetDateUtc),
+                        TargetDateUtc = projectStartDate.AddDays(milestoneData.DaysFromStart),
                         Status = eMilestoneStatus.Planned,
                         CreatedByUserId = project.ProjectMembers.FirstOrDefault()?.UserId ?? project.OwningOrganizationUserId ?? Guid.Empty
                     };
@@ -362,7 +368,7 @@ Please create a comprehensive roadmap with milestones and tasks that:
                         Milestone = milestone,
                         AssignedRole = taskData.AssignedRole,
                         OrderIndex = taskData.OrderIndex,
-                        DueAtUtc = DateTime.Parse(taskData.DueAtUtc),
+                        DueAtUtc = projectStartDate.AddDays(taskData.DaysFromStart),
                         Status = eTaskStatus.Todo,
                         CreatedByUserId = project.ProjectMembers.FirstOrDefault()?.UserId ?? project.OwningOrganizationUserId ?? Guid.Empty
                     };

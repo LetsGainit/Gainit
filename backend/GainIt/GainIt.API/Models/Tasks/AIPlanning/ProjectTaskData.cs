@@ -12,7 +12,7 @@ namespace GainIt.API.Models.Tasks.AIPlanning
         public int MilestoneId { get; set; }
         public string AssignedRole { get; set; } = string.Empty;
         public int OrderIndex { get; set; }
-        public string DueAtUtc { get; set; } = string.Empty;
+        public int DaysFromStart { get; set; }
         public List<ProjectSubtaskData> Subtasks { get; set; } = new();
     }
 }

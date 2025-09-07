@@ -8,6 +8,6 @@ namespace GainIt.API.Models.Tasks.AIPlanning
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int OrderIndex { get; set; }
-        public string TargetDateUtc { get; set; } = string.Empty;
+        public int DaysFromStart { get; set; }
     }
 }
