@@ -485,7 +485,7 @@ namespace GainIt.API.Services.Users.Implementations
             else
             {
                 // Fallback simple facts
-                int linkedRepos = repoProjects.Count;
+                int linkedRepos = repoProjectIds.Count;
                 fact = !string.IsNullOrWhiteSpace(user.GitHubUsername) || linkedRepos > 0
                     ? $"GitHub: username={(string.IsNullOrWhiteSpace(user.GitHubUsername) ? "none" : user.GitHubUsername)}, linkedRepos={linkedRepos}"
                     : string.Empty;
