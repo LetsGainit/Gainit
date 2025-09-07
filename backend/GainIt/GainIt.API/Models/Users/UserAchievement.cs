@@ -26,5 +26,9 @@ namespace GainIt.API.Models.Users
         // Additional data about how it was earned (optional)
         [StringLength(1000)]
         public string? EarnedDetails { get; set; }
+
+        // Optional custom icon URL for this earned achievement (can be null or empty)
+        [StringLength(500)]
+        public string? AchievementIconUrl { get; set; }
     }
 }

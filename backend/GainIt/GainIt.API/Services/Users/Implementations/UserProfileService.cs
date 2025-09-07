@@ -937,7 +937,8 @@ namespace GainIt.API.Services.Users.Implementations
                     EarnedAtUtc = DateTime.UtcNow,
                     User = gainer,
                     AchievementTemplate = achievementTemplate,
-                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}"
+                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}",
+                    AchievementIconUrl = achievementTemplate.IconUrl
                 };
 
                 // Add to DbContext explicitly to ensure proper tracking and ID generation
@@ -990,7 +991,8 @@ namespace GainIt.API.Services.Users.Implementations
                     EarnedAtUtc = DateTime.UtcNow,
                     User = mentor,
                     AchievementTemplate = achievementTemplate,
-                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}"
+                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}",
+                    AchievementIconUrl = achievementTemplate.IconUrl
                 };
 
                 // Add to DbContext explicitly to ensure proper tracking and ID generation
@@ -1043,7 +1045,8 @@ namespace GainIt.API.Services.Users.Implementations
                     EarnedAtUtc = DateTime.UtcNow,
                     User = nonprofit,
                     AchievementTemplate = achievementTemplate,
-                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}"
+                    EarnedDetails = $"Earned '{achievementTemplate.Title}' on {DateTime.UtcNow:yyyy-MM-dd}",
+                    AchievementIconUrl = achievementTemplate.IconUrl
                 };
 
                 // Add to DbContext explicitly to ensure proper tracking and ID generation
