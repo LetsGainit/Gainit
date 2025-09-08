@@ -16,6 +16,7 @@ namespace GainIt.API.DTOs.ViewModels.Projects
         public int? Duration { get; set; }
         public string? DurationText { get; set; }
         public List<string> OpenRoles { get; set; } = new List<string>();
+        public bool IsAdmin { get; set; }
 
         public ConciseUserProjectViewModel(UserProject i_Project, Guid? i_TeamMemberId)
         {
@@ -56,6 +57,13 @@ namespace GainIt.API.DTOs.ViewModels.Projects
                    .Select(member => member.User.ProfilePictureURL ?? string.Empty)
                    .Where(url => !string.IsNullOrEmpty(url))
                    .ToList() ?? new List<string>();
+
+            // Check if current user is admin
+            IsAdmin = i_TeamMemberId.HasValue && 
+                      i_Project.ProjectMembers?
+                          .Any(pm => pm.UserId == i_TeamMemberId.Value && 
+                                    pm.IsAdmin && 
+                                    pm.LeftAtUtc == null) ?? false;
         }
 
         private static string HumanizeDays(int days)
