@@ -127,7 +127,10 @@ try
         builder.Configuration.GetSection("OpenAI"));
     builder.Services.Configure<AcsEmailOptions>(
         builder.Configuration.GetSection("ACS:Email"));
-    builder.Services.AddSignalR()
+    builder.Services.AddSignalR(options =>
+    {
+        options.EnableDetailedErrors = true;
+    })
     .AddAzureSignalR(
         builder.Configuration["SignalR:ConnectionString"]);
     builder.Services.Configure<JoinRequestOptions>(
@@ -406,7 +409,8 @@ try
             .WithOrigins("http://localhost:5173", "http://localhost:3000", "https://letsgainit.com", "https://www.letsgainit.com", "https://gray-moss-04b923a10.2.azurestaticapps.net")
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials());
+            .AllowCredentials()
+            .SetIsOriginAllowedToAllowWildcardSubdomains());
     });
 
     var app = builder.Build();
