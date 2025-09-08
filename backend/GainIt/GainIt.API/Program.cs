@@ -200,7 +200,7 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v2 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v3 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
@@ -266,11 +266,18 @@ try
         options.AddPolicy("RequireAccessAsUser", policy =>
             policy.RequireAssertion(ctx =>
             {
-                // In Development, always allow access
+                // In Development, allow access if user is authenticated OR if no user (for testing)
                 var httpContext = ctx.Resource as HttpContext;
                 if (httpContext?.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment() == true)
                 {
-                    return true;
+                    // Allow if user is authenticated OR if no user (for local testing)
+                    return ctx.User?.Identity?.IsAuthenticated == true || ctx.User?.Identity?.IsAuthenticated == false;
+                }
+
+                // In Production, require proper authentication and scopes
+                if (ctx.User?.Identity?.IsAuthenticated != true)
+                {
+                    return false;
                 }
 
                 // Support both 'scp' and the full URI scope claim
@@ -293,11 +300,18 @@ try
         options.AddPolicy("RequireAdminAccess", policy =>
             policy.RequireAssertion(ctx =>
             {
-                // In Development, always allow access
+                // In Development, allow access if user is authenticated OR if no user (for testing)
                 var httpContext = ctx.Resource as HttpContext;
                 if (httpContext?.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment() == true)
                 {
-                    return true;
+                    // Allow if user is authenticated OR if no user (for local testing)
+                    return ctx.User?.Identity?.IsAuthenticated == true || ctx.User?.Identity?.IsAuthenticated == false;
+                }
+
+                // In Production, require proper authentication and admin role
+                if (ctx.User?.Identity?.IsAuthenticated != true)
+                {
+                    return false;
                 }
 
                 // Check for admin role
@@ -412,17 +426,10 @@ try
     app.UseHttpsRedirection(); //redirects to https
     app.UseCors("signalr-cors");
 
-    // Use authentication/authorization middleware based on environment
-    if (!app.Environment.IsDevelopment())
-    {
-        app.UseAuthentication(); //authenticates the request
-        app.UseAuthorization(); //authorizes the request
-        Log.Information("Production environment: authentication and authorization middleware enabled");
-    }
-    else
-    {
-        Log.Warning("Development environment detected: skipping authentication/authorization middleware for local testing");
-    }
+    // Always use authentication/authorization middleware for SignalR to work properly
+    app.UseAuthentication(); //authenticates the request
+    app.UseAuthorization(); //authorizes the request
+    Log.Information("Authentication and authorization middleware enabled for all environments");
 
     app.MapControllers(); //maps the controllers to the request
     app.MapHub<NotificationsHub>("/hubs/notifications");
