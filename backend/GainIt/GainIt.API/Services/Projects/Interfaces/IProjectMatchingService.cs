@@ -13,8 +13,8 @@ namespace GainIt.API.Services.Projects.Interfaces
 
     public interface IProjectMatchingService
     {
-        Task<ProjectMatchResultDto> MatchProjectsByTextAsync(string i_InputText, int i_ResultCount = 3);
-        Task<IEnumerable<AzureVectorSearchProjectViewModel>> MatchProjectsByProfileAsync(Guid i_UserId, int i_ResultCount = 3);
+        Task<EnhancedProjectMatchResultDto> MatchProjectsByTextAsync(string i_InputText, int i_ResultCount = 3);
+        Task<IEnumerable<EnhancedProjectSearchViewModel>> MatchProjectsByProfileAsync(Guid i_UserId, int i_ResultCount = 3);
         
         /// <summary>
         /// Generates AI-powered insights for GitHub analytics using the existing GPT configuration

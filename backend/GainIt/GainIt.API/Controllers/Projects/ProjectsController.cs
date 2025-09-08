@@ -869,7 +869,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="count">Maximum number of results to return (default 3).</param>
         /// <returns>A list of relevant projects based on vector similarity.</returns>
         [HttpGet("search/vector")]
-        public async Task<ActionResult<ProjectMatchResultViewModel>> SearchProjectsByVector([FromQuery] string query, [FromQuery] int count = 3)
+        public async Task<ActionResult<EnhancedProjectMatchResultViewModel>> SearchProjectsByVector([FromQuery] string query, [FromQuery] int count = 3)
         {
             r_logger.LogInformation("Performing vector search: Query={Query}, Count={Count}", query, count);
             
@@ -881,9 +881,9 @@ namespace GainIt.API.Controllers.Projects
 
             try
             {
-                ProjectMatchResultDto resultDto = await r_ProjectMatchingService.MatchProjectsByTextAsync(query, count);
+                EnhancedProjectMatchResultDto resultDto = await r_ProjectMatchingService.MatchProjectsByTextAsync(query, count);
 
-                ProjectMatchResultViewModel resultViewModel = new ProjectMatchResultViewModel(resultDto.Projects, resultDto.Explanation);
+                EnhancedProjectMatchResultViewModel resultViewModel = new EnhancedProjectMatchResultViewModel(resultDto.Projects, resultDto.Explanation);
 
                 r_logger.LogInformation("Vector search completed: Query={Query}, Results={Count}", query, resultDto.Projects.Count());
                 return Ok(resultViewModel);
@@ -901,7 +901,7 @@ namespace GainIt.API.Controllers.Projects
         /// <param name="count">Max number of results (default 3).</param>
         [HttpGet("match/profile")]
         [Authorize(Policy = "RequireAccessAsUser")]
-        public async Task<ActionResult<IEnumerable<AzureVectorSearchProjectViewModel>>> MatchByProfile(
+        public async Task<ActionResult<IEnumerable<EnhancedProjectSearchViewModel>>> MatchByProfile(
              [FromQuery] int count = 3)
         {
             try 

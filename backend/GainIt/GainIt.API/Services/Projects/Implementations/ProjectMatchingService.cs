@@ -44,7 +44,7 @@ namespace GainIt.API.Services.Projects.Implementations
             r_logger = i_logger;
         }
 
-        public async Task<ProjectMatchResultDto> MatchProjectsByTextAsync(string i_InputText, int i_ResultCount = 3)
+        public async Task<EnhancedProjectMatchResultDto> MatchProjectsByTextAsync(string i_InputText, int i_ResultCount = 3)
         {
             r_logger.LogInformation("Matching projects by text: InputText={InputText}, ResultCount={ResultCount}", i_InputText, i_ResultCount);
 
@@ -61,12 +61,12 @@ namespace GainIt.API.Services.Projects.Implementations
                 r_logger.LogInformation("Projects filtered with iterative search: FilteredCount={FilteredCount}", filteredProjects.Count);
 
                 // Convert to AzureVectorSearchProjectViewModel
-                var projectViewModels = filteredProjects.Select(ConvertToAzureVectorSearchViewModel);
+                var projectViewModels = filteredProjects.Select(ConvertToEnhancedProjectSearchViewModel);
 
                 var chatExplenation = await getChatExplanationAsync(chatrefinedQuery, filteredProjects);
                 r_logger.LogInformation("Chat explanation generated: Chat Explanation={Explanation}", chatExplenation);
 
-                var result = new ProjectMatchResultDto(projectViewModels, chatExplenation);
+                var result = new EnhancedProjectMatchResultDto(projectViewModels, chatExplenation);
                 // Replace the existing logging line with colored project names using ANSI escape codes for green
                 r_logger.LogInformation(
                     "Project matching completed successfully: FinalResultCount={FinalResultCount}, ProjectNames={ProjectNames}",
@@ -82,7 +82,7 @@ namespace GainIt.API.Services.Projects.Implementations
             }
         }
 
-        public async Task<IEnumerable<AzureVectorSearchProjectViewModel>> MatchProjectsByProfileAsync(Guid i_UserId, int i_ResultCount = 3)
+        public async Task<IEnumerable<EnhancedProjectSearchViewModel>> MatchProjectsByProfileAsync(Guid i_UserId, int i_ResultCount = 3)
         {
             r_logger.LogInformation("Matching projects by profile: UserId={UserId}, ResultCount={ResultCount}", i_UserId, i_ResultCount);
 
@@ -118,7 +118,7 @@ namespace GainIt.API.Services.Projects.Implementations
                 );
 
                 // Convert to AzureVectorSearchProjectViewModel
-                var projectViewModels = filteredProjects.Select(ConvertToAzureVectorSearchViewModel);
+                var projectViewModels = filteredProjects.Select(ConvertToEnhancedProjectSearchViewModel);
                 return projectViewModels;
             }
             catch (KeyNotFoundException)
@@ -372,7 +372,7 @@ namespace GainIt.API.Services.Projects.Implementations
             return text;
         }
 
-        private async Task<List<TemplateProject>> filterProjectsWithChatAsync(string i_Query, List<TemplateProject> i_Projects)
+        private async Task<List<TemplateProject>> filterProjectsWithChatAsync(string i_Query, List<TemplateProject> i_Projects, int i_RequestedCount)
         {
             r_logger.LogInformation("Filtering projects with chat: Query={Query}, ProjectsCount={ProjectsCount}", i_Query, i_Projects.Count);
 
@@ -410,13 +410,16 @@ namespace GainIt.API.Services.Projects.Implementations
                 {
                    new SystemChatMessage(
                     "You are an assistant that verifies project relevance based on a user query. " +
-                    "Review the projects and return a JSON array of the IDs (as strings) of all the projects that are relevant or potentially relevant. " +
-                    "Be INCLUSIVE rather than exclusive - include projects that have ANY connection to the query, even if tangential. " +
-                    "Only exclude projects that are completely unrelated. " +
-                    "If all projects have some relevance, return them all. " +
+                    "Review the projects and return a JSON array of the IDs (as strings) of the most relevant projects. " +
+                    "Be INCLUSIVE - include projects that have ANY connection to the query, even if tangential or loosely related. " +
+                    "Only exclude projects that are completely unrelated to the query. " +
+                    "Consider technologies, skills, domains, difficulty levels, and learning outcomes. " +
+                    "If in doubt, include the project. " +
+                    "IMPORTANT: Return exactly the number of projects requested. If there are fewer relevant projects than requested, return all relevant ones. " +
+                    "If there are more relevant projects than requested, return the most relevant ones up to the requested count. " +
                     "Return the project IDs as a JSON array of strings, e.g., [\"id1\", \"id2\", \"id3\"]."),
                 new UserChatMessage(
-                    $"Query: {i_Query}\n\nProjects:\n{summaries}\n\nReturn the relevant project IDs as a JSON array:")
+                    $"Query: {i_Query}\n\nProjects:\n{summaries}\n\nReturn the {i_RequestedCount} most relevant project IDs as a JSON array:")
                 };
 
                 var options = new ChatCompletionOptions
@@ -663,7 +666,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
                     // Calculate how many more projects we need
                     var remainingNeeded = requestedCount - finalFilteredProjects.Count;
-                    var searchSize = Math.Max(remainingNeeded * 3, 15); // Get 3x more than needed
+                    var searchSize = Math.Max(remainingNeeded * 5, 15); // Get 5x more than needed to give AI more options
 
                     // Run vector search with current threshold
                     var matchedProjectIds = await runVectorSearchAsync(embedding, searchSize, currentSimilarityThreshold);
@@ -690,7 +693,7 @@ namespace GainIt.API.Services.Projects.Implementations
                     r_logger.LogInformation("Fetched {FetchedCount} new projects", newProjects.Count);
 
                     // Apply chat filtering to new projects
-                    var filteredNewProjects = await filterProjectsWithChatAsync(query, newProjects);
+                    var filteredNewProjects = await filterProjectsWithChatAsync(query, newProjects, requestedCount);
                     r_logger.LogInformation("Chat filtered {FilteredCount} new projects", filteredNewProjects.Count);
 
                     // Add filtered projects to final result (avoid duplicates)
@@ -809,35 +812,26 @@ namespace GainIt.API.Services.Projects.Implementations
             }
         }
 
-        /// <summary>
-        /// Converts a TemplateProject (which can be either TemplateProject or UserProject) to AzureVectorSearchProjectViewModel
-        /// </summary>
-        /// <param name="project">The project to convert</param>
-        /// <returns>AzureVectorSearchProjectViewModel with all relevant fields populated</returns>
-        private AzureVectorSearchProjectViewModel ConvertToAzureVectorSearchViewModel(TemplateProject project)
+
+        private EnhancedProjectSearchViewModel ConvertToEnhancedProjectSearchViewModel(TemplateProject project)
         {
-            var viewModel = new AzureVectorSearchProjectViewModel
+            var viewModel = new EnhancedProjectSearchViewModel
             {
                 ProjectId = project.ProjectId.ToString(),
                 ProjectName = project.ProjectName,
                 ProjectDescription = project.ProjectDescription,
+                ProjectPictureUrl = project.ProjectPictureUrl, // This should be available in the model
                 DifficultyLevel = project.DifficultyLevel.ToString(),
-                DurationDays = (int)project.Duration.TotalDays,
-                Goals = project.Goals?.ToArray() ?? new string[0],
-                Technologies = project.Technologies?.ToArray() ?? new string[0],
+                DurationDays = (int)Math.Round(project.Duration.TotalDays),
+                DurationText = HumanizeDays((int)Math.Round(project.Duration.TotalDays)), // Convert to human-readable format
                 RequiredRoles = project.RequiredRoles?.ToArray() ?? new string[0],
-                ProgrammingLanguages = new string[0], // Default for TemplateProject
-                RagContext = new RagContextViewModel
-                {
-                    SearchableText = project.RagContext?.SearchableText ?? string.Empty,
-                    Tags = project.RagContext?.Tags?.ToArray() ?? new string[0],
-                    SkillLevels = project.RagContext?.SkillLevels?.ToArray() ?? new string[0],
-                    ProjectType = project.RagContext?.ProjectType ?? string.Empty,
-                    Domain = project.RagContext?.Domain ?? string.Empty,
-                    LearningOutcomes = project.RagContext?.LearningOutcomes?.ToArray() ?? new string[0],
-                    ComplexityFactors = project.RagContext?.ComplexityFactors?.ToArray() ?? new string[0]
-                }
+                Technologies = project.Technologies?.ToArray() ?? new string[0],
+                Goals = project.Goals?.ToArray() ?? new string[0],
+                ProgrammingLanguages = new string[0] // Default for TemplateProject
             };
+
+            // For templates, open roles are the same as required roles
+            viewModel.OpenRoles = viewModel.RequiredRoles;
 
             // If it's a UserProject, populate the additional fields
             if (project is UserProject userProject)
@@ -845,15 +839,60 @@ namespace GainIt.API.Services.Projects.Implementations
                 viewModel.ProjectSource = userProject.ProjectSource.ToString();
                 viewModel.ProjectStatus = userProject.ProjectStatus.ToString();
                 viewModel.ProgrammingLanguages = userProject.ProgrammingLanguages?.ToArray() ?? new string[0];
+                viewModel.RepositoryLink = userProject.RepositoryLink;
+                viewModel.TeamSize = userProject.ProjectMembers?.Count ?? 0;
+                
+                // For user projects, calculate open roles (roles that still need team members)
+                viewModel.OpenRoles = CalculateOpenRoles(userProject);
             }
             else
             {
                 // For TemplateProject, set these as default values
                 viewModel.ProjectSource = "Template";
                 viewModel.ProjectStatus = eProjectStatus.NotActive.ToString();
+                viewModel.TeamSize = 0;
             }
 
             return viewModel;
+        }
+
+        private static string HumanizeDays(int days)
+        {
+            const int daysInYear = 365;
+            const int daysInMonth = 30;
+            const int daysInWeek = 7;
+
+            if (days <= 0)
+            {
+                return "0 days";
+            }
+
+            if (days % daysInYear == 0)
+            {
+                int years = days / daysInYear;
+                return years == 1 ? "1 year" : $"{years} years";
+            }
+
+            if (days % daysInMonth == 0)
+            {
+                int months = days / daysInMonth;
+                return months == 1 ? "1 month" : $"{months} months";
+            }
+
+            if (days % daysInWeek == 0)
+            {
+                int weeks = days / daysInWeek;
+                return weeks == 1 ? "1 week" : $"{weeks} weeks";
+            }
+
+            return days == 1 ? "1 day" : $"{days} days";
+        }
+
+        private string[] CalculateOpenRoles(UserProject userProject)
+        {
+            // For consistency with other view models, just return RequiredRoles
+            // The frontend can handle role availability logic if needed
+            return userProject.RequiredRoles?.ToArray() ?? new string[0];
         }
     }
 }
