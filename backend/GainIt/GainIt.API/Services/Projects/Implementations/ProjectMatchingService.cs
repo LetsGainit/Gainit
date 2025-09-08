@@ -560,32 +560,21 @@ namespace GainIt.API.Services.Projects.Implementations
             }
         }
 
-        private async Task<List<Guid>> runVectorSearchAsync(IReadOnlyList<float> embedding, int resultCount, double similarityThreshold)
+        private async Task<List<(Guid ProjectId, double Score)>> runVectorSearchWithScoresAsync(IReadOnlyList<float> embedding, int resultCount, double similarityThreshold)
         {
-            r_logger.LogInformation("Running vector search: EmbeddingSize={EmbeddingSize}, ResultCount={ResultCount}, SimilarityThreshold={SimilarityThreshold}", 
+            r_logger.LogInformation("Running vector search with scores: EmbeddingSize={EmbeddingSize}, ResultCount={ResultCount}, SimilarityThreshold={SimilarityThreshold}", 
                 embedding.Count, resultCount, similarityThreshold);
             var startTime = DateTime.UtcNow;
 
             try
             {
-                // Request more results to account for deduplication
-                var searchSize = Math.Max(resultCount * 3, 15); // Get 3x more results to ensure we have enough after deduplication
-                
                 var searchOptions = new SearchOptions
                 {
-                    Size = searchSize,
+                    Size = resultCount,
                     VectorSearch = new VectorSearchOptions
                     {
-                        Queries =
-                        {
-                            new VectorizedQuery(embedding.ToArray())
-                            {
-                                KNearestNeighborsCount = searchSize,
-                                Fields = { "text_vector" }
-                            }
-                        }
-                    },
-                    Select = { "projectId" }
+                        Queries = { new VectorizedQuery(embedding.ToArray()) { KNearestNeighborsCount = resultCount, Fields = { "text_vector" } } }
+                    }
                 };
 
                 var results = await r_searchClient.SearchAsync<ProjectSearchResult>(null, searchOptions);
@@ -612,30 +601,33 @@ namespace GainIt.API.Services.Projects.Implementations
                         }
                         else
                         {
-                            r_logger.LogWarning("Failed to parse ProjectId: '{ProjectId}'", result.Document.projectId ?? "NULL");
+                            r_logger.LogWarning("Failed to parse ProjectId as Guid: '{ProjectId}'", result.Document.projectId);
                         }
                     }
                 }
 
                 // Sort by score (descending) and take the requested number of unique projects
-                var matchedProjectIds = projectScores
+                var matchedProjectIdsWithScores = projectScores
                     .OrderByDescending(kvp => kvp.Value)
                     .Take(resultCount)
-                    .Select(kvp => kvp.Key)
+                    .Select(kvp => (kvp.Key, kvp.Value))
                     .ToList();
 
                 var duration = DateTime.UtcNow - startTime;
-                r_logger.LogInformation("Vector search completed: MatchedProjectIds={MatchedProjectIds}, Count={Count}, Duration={Duration}ms",
-                    string.Join(",", matchedProjectIds), matchedProjectIds.Count, duration.TotalMilliseconds);
-                return matchedProjectIds;
+                r_logger.LogInformation("Vector search with scores completed: MatchedProjectIds={MatchedProjectIds}, Count={Count}, Duration={Duration}ms",
+                    string.Join(",", matchedProjectIdsWithScores.Select(p => p.Item1)), matchedProjectIdsWithScores.Count, duration.TotalMilliseconds);
+
+                return matchedProjectIdsWithScores;
             }
             catch (Exception ex)
             {
                 var duration = DateTime.UtcNow - startTime;
-                r_logger.LogError(ex, "Error running vector search: EmbeddingSize={EmbeddingSize}, ResultCount={ResultCount}, Duration={Duration}ms", embedding.Count, resultCount, duration.TotalMilliseconds);
+                r_logger.LogError(ex, "Error in vector search with scores: EmbeddingSize={EmbeddingSize}, ResultCount={ResultCount}, SimilarityThreshold={SimilarityThreshold}, Duration={Duration}ms",
+                    embedding.Count, resultCount, similarityThreshold, duration.TotalMilliseconds);
                 throw;
             }
         }
+
 
         /// <summary>
         /// Performs iterative vector search with chat filtering to ensure we return exactly the requested count of projects.
@@ -652,43 +644,45 @@ namespace GainIt.API.Services.Projects.Implementations
 
             try
             {
+                // Store projects with their scores to maintain ordering
+                var projectsWithScores = new List<(TemplateProject Project, double Score)>();
                 var allProcessedProjectIds = new HashSet<Guid>(); // Track all processed project IDs to avoid duplicates
-                var finalFilteredProjects = new List<TemplateProject>();
                 var currentSimilarityThreshold = r_similarityThreshold;
                 var searchAttempt = 1;
                 const int maxSearchAttempts = 3; // Prevent infinite loops
                 const double thresholdDecrement = 0.1; // Reduce threshold by 0.1 each iteration
 
-                while (finalFilteredProjects.Count < requestedCount && searchAttempt <= maxSearchAttempts)
+                while (projectsWithScores.Count < requestedCount && searchAttempt <= maxSearchAttempts)
                 {
                     r_logger.LogInformation("Search attempt {Attempt}: CurrentThreshold={Threshold}, CurrentCount={CurrentCount}, RequestedCount={RequestedCount}", 
-                        searchAttempt, currentSimilarityThreshold, finalFilteredProjects.Count, requestedCount);
+                        searchAttempt, currentSimilarityThreshold, projectsWithScores.Count, requestedCount);
 
                     // Calculate how many more projects we need
-                    var remainingNeeded = requestedCount - finalFilteredProjects.Count;
-                    var searchSize = Math.Max(remainingNeeded * 5, 15); // Get 5x more than needed to give AI more options
+                    var remainingNeeded = requestedCount - projectsWithScores.Count;
+                    var searchSize = Math.Max(remainingNeeded * 3, 15); // Get 3x more than needed to give AI more options
 
-                    // Run vector search with current threshold
-                    var matchedProjectIds = await runVectorSearchAsync(embedding, searchSize, currentSimilarityThreshold);
+                    // Run vector search with current threshold and get scores
+                    var matchedProjectIdsWithScores = await runVectorSearchWithScoresAsync(embedding, searchSize, currentSimilarityThreshold);
                     
                     // Filter out already processed project IDs
-                    var newProjectIds = matchedProjectIds.Where(id => !allProcessedProjectIds.Contains(id)).ToList();
+                    var newProjectIdsWithScores = matchedProjectIdsWithScores.Where(kvp => !allProcessedProjectIds.Contains(kvp.Item1)).ToList();
                     
-                    if (newProjectIds.Count == 0)
+                    if (newProjectIdsWithScores.Count == 0)
                     {
                         r_logger.LogInformation("No new project IDs found in search attempt {Attempt}", searchAttempt);
                         break; // No more projects to process
                     }
 
                     // Add new IDs to processed set
-                    foreach (var id in newProjectIds)
+                    foreach (var kvp in newProjectIdsWithScores)
                     {
-                        allProcessedProjectIds.Add(id);
+                        allProcessedProjectIds.Add(kvp.Item1);
                     }
 
-                    r_logger.LogInformation("Found {NewCount} new project IDs in search attempt {Attempt}", newProjectIds.Count, searchAttempt);
+                    r_logger.LogInformation("Found {NewCount} new project IDs in search attempt {Attempt}", newProjectIdsWithScores.Count, searchAttempt);
 
                     // Fetch projects for new IDs
+                    var newProjectIds = newProjectIdsWithScores.Select(kvp => kvp.Item1).ToList();
                     var newProjects = await fetchProjectsByIdsAsync(newProjectIds);
                     r_logger.LogInformation("Fetched {FetchedCount} new projects", newProjects.Count);
 
@@ -696,17 +690,23 @@ namespace GainIt.API.Services.Projects.Implementations
                     var filteredNewProjects = await filterProjectsWithChatAsync(query, newProjects, requestedCount);
                     r_logger.LogInformation("Chat filtered {FilteredCount} new projects", filteredNewProjects.Count);
 
-                    // Add filtered projects to final result (avoid duplicates)
-                    var existingProjectIds = new HashSet<Guid>(finalFilteredProjects.Select(p => p.ProjectId));
-                    var uniqueNewProjects = filteredNewProjects.Where(p => !existingProjectIds.Contains(p.ProjectId)).ToList();
-                    
-                    finalFilteredProjects.AddRange(uniqueNewProjects);
+                    // Add filtered projects with their scores (avoid duplicates)
+                    var existingProjectIds = new HashSet<Guid>(projectsWithScores.Select(p => p.Project.ProjectId));
+                    foreach (var project in filteredNewProjects)
+                    {
+                        if (!existingProjectIds.Contains(project.ProjectId))
+                        {
+                            // Find the score for this project
+                            var score = newProjectIdsWithScores.FirstOrDefault(kvp => kvp.Item1 == project.ProjectId).Item2;
+                            projectsWithScores.Add((project, score));
+                        }
+                    }
                     
                     r_logger.LogInformation("Added {AddedCount} unique projects. Total count now: {TotalCount}", 
-                        uniqueNewProjects.Count, finalFilteredProjects.Count);
+                        filteredNewProjects.Count(p => !existingProjectIds.Contains(p.ProjectId)), projectsWithScores.Count);
 
                     // If we have enough projects, break
-                    if (finalFilteredProjects.Count >= requestedCount)
+                    if (projectsWithScores.Count >= requestedCount)
                     {
                         r_logger.LogInformation("Reached requested count after {Attempt} search attempts", searchAttempt);
                         break;
@@ -724,8 +724,12 @@ namespace GainIt.API.Services.Projects.Implementations
                     }
                 }
 
-                // Take exactly the requested count
-                var result = finalFilteredProjects.Take(requestedCount).ToList();
+                // Sort by score (descending) and take exactly the requested count
+                var result = projectsWithScores
+                    .OrderByDescending(p => p.Score)
+                    .Take(requestedCount)
+                    .Select(p => p.Project)
+                    .ToList();
                 
                 var duration = DateTime.UtcNow - startTime;
                 r_logger.LogInformation("Iterative search completed: FinalCount={FinalCount}, RequestedCount={RequestedCount}, Attempts={Attempts}, Duration={Duration}ms",
