@@ -9,6 +9,11 @@ using GainIt.API.DTOs.ViewModels.GitHub;
 
 namespace GainIt.API.Services.GitHub.Implementations
 {
+    /// <summary>
+    /// Orchestrates GitHub operations for projects: repository linking, validation,
+    /// synchronization, analytics aggregation, and member contribution insights.
+    /// Wraps lower-level API client calls and persists results.
+    /// </summary>
     public class GitHubService : IGitHubService
     {
         private readonly GainItDbContext _context;
@@ -17,6 +22,14 @@ namespace GainIt.API.Services.GitHub.Implementations
         private readonly IProjectMatchingService _projectMatchingService;
         private readonly ILogger<GitHubService> _logger;
 
+        /// <summary>
+        /// Creates a new <see cref="GitHubService"/>.
+        /// </summary>
+        /// <param name="context">EF Core context used for persistence.</param>
+        /// <param name="apiClient">GitHub REST API client.</param>
+        /// <param name="analyticsService">Service for computing analytics aggregates.</param>
+        /// <param name="projectMatchingService">Service for project-related matching.</param>
+        /// <param name="logger">Logger instance.</param>
         public GitHubService(
             GainItDbContext context,
             IGitHubApiClient apiClient,

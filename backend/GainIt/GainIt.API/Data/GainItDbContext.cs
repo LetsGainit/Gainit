@@ -16,6 +16,11 @@ using System.Linq;
 
 namespace GainIt.API.Data
 {
+    /// <summary>
+    /// Application database context configured with Entity Framework Core.
+    /// Exposes <see cref="DbSet{TEntity}"/> properties for domain entities,
+    /// defines relationships and constraints, and supports application seeding.
+    /// </summary>
     public class GainItDbContext : DbContext
     {
         private readonly ILogger<GainItDbContext> r_logger;
@@ -901,8 +906,18 @@ namespace GainIt.API.Data
         #endregion
     }
     
+    /// <summary>
+    /// Provides methods to seed initial data required for the application to run
+    /// (e.g., template projects). Designed to be safe to run on every startup.
+    /// </summary>
     public static class GainItDbContextSeeder
     {
+        /// <summary>
+        /// Seeds the database with initial data if it is missing.
+        /// </summary>
+        /// <param name="context">The EF Core database context.</param>
+        /// <param name="projectConfigService">Service used to read and apply project templates/configuration.</param>
+        /// <param name="logger">Optional logger for diagnostic output.</param>
         public static void SeedData(GainItDbContext context, IProjectConfigurationService projectConfigService, ILogger? logger = null)
         {
             logger?.LogInformation("Starting database seeding process");

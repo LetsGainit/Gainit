@@ -5,11 +5,20 @@ using Microsoft.Extensions.Logging;
 
 namespace GainIt.API.Services.GitHub.Implementations
 {
+    /// <summary>
+    /// Computes repository and user analytics from stored repository metadata and
+    /// GitHub API responses. Produces aggregate series suitable for graphs and summaries.
+    /// </summary>
     public class GitHubAnalyticsService : IGitHubAnalyticsService
     {
         private readonly ILogger<GitHubAnalyticsService> _logger;
         private readonly IGitHubApiClient _gitHubApiClient;
 
+        /// <summary>
+        /// Creates a new <see cref="GitHubAnalyticsService"/>.
+        /// </summary>
+        /// <param name="logger">Logger instance for diagnostics.</param>
+        /// <param name="gitHubApiClient">GitHub API client to fetch raw data when required.</param>
         public GitHubAnalyticsService(ILogger<GitHubAnalyticsService> logger, IGitHubApiClient gitHubApiClient)
         {
             _logger = logger;

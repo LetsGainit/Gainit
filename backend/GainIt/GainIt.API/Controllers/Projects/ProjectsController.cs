@@ -11,7 +11,6 @@ using GainIt.API.Services.FileUpload.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
-using GainIt.API.DTOs.Requests.Projects;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
@@ -23,6 +22,11 @@ namespace GainIt.API.Controllers.Projects
 {
     [ApiController]
     [Route("api/projects")]
+    /// <summary>
+    /// Manages project lifecycle APIs including retrieval, creation from templates,
+    /// nonprofit projects, GitHub linking, search/match, tasks/milestones helpers,
+    /// and export utilities for vector search.
+    /// </summary>
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectService r_ProjectService;
@@ -32,6 +36,15 @@ namespace GainIt.API.Controllers.Projects
         private readonly ILogger<ProjectsController> r_logger;
         private readonly GainItDbContext r_DbContext;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProjectsController"/>.
+        /// </summary>
+        /// <param name="i_ProjectService">Project domain service.</param>
+        /// <param name="r_ProjectMatchingService">Matching and search service.</param>
+        /// <param name="gitHubService">GitHub integration service.</param>
+        /// <param name="fileUploadService">File upload service.</param>
+        /// <param name="logger">Logger instance.</param>
+        /// <param name="dbContext">EF Core database context.</param>
         public ProjectsController(
             IProjectService i_ProjectService, 
             IProjectMatchingService r_ProjectMatchingService,

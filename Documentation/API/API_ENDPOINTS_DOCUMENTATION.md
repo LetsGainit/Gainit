@@ -520,7 +520,7 @@ projectPictureUrl: "https://example.com/image.jpg"
 
 #### GET `/search`
 **Query Parameters:**
-- `q`: Search term
+- `searchQuery`: Search term
 - `difficultyLevel`: Filter by difficulty
 - `technologies`: Comma-separated list of technologies
 - `status`: Project status filter
@@ -534,7 +534,7 @@ projectPictureUrl: "https://example.com/image.jpg"
 - `query`: The user's search text (required)
 - `count`: **Exact** number of results to return (default: 3) - **guaranteed to return exactly this many projects**
 
-**Response:** `ProjectMatchResultViewModel`
+**Response:** `EnhancedProjectMatchResultViewModel`
 ```json
 {
   "projects": [
@@ -584,7 +584,7 @@ GET /api/projects/search/vector?query=web development with React&count=5
 **Query Parameters:**
 - `count`: **Exact** number of results to return (default: 3) - **guaranteed to return exactly this many projects**
 
-**Response:** `IEnumerable<AzureVectorSearchProjectViewModel>`
+**Response:** `IEnumerable<EnhancedProjectSearchViewModel>`
 ```json
 [
   {

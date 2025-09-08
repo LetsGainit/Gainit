@@ -34,6 +34,11 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+/// <summary>
+/// Application entry point and host configuration for GainIt.API.
+/// Configures logging, DI container, authentication/authorization, middleware,
+/// Swagger, SignalR, health checks, and application services.
+/// </summary>
 // Build configuration first
 var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())

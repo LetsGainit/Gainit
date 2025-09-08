@@ -10,6 +10,10 @@ using Microsoft.Extensions.Options;
 
 namespace GainIt.API.Services.GitHub.Implementations
 {
+    /// <summary>
+    /// Low-level HTTP client wrapper for the GitHub REST API (v3).
+    /// Handles headers, authentication, rate-limit awareness, and JSON serialization.
+    /// </summary>
     public class GitHubApiClient : IGitHubApiClient
     {
         private readonly HttpClient _httpClient;
@@ -19,6 +23,12 @@ namespace GainIt.API.Services.GitHub.Implementations
         private int _remainingRequests = 5000; // Public API rate limit
         private readonly IConfiguration _configuration;
 
+        /// <summary>
+        /// Creates a new <see cref="GitHubApiClient"/> configured for the GitHub REST API.
+        /// </summary>
+        /// <param name="httpClient">Injected typed <see cref="HttpClient"/>.</param>
+        /// <param name="logger">Logger instance.</param>
+        /// <param name="configuration">Configuration for token lookup.</param>
         public GitHubApiClient(
             HttpClient httpClient,
             ILogger<GitHubApiClient> logger,

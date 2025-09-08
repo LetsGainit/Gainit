@@ -4,6 +4,10 @@ using GainIt.API.Models.Users;
 
 namespace GainIt.API.Models.Projects
 {
+    /// <summary>
+    /// Per-user contribution snapshot for a specific repository and analysis period.
+    /// Captures commit, PR, issue, review and collaboration metrics to power analytics.
+    /// </summary>
     public class GitHubContribution
     {
         [Key]
@@ -22,7 +26,9 @@ namespace GainIt.API.Models.Projects
         [Required]
         public DateTime CalculatedAtUtc { get; set; } = DateTime.UtcNow;
 
-        // Time period for these analytics
+        /// <summary>
+        /// Time period in days over which the analytics were calculated.
+        /// </summary>
         [Required]
         public int DaysPeriod { get; set; } = 30;
 
