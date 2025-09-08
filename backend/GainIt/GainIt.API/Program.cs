@@ -34,11 +34,6 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-/// <summary>
-/// Application entry point and host configuration for GainIt.API.
-/// Configures logging, DI container, authentication/authorization, middleware,
-/// Swagger, SignalR, health checks, and application services.
-/// </summary>
 // Build configuration first
 var configBuilder = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -203,7 +198,7 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v3 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v4 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
@@ -428,7 +423,8 @@ try
     app.UsePerformanceMonitoring(); // Monitor performance and memory usage
     app.UseMiddleware<RequestLoggingMiddleware>(); //logs starts
     app.UseHttpsRedirection(); //redirects to https
-    app.UseCors("signalr-cors");
+    app.UseRouting(); // Required for proper request routing
+    app.UseCors("signalr-cors"); // Must be BEFORE authentication
 
     // Always use authentication/authorization middleware for SignalR to work properly
     app.UseAuthentication(); //authenticates the request
@@ -436,7 +432,7 @@ try
     Log.Information("Authentication and authorization middleware enabled for all environments");
 
     app.MapControllers(); //maps the controllers to the request
-    app.MapHub<NotificationsHub>("/hubs/notifications");
+    app.MapHub<NotificationsHub>("/hubs/notifications").RequireAuthorization();
 
     // Add health check endpoint
     app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
