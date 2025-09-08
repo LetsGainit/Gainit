@@ -31,7 +31,7 @@ namespace GainIt.API.Services.Projects.Implementations
         private readonly ChatClient r_chatClient;
         private readonly GainItDbContext r_DbContext;
         private readonly ILogger<ProjectMatchingService> r_logger;
-        private const double r_similarityThreshold = 0.80;
+        private const double r_similarityThreshold = 0.75;
 
         public ProjectMatchingService(SearchClient i_SearchClient, AzureOpenAIClient i_AzureOpenAIClient, IOptions<OpenAIOptions> i_OpenAIOptionsAccessor, GainItDbContext i_DbContext, ILogger<ProjectMatchingService> i_logger)
         {
@@ -174,20 +174,19 @@ namespace GainIt.API.Services.Projects.Implementations
                 var messages = new ChatMessage[]
                 {
                     new SystemChatMessage(
-                        "You are an assistant that explains *exactly* why each suggested project matches the user's query. " +
-                        "Follow these rules strictly:\n" +
-                        "1. Refer to **all** provided fields: Name, Description, Goals, Technologies, Difficulty, Duration, Source, and Status (if present).\n" +
-                        "2. Give **1–2 bullet points** per project, **max 20 words** each, in the form:\n" +
-                        "   - ProjectName: [point]\n" +
-                        "3. Do **not** invent or suggest any projects beyond the list.\n" +
-                        "4. If Source is `NonprofitOrganization`, you may note its real-world context; otherwise omit source and status.\n" +
-                        "5. Focus each bullet on **how specific attributes** of the project satisfy the user's query.\n" +
-                        "6. If a project's Status is `InProgress`, you may **optionally** mention one benefit of joining an ongoing project—but **sparingly**:\n" +
-                        "   only when it truly adds relevance, and **do not** include this bullet for every active project."
+                        "You are an assistant that provides detailed explanations for each project that was selected. " +
+                        "Follow these rules:\n" +
+                        "1. Give **2-3 sentences** per project explaining why it matches the user's query\n" +
+                        "2. Use the format: \"ProjectName: [detailed explanation]\"\n" +
+                        "3. Keep each explanation between 25-40 words\n" +
+                        "4. Focus on the most relevant aspects that connect to the user's query\n" +
+                        "5. Be specific about technologies, difficulty level, key features, and learning outcomes\n" +
+                        "6. Mention how the project helps achieve the user's goals\n" +
+                        "7. Do not repeat the same explanation for multiple projects"
                     ),
                     new UserChatMessage(
-                        $"User query: {i_Query}\n\nProjects:\n{summaries}\n\n" +
-                        "Explain each project's relevance:")
+                        $"User query: {i_Query}\n\nSelected projects:\n{summaries}\n\n" +
+                        "Provide a detailed explanation for each project:")
                 };
 
                 var options = new ChatCompletionOptions
@@ -422,11 +421,13 @@ namespace GainIt.API.Services.Projects.Implementations
                 {
                    new SystemChatMessage(
                     "You are an assistant that verifies project relevance based on a user query. " +
-                    "Review the projects and return a JSON array of the IDs (as strings) of all the projects that are clearly relevant. " +
-                    "Include all that are a good match — do not exclude any just to reduce the list. " +
-                    "If all are relevant, return them all. If none are relevant, return an empty array []."),
+                    "Review the projects and return a JSON array of the IDs (as strings) of all the projects that are relevant or potentially relevant. " +
+                    "Be INCLUSIVE rather than exclusive - include projects that have ANY connection to the query, even if tangential. " +
+                    "Only exclude projects that are completely unrelated. " +
+                    "If all projects have some relevance, return them all. " +
+                    "Return the project IDs as a JSON array of strings, e.g., [\"id1\", \"id2\", \"id3\"]."),
                 new UserChatMessage(
-                    $"Query: {i_Query}\n\nProjects:\n{summaries}")
+                    $"Query: {i_Query}\n\nProjects:\n{summaries}\n\nReturn the relevant project IDs as a JSON array:")
                 };
 
                 var options = new ChatCompletionOptions
@@ -437,6 +438,8 @@ namespace GainIt.API.Services.Projects.Implementations
                 ChatCompletion completion =
                     await r_chatClient.CompleteChatAsync(messages, options);
                 var response = completion.Content[0].Text.Trim();
+
+                r_logger.LogInformation("Chat filtering response: Query={Query}, Response={Response}", i_Query, response);
 
                 // Remove Markdown code block if present
                 if (response.StartsWith("```"))
@@ -456,22 +459,25 @@ namespace GainIt.API.Services.Projects.Implementations
 
                 Guid[] projectIds;
 
-                if (response == "none")
+                if (response == "none" || response == "[]" || string.IsNullOrWhiteSpace(response))
                 {
-                    r_logger.LogInformation("No projects matched the query: Query={Query}", i_Query);
+                    r_logger.LogInformation("No projects matched the query: Query={Query}, Response={Response}", i_Query, response);
                     return new List<TemplateProject>();
                 }
-
-
 
                 try
                 {
                     var stringIds = JsonSerializer.Deserialize<string[]>(response);
                     projectIds = stringIds?.Select(Guid.Parse).ToArray() ?? Array.Empty<Guid>();
+                    r_logger.LogInformation("Successfully parsed project IDs: Count={Count}, IDs={IDs}", 
+                        projectIds.Length, string.Join(",", projectIds));
                 }
-                catch
+                catch (Exception parseEx)
                 {
-                    projectIds = Array.Empty<Guid>();
+                    r_logger.LogWarning(parseEx, "Failed to parse chat response as JSON: Response={Response}", response);
+                    // If parsing fails, return all projects instead of none
+                    r_logger.LogInformation("Falling back to returning all projects due to parsing error");
+                    return i_Projects;
                 }
 
                 var filteredProjects = i_Projects
@@ -569,16 +575,19 @@ namespace GainIt.API.Services.Projects.Implementations
 
             try
             {
+                // Request more results to account for deduplication
+                var searchSize = Math.Max(resultCount * 3, 15); // Get 3x more results to ensure we have enough after deduplication
+                
                 var searchOptions = new SearchOptions
                 {
-                    Size = resultCount,
+                    Size = searchSize,
                     VectorSearch = new VectorSearchOptions
                     {
                         Queries =
                         {
                             new VectorizedQuery(embedding.ToArray())
                             {
-                                KNearestNeighborsCount = resultCount,
+                                KNearestNeighborsCount = searchSize,
                                 Fields = { "text_vector" }
                             }
                         }
@@ -587,7 +596,9 @@ namespace GainIt.API.Services.Projects.Implementations
                 };
 
                 var results = await r_searchClient.SearchAsync<ProjectSearchResult>(null, searchOptions);
-                var matchedProjectIds = new List<Guid>();
+                
+                // Dictionary to store the highest score for each project ID
+                var projectScores = new Dictionary<Guid, double>();
 
                 await foreach (var result in results.Value.GetResultsAsync())
                 {
@@ -600,7 +611,11 @@ namespace GainIt.API.Services.Projects.Implementations
                         // Parse the string ProjectId to Guid
                         if (Guid.TryParse(result.Document.projectId, out Guid projectId))
                         {
-                            matchedProjectIds.Add(projectId);
+                            // Keep only the highest score for each project ID
+                            if (!projectScores.ContainsKey(projectId) || projectScores[projectId] < result.Score.Value)
+                            {
+                                projectScores[projectId] = result.Score.Value;
+                            }
                         }
                         else
                         {
@@ -608,6 +623,13 @@ namespace GainIt.API.Services.Projects.Implementations
                         }
                     }
                 }
+
+                // Sort by score (descending) and take the requested number of unique projects
+                var matchedProjectIds = projectScores
+                    .OrderByDescending(kvp => kvp.Value)
+                    .Take(resultCount)
+                    .Select(kvp => kvp.Key)
+                    .ToList();
 
                 var duration = DateTime.UtcNow - startTime;
                 r_logger.LogInformation("Vector search completed: MatchedProjectIds={MatchedProjectIds}, Count={Count}, Duration={Duration}ms",
@@ -629,13 +651,41 @@ namespace GainIt.API.Services.Projects.Implementations
 
             try
             {
+                // Remove duplicates from the input list to avoid unnecessary database queries
+                var uniqueProjectIds = matchedProjectIds.Distinct().ToList();
+                r_logger.LogInformation("Unique project IDs after deduplication: UniqueCount={UniqueCount}, OriginalCount={OriginalCount}",
+                    uniqueProjectIds.Count, matchedProjectIds.Count);
+
+                // Log each project ID we're looking for
+                foreach (var projectId in uniqueProjectIds)
+                {
+                    r_logger.LogInformation("Looking for project ID: {ProjectId}", projectId);
+                }
+
                 List<TemplateProject> templateProjects = await r_DbContext.TemplateProjects
-                    .Where(p => matchedProjectIds.Contains(p.ProjectId))
+                    .Where(p => uniqueProjectIds.Contains(p.ProjectId))
                     .ToListAsync();
 
                 List<UserProject> userProjects = await r_DbContext.Projects
-                    .Where(p => matchedProjectIds.Contains(p.ProjectId))
+                    .Where(p => uniqueProjectIds.Contains(p.ProjectId))
                     .ToListAsync();
+
+                r_logger.LogInformation("Database check: TotalTemplateProjects={TotalTemplateProjects}, TotalUserProjects={TotalUserProjects}",
+                    await r_DbContext.TemplateProjects.CountAsync(), await r_DbContext.Projects.CountAsync());
+
+                r_logger.LogInformation("Project ID matches: FoundInTemplates={FoundInTemplates}, FoundInUsers={FoundInUsers}",
+                    templateProjects.Count, userProjects.Count);
+
+                // Log which specific projects were found
+                foreach (var project in templateProjects)
+                {
+                    r_logger.LogInformation("Found template project: {ProjectId} - {ProjectName}", project.ProjectId, project.ProjectName);
+                }
+
+                foreach (var project in userProjects)
+                {
+                    r_logger.LogInformation("Found user project: {ProjectId} - {ProjectName}", project.ProjectId, project.ProjectName);
+                }
 
                 Dictionary<Guid, TemplateProject> mergedProjects = new();
 
@@ -654,7 +704,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
                 var result = mergedProjects.Values.ToList();
                 r_logger.LogInformation("Projects fetched successfully: RequestedCount={RequestedCount}, FetchedCount={FetchedCount}",
-                    matchedProjectIds.Count, result.Count);
+                    uniqueProjectIds.Count, result.Count);
                 return result;
             }
             catch (Exception ex)

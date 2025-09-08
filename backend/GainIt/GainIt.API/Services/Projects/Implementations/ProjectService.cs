@@ -1,4 +1,6 @@
 ﻿using Azure.AI.OpenAI;
+using Azure.Search.Documents;
+using Azure.Search.Documents.Models;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using GainIt.API.Data;
@@ -29,8 +31,9 @@ namespace GainIt.API.Services.Projects.Implementations
         private readonly ChatClient r_chatClient;
         private readonly BlobServiceClient r_BlobServiceClient;
         private readonly AzureStorageOptions r_AzureStorageOptions;
+        private readonly SearchClient r_SearchClient;
 
-        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, IFileUploadService i_FileUploadService, AzureOpenAIClient i_azureOpenAIClient, IOptions<OpenAIOptions> i_openAIOptions, BlobServiceClient i_BlobServiceClient, IOptions<AzureStorageOptions> i_azureStorageOptions)
+        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, IFileUploadService i_FileUploadService, AzureOpenAIClient i_azureOpenAIClient, IOptions<OpenAIOptions> i_openAIOptions, BlobServiceClient i_BlobServiceClient, IOptions<AzureStorageOptions> i_azureStorageOptions, SearchClient i_SearchClient)
         {
             r_DbContext = i_DbContext;
             r_logger = i_logger;
@@ -40,6 +43,7 @@ namespace GainIt.API.Services.Projects.Implementations
             r_chatClient = i_azureOpenAIClient.GetChatClient(i_openAIOptions.Value.ChatDeploymentName);
             r_BlobServiceClient = i_BlobServiceClient;
             r_AzureStorageOptions = i_azureStorageOptions.Value;
+            r_SearchClient = i_SearchClient;
         }
         
         public async Task<UserProject> AssignMentorAsync(Guid i_ProjectId, Guid i_MentorId)
@@ -807,6 +811,9 @@ namespace GainIt.API.Services.Projects.Implementations
                 // First, delete all existing export files to keep only the latest
                 await DeleteAllExistingExportFilesAsync();
                 
+                // Clear the search index to prevent stale data
+                await ClearSearchIndexAsync();
+                
                 var azureVectorProjects = await ExportProjectsForAzureVectorSearchAsync();
                 
                 // Convert to JSONL format (one JSON object per line)
@@ -886,6 +893,81 @@ namespace GainIt.API.Services.Projects.Implementations
             }
         }
 
+        /// <summary>
+        /// Clears the Azure Cognitive Search index to prevent stale data
+        /// This ensures that only current projects are returned in search results
+        /// </summary>
+        private async Task ClearSearchIndexAsync()
+        {
+            r_logger.LogInformation("Clearing Azure Cognitive Search index to prevent stale data");
+            
+            try
+            {
+                // Get all documents from the search index
+                var searchOptions = new SearchOptions
+                {
+                    Size = 1000, // Get up to 1000 documents at a time
+                    Select = { "chunk_id" } // Only select the key field for deletion
+                };
+
+                var documentsToDelete = new List<string>();
+                
+                // Search for all documents in the index
+                var results = await r_SearchClient.SearchAsync<JsonElement>(null, searchOptions);
+                
+                await foreach (var result in results.Value.GetResultsAsync())
+                {
+                    // Extract the chunk_id from the document
+                    if (result.Document.TryGetProperty("chunk_id", out var chunkIdElement))
+                    {
+                        var chunkId = chunkIdElement.GetString();
+                        if (!string.IsNullOrEmpty(chunkId))
+                        {
+                            documentsToDelete.Add(chunkId);
+                        }
+                    }
+                }
+
+                if (documentsToDelete.Count > 0)
+                {
+                    r_logger.LogInformation("Found {DocumentCount} documents to delete from search index", documentsToDelete.Count);
+                    
+                    // Delete documents in batches
+                    var batchSize = 50; // Azure Cognitive Search batch limit
+                    for (int i = 0; i < documentsToDelete.Count; i += batchSize)
+                    {
+                        var batch = documentsToDelete.Skip(i).Take(batchSize);
+                        
+                        // Create batch with proper constructor
+                        var batchDocuments = new IndexDocumentsBatch<SearchDocument>();
+                        
+                        foreach (var id in batch)
+                        {
+                            var doc = new SearchDocument { ["chunk_id"] = id };
+                            batchDocuments.Actions.Add(IndexDocumentsAction.Delete(doc));
+                        }
+                        
+                        await r_SearchClient.IndexDocumentsAsync(batchDocuments);
+                        
+                        r_logger.LogInformation("Deleted batch {BatchNumber} of documents from search index", (i / batchSize) + 1);
+                    }
+                    
+                    r_logger.LogInformation("Successfully cleared {DocumentCount} documents from search index", documentsToDelete.Count);
+                }
+                else
+                {
+                    r_logger.LogInformation("No documents found in search index to delete");
+                }
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error clearing search index");
+                // Don't throw - we want to continue with the export even if index clearing fails
+                // The indexer will still work, just might have some stale data temporarily
+            }
+        }
+
+
 
 
                 /// <summary>
@@ -910,6 +992,12 @@ namespace GainIt.API.Services.Projects.Implementations
                 
                 r_logger.LogInformation("Retrieved projects: Template={TemplateCount}, User={UserCount}", 
                     templateProjects.Count, userProjects.Count);
+                
+                // Log all project IDs for debugging
+                r_logger.LogInformation("Template project IDs: {TemplateIds}", 
+                    string.Join(", ", templateProjects.Select(p => p.ProjectId)));
+                r_logger.LogInformation("User project IDs: {UserIds}", 
+                    string.Join(", ", userProjects.Select(p => p.ProjectId)));
                 
                 var allProjects = new List<AzureVectorSearchProjectViewModel>();
                 
@@ -1008,9 +1096,12 @@ namespace GainIt.API.Services.Projects.Implementations
                     };
                     
                     allProjects.Add(exportProject);
+                    r_logger.LogDebug("Exported user project: {ProjectId} - {ProjectName}", projectId, projectName);
                 }
                 
                 r_logger.LogInformation("Successfully exported {Count} unique projects for Azure vector search", allProjects.Count);
+                r_logger.LogInformation("Exported project IDs: {ExportedIds}", 
+                    string.Join(", ", allProjects.Select(p => p.ProjectId)));
                 return allProjects;
             }
             catch (Exception ex)
