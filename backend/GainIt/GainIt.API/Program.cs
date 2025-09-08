@@ -126,8 +126,11 @@ try
     {
         options.EnableDetailedErrors = true;
     })
-    .AddAzureSignalR(
-        builder.Configuration["SignalR:ConnectionString"]);
+    .AddAzureSignalR(options =>
+    {
+        options.ConnectionString = builder.Configuration["SignalR:ConnectionString"];
+        options.ServerStickyMode = Microsoft.Azure.SignalR.ServerStickyMode.Required;
+    });
     builder.Services.Configure<JoinRequestOptions>(
         builder.Configuration.GetSection("JoinRequests"));
 
@@ -198,7 +201,7 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v5 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v6 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
@@ -406,6 +409,13 @@ try
             .AllowAnyMethod()
             .AllowCredentials()
             .SetIsOriginAllowedToAllowWildcardSubdomains());
+        
+        // Specific policy for SignalR negotiate endpoint
+        options.AddPolicy("signalr-negotiate", p => p
+            .WithOrigins("https://letsgainit.com", "https://www.letsgainit.com")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
     });
 
     var app = builder.Build();
@@ -424,7 +434,9 @@ try
     app.UseMiddleware<RequestLoggingMiddleware>(); //logs starts
     app.UseHttpsRedirection(); //redirects to https
     app.UseRouting(); // Required for proper request routing
-    app.UseCors("signalr-cors"); // Must be BEFORE authentication
+    
+    // CORS must be before authentication for SignalR negotiate
+    app.UseCors("signalr-cors");
 
     // Always use authentication/authorization middleware for SignalR to work properly
     app.UseAuthentication(); //authenticates the request
@@ -432,7 +444,10 @@ try
     Log.Information("Authentication and authorization middleware enabled for all environments");
 
     app.MapControllers(); //maps the controllers to the request
-    app.MapHub<NotificationsHub>("/hubs/notifications").RequireAuthorization();
+    
+    // Map SignalR hub
+    app.MapHub<NotificationsHub>("/hubs/notifications")
+        .RequireAuthorization();
 
     // Add health check endpoint
     app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
