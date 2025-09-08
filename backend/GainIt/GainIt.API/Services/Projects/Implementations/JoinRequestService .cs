@@ -259,20 +259,25 @@ namespace GainIt.API.Services.Projects.Implementations
                 r_logger.LogInformation("Approving join request: ProjectId={ProjectId}, JoinRequestId={JoinRequestId}, RequesterUserId={RequesterUserId}, RequestedRole={RequestedRole}",
                     i_ProjectId, i_JoinRequestId, joinRequest.RequesterUserId, joinRequest.RequestedRole);
 
-                using var transaction = await r_Db.Database.BeginTransactionAsync();
+                // Use execution strategy to handle retries and transactions
+                var strategy = r_Db.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
+                {
+                    using var transaction = await r_Db.Database.BeginTransactionAsync();
 
-                joinRequest.Status = eJoinRequestStatus.Approved;
-                joinRequest.DeciderUserId = i_DeciderUserId;
-                joinRequest.DecisionAtUtc = DateTime.UtcNow;
-                joinRequest.DecisionReason = null;
+                    joinRequest.Status = eJoinRequestStatus.Approved;
+                    joinRequest.DeciderUserId = i_DeciderUserId;
+                    joinRequest.DecisionAtUtc = DateTime.UtcNow;
+                    joinRequest.DecisionReason = null;
 
-                await addTeamMemberAsync(
-                   i_ProjectId,
-                   joinRequest.RequesterUserId,
-                   joinRequest.RequestedRole);
+                    await addTeamMemberAsync(
+                       i_ProjectId,
+                       joinRequest.RequesterUserId,
+                       joinRequest.RequestedRole);
 
-                await r_Db.SaveChangesAsync();
-                await transaction.CommitAsync();
+                    await r_Db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                });
 
                 r_logger.LogInformation("Join request approved successfully: ProjectId={ProjectId}, JoinRequestId={JoinRequestId}, RequesterUserId={RequesterUserId}",
                     i_ProjectId, i_JoinRequestId, joinRequest.RequesterUserId);

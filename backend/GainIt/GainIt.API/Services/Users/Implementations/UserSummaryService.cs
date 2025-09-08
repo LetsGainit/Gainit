@@ -383,6 +383,8 @@ namespace GainIt.API.Services.Users.Implementations
             int total = frontendCount + backendCount + databaseCount + devopsCount;
             if (total == 0) total = 1;
 
+            // The pct function calculates the percentage representation of a count (c) out of the total.
+            // It converts c to a double, divides by total, multiplies by 100, and rounds to the nearest integer.
             int pct(int c) => (int)Math.Round((double)c * 100 / total);
 
             return new
