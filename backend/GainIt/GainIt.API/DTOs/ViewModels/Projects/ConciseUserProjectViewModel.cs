@@ -60,10 +60,10 @@ namespace GainIt.API.DTOs.ViewModels.Projects
 
             // Check if current user is admin
             IsAdmin = i_TeamMemberId.HasValue && 
-                      i_Project.ProjectMembers?
+                      (i_Project.ProjectMembers?
                           .Any(pm => pm.UserId == i_TeamMemberId.Value && 
-                                    pm.IsAdmin && 
-                                    pm.LeftAtUtc == null) ?? false;
+                                    pm.IsAdmin == true && 
+                                    !pm.LeftAtUtc.HasValue) ?? false);
         }
 
         private static string HumanizeDays(int days)
