@@ -56,14 +56,9 @@ namespace GainIt.API.Services.Projects.Implementations
                 var embedding = await getEmbeddingAsync(chatrefinedQuery);
                 r_logger.LogInformation("Embedding generated: EmbeddingSize={EmbeddingSize}", embedding.Count);
 
-                var matchedProjectIds = await runVectorSearchAsync(embedding, i_ResultCount);
-                r_logger.LogInformation("Vector search completed: MatchedProjectIds={MatchedProjectIds}, Count={Count}", string.Join(",", matchedProjectIds), matchedProjectIds.Count);
-
-                var matchedProjects = await fetchProjectsByIdsAsync(matchedProjectIds);
-                r_logger.LogInformation("Projects fetched by IDs: FetchedCount={FetchedCount}", matchedProjects.Count);
-
-                var filteredProjects = await filterProjectsWithChatAsync(chatrefinedQuery, matchedProjects);
-                r_logger.LogInformation("Projects filtered with chat: FilteredCount={FilteredCount}", filteredProjects.Count);
+                // Use iterative search to ensure we get exactly the requested count
+                var filteredProjects = await getFilteredProjectsWithIterativeSearchAsync(embedding, chatrefinedQuery, i_ResultCount);
+                r_logger.LogInformation("Projects filtered with iterative search: FilteredCount={FilteredCount}", filteredProjects.Count);
 
                 // Convert to AzureVectorSearchProjectViewModel
                 var projectViewModels = filteredProjects.Select(ConvertToAzureVectorSearchViewModel);
@@ -113,16 +108,10 @@ namespace GainIt.API.Services.Projects.Implementations
                 var embedding = await getEmbeddingAsync(chatrefinedQuery);
                 r_logger.LogInformation("Profile embedding generated: UserId={UserId}, EmbeddingSize={EmbeddingSize}", i_UserId, embedding.Count);
 
-                var matchedProjectIds = await runVectorSearchAsync(embedding, i_ResultCount);
-                r_logger.LogInformation("Profile vector search completed: UserId={UserId}, MatchedProjectIds={MatchedProjectIds}, Count={Count}", i_UserId, string.Join(",", matchedProjectIds), matchedProjectIds.Count);
-
-                var matchedProjects = await fetchProjectsByIdsAsync(matchedProjectIds);
-                r_logger.LogInformation("Profile projects fetched: UserId={UserId}, FetchedCount={FetchedCount}", i_UserId, matchedProjects.Count);
-
-                var filteredProjects = await filterProjectsWithChatAsync(chatrefinedQuery, matchedProjects);
-                // Replace the existing logging line with the following to log project names as well:
+                // Use iterative search to ensure we get exactly the requested count
+                var filteredProjects = await getFilteredProjectsWithIterativeSearchAsync(embedding, chatrefinedQuery, i_ResultCount);
                 r_logger.LogInformation(
-                    "Profile projects filtered: UserId={UserId}, FilteredCount={FilteredCount}, ProjectNames={ProjectNames}",
+                    "Profile projects filtered with iterative search: UserId={UserId}, FilteredCount={FilteredCount}, ProjectNames={ProjectNames}",
                     i_UserId,
                     filteredProjects.Count,
                     string.Join(", ", filteredProjects.Select(p => $"\u001b[32m{p.ProjectName}\u001b[0m"))
@@ -568,9 +557,10 @@ namespace GainIt.API.Services.Projects.Implementations
             }
         }
 
-        private async Task<List<Guid>> runVectorSearchAsync(IReadOnlyList<float> embedding, int resultCount)
+        private async Task<List<Guid>> runVectorSearchAsync(IReadOnlyList<float> embedding, int resultCount, double similarityThreshold)
         {
-            r_logger.LogInformation("Running vector search: EmbeddingSize={EmbeddingSize}, ResultCount={ResultCount}", embedding.Count, resultCount);
+            r_logger.LogInformation("Running vector search: EmbeddingSize={EmbeddingSize}, ResultCount={ResultCount}, SimilarityThreshold={SimilarityThreshold}", 
+                embedding.Count, resultCount, similarityThreshold);
             var startTime = DateTime.UtcNow;
 
             try
@@ -602,7 +592,7 @@ namespace GainIt.API.Services.Projects.Implementations
 
                 await foreach (var result in results.Value.GetResultsAsync())
                 {
-                    if (result.Score.HasValue && result.Score.Value >= r_similarityThreshold)
+                    if (result.Score.HasValue && result.Score.Value >= similarityThreshold)
                     {
                         // Log what we're getting for projectId
                         r_logger.LogInformation("Found search result with score {Score}, ProjectId: '{ProjectId}'", 
@@ -640,6 +630,110 @@ namespace GainIt.API.Services.Projects.Implementations
             {
                 var duration = DateTime.UtcNow - startTime;
                 r_logger.LogError(ex, "Error running vector search: EmbeddingSize={EmbeddingSize}, ResultCount={ResultCount}, Duration={Duration}ms", embedding.Count, resultCount, duration.TotalMilliseconds);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Performs iterative vector search with chat filtering to ensure we return exactly the requested count of projects.
+        /// If chat filtering reduces the results below the requested count, performs additional searches with lower similarity thresholds.
+        /// </summary>
+        /// <param name="embedding">The embedding vector for search</param>
+        /// <param name="query">The refined query for chat filtering</param>
+        /// <param name="requestedCount">The exact number of projects to return</param>
+        /// <returns>List of filtered projects, exactly the requested count</returns>
+        private async Task<List<TemplateProject>> getFilteredProjectsWithIterativeSearchAsync(IReadOnlyList<float> embedding, string query, int requestedCount)
+        {
+            r_logger.LogInformation("Starting iterative search: RequestedCount={RequestedCount}", requestedCount);
+            var startTime = DateTime.UtcNow;
+
+            try
+            {
+                var allProcessedProjectIds = new HashSet<Guid>(); // Track all processed project IDs to avoid duplicates
+                var finalFilteredProjects = new List<TemplateProject>();
+                var currentSimilarityThreshold = r_similarityThreshold;
+                var searchAttempt = 1;
+                const int maxSearchAttempts = 3; // Prevent infinite loops
+                const double thresholdDecrement = 0.1; // Reduce threshold by 0.1 each iteration
+
+                while (finalFilteredProjects.Count < requestedCount && searchAttempt <= maxSearchAttempts)
+                {
+                    r_logger.LogInformation("Search attempt {Attempt}: CurrentThreshold={Threshold}, CurrentCount={CurrentCount}, RequestedCount={RequestedCount}", 
+                        searchAttempt, currentSimilarityThreshold, finalFilteredProjects.Count, requestedCount);
+
+                    // Calculate how many more projects we need
+                    var remainingNeeded = requestedCount - finalFilteredProjects.Count;
+                    var searchSize = Math.Max(remainingNeeded * 3, 15); // Get 3x more than needed
+
+                    // Run vector search with current threshold
+                    var matchedProjectIds = await runVectorSearchAsync(embedding, searchSize, currentSimilarityThreshold);
+                    
+                    // Filter out already processed project IDs
+                    var newProjectIds = matchedProjectIds.Where(id => !allProcessedProjectIds.Contains(id)).ToList();
+                    
+                    if (newProjectIds.Count == 0)
+                    {
+                        r_logger.LogInformation("No new project IDs found in search attempt {Attempt}", searchAttempt);
+                        break; // No more projects to process
+                    }
+
+                    // Add new IDs to processed set
+                    foreach (var id in newProjectIds)
+                    {
+                        allProcessedProjectIds.Add(id);
+                    }
+
+                    r_logger.LogInformation("Found {NewCount} new project IDs in search attempt {Attempt}", newProjectIds.Count, searchAttempt);
+
+                    // Fetch projects for new IDs
+                    var newProjects = await fetchProjectsByIdsAsync(newProjectIds);
+                    r_logger.LogInformation("Fetched {FetchedCount} new projects", newProjects.Count);
+
+                    // Apply chat filtering to new projects
+                    var filteredNewProjects = await filterProjectsWithChatAsync(query, newProjects);
+                    r_logger.LogInformation("Chat filtered {FilteredCount} new projects", filteredNewProjects.Count);
+
+                    // Add filtered projects to final result (avoid duplicates)
+                    var existingProjectIds = new HashSet<Guid>(finalFilteredProjects.Select(p => p.ProjectId));
+                    var uniqueNewProjects = filteredNewProjects.Where(p => !existingProjectIds.Contains(p.ProjectId)).ToList();
+                    
+                    finalFilteredProjects.AddRange(uniqueNewProjects);
+                    
+                    r_logger.LogInformation("Added {AddedCount} unique projects. Total count now: {TotalCount}", 
+                        uniqueNewProjects.Count, finalFilteredProjects.Count);
+
+                    // If we have enough projects, break
+                    if (finalFilteredProjects.Count >= requestedCount)
+                    {
+                        r_logger.LogInformation("Reached requested count after {Attempt} search attempts", searchAttempt);
+                        break;
+                    }
+
+                    // Prepare for next iteration with lower threshold
+                    currentSimilarityThreshold -= thresholdDecrement;
+                    searchAttempt++;
+
+                    // Ensure threshold doesn't go too low
+                    if (currentSimilarityThreshold < 0.3)
+                    {
+                        r_logger.LogWarning("Similarity threshold reached minimum (0.3). Stopping search attempts.");
+                        break;
+                    }
+                }
+
+                // Take exactly the requested count
+                var result = finalFilteredProjects.Take(requestedCount).ToList();
+                
+                var duration = DateTime.UtcNow - startTime;
+                r_logger.LogInformation("Iterative search completed: FinalCount={FinalCount}, RequestedCount={RequestedCount}, Attempts={Attempts}, Duration={Duration}ms",
+                    result.Count, requestedCount, searchAttempt, duration.TotalMilliseconds);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                var duration = DateTime.UtcNow - startTime;
+                r_logger.LogError(ex, "Error in iterative search: RequestedCount={RequestedCount}, Duration={Duration}ms", requestedCount, duration.TotalMilliseconds);
                 throw;
             }
         }

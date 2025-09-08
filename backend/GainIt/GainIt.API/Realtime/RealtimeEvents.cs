@@ -8,6 +8,7 @@
             public const string JoinApproved = "projectJoinApproved";
             public const string JoinRejected = "projectJoinRejected";
             public const string JoinCancelled = "projectJoinCancelled";
+            public const string ProjectStarted = "projectStarted";
         }
         public static class Tasks
         {

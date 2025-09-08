@@ -65,7 +65,7 @@ namespace GainIt.API.Services.Projects.Interfaces
         Task<IEnumerable<TemplateProject>> FilterTemplateProjectsByDifficultyAsync(eDifficultyLevel i_Difficulty);
 
         // Create a new project from a template and assign the user as one of the team members
-        Task<UserProject> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId);
+        Task<UserProject> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId, string i_SelectedRole);
 
         // Create a new project for a nonprofit organization and assign the organization as the owner
         Task<UserProject> CreateProjectForNonprofitAsync(UserProjectViewModel i_Project, Guid i_NonprofitOrgId);
@@ -76,6 +76,14 @@ namespace GainIt.API.Services.Projects.Interfaces
         /// </summary>
         /// <returns>List of projects formatted for Azure Cognitive Search</returns>
         Task<List<AzureVectorSearchProjectViewModel>> ExportProjectsForAzureVectorSearchAsync();
+
+        /// <summary>
+        /// Starts a project by changing its status to InProgress and generating a roadmap
+        /// </summary>
+        /// <param name="projectId">The project ID to start</param>
+        /// <param name="actorUserId">The user ID of the person starting the project</param>
+        /// <returns>The updated project with InProgress status</returns>
+        Task<UserProject> StartProjectAsync(Guid projectId, Guid actorUserId);
 
         // New methods for blob storage integration
         Task<string> ExportAndUploadProjectsAsync();

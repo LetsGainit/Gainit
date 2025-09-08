@@ -6,12 +6,20 @@ using Azure.Storage.Blobs.Models;
 using GainIt.API.Data;
 using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.DTOs.Requests.Projects;
+using GainIt.API.DTOs.Requests.Forum;
+using GainIt.API.DTOs.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
+using GainIt.API.Models.ProjectForum;
 using GainIt.API.Options;
+using GainIt.API.Realtime;
+using GainIt.API.Services.Email.Interfaces;
+using GainIt.API.Services.Forum.Interfaces;
 using GainIt.API.Services.GitHub.Interfaces;
 using GainIt.API.Services.Projects.Interfaces;
 using GainIt.API.Services.FileUpload.Interfaces;
+using GainIt.API.Services.Tasks.Interfaces;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -32,8 +40,12 @@ namespace GainIt.API.Services.Projects.Implementations
         private readonly BlobServiceClient r_BlobServiceClient;
         private readonly AzureStorageOptions r_AzureStorageOptions;
         private readonly SearchClient r_SearchClient;
+        private readonly IPlanningService r_PlanningService;
+        private readonly IEmailSender r_EmailSender;
+        private readonly IHubContext<NotificationsHub> r_Hub;
+        private readonly IForumService r_ForumService;
 
-        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, IFileUploadService i_FileUploadService, AzureOpenAIClient i_azureOpenAIClient, IOptions<OpenAIOptions> i_openAIOptions, BlobServiceClient i_BlobServiceClient, IOptions<AzureStorageOptions> i_azureStorageOptions, SearchClient i_SearchClient)
+        public ProjectService(GainItDbContext i_DbContext, ILogger<ProjectService> i_logger, IGitHubService i_gitHubService, IFileUploadService i_FileUploadService, AzureOpenAIClient i_azureOpenAIClient, IOptions<OpenAIOptions> i_openAIOptions, BlobServiceClient i_BlobServiceClient, IOptions<AzureStorageOptions> i_azureStorageOptions, SearchClient i_SearchClient, IPlanningService i_PlanningService, IEmailSender i_EmailSender, IHubContext<NotificationsHub> i_Hub, IForumService i_ForumService)
         {
             r_DbContext = i_DbContext;
             r_logger = i_logger;
@@ -44,6 +56,10 @@ namespace GainIt.API.Services.Projects.Implementations
             r_BlobServiceClient = i_BlobServiceClient;
             r_AzureStorageOptions = i_azureStorageOptions.Value;
             r_SearchClient = i_SearchClient;
+            r_PlanningService = i_PlanningService;
+            r_EmailSender = i_EmailSender;
+            r_Hub = i_Hub;
+            r_ForumService = i_ForumService;
         }
         
         public async Task<UserProject> AssignMentorAsync(Guid i_ProjectId, Guid i_MentorId)
@@ -94,6 +110,18 @@ namespace GainIt.API.Services.Projects.Implementations
                 });
 
                 await r_DbContext.SaveChangesAsync();
+                
+                // Export projects to Azure blob for indexer
+                try
+                {
+                    await ExportAndUploadProjectsAsync();
+                    r_logger.LogInformation("Successfully exported projects after mentor assignment: ProjectId={ProjectId}", i_ProjectId);
+                }
+                catch (Exception exportEx)
+                {
+                    r_logger.LogWarning(exportEx, "Failed to export projects after mentor assignment: ProjectId={ProjectId}", i_ProjectId);
+                    // Don't throw - the main operation succeeded
+                }
                 
                 r_logger.LogInformation("Successfully assigned mentor to project: ProjectId={ProjectId}, MentorId={MentorId}", 
                     i_ProjectId, i_MentorId);
@@ -156,8 +184,36 @@ namespace GainIt.API.Services.Projects.Implementations
                 // Generate RAG context for the project
                 newProject.RagContext = await GenerateRagContextAsync(newProject);
 
+                // Add the nonprofit organization as the project admin (they own the project)
+                newProject.ProjectMembers.Add(new ProjectMember
+                {
+                    ProjectId = newProject.ProjectId,
+                    UserId = i_NonprofitOrgId, // Nonprofit organization becomes admin
+                    UserRole = "Project Owner", // Nonprofit organization role
+                    IsAdmin = true, // Nonprofit organization becomes admin
+                    Project = newProject,
+                    User = nonprofit, // Nonprofit organization user
+                    JoinedAtUtc = DateTime.UtcNow
+                });
+
+                // Note: Creator is NOT automatically added as a team member
+                // They can join later through join requests if they want to participate
+                r_logger.LogInformation("Nonprofit project created with only nonprofit organization as admin. Creator can join later via join request if desired.");
+
                 r_DbContext.Projects.Add(newProject);
                 await r_DbContext.SaveChangesAsync();
+
+                // Export projects to Azure blob for indexer
+                try
+                {
+                    await ExportAndUploadProjectsAsync();
+                    r_logger.LogInformation("Successfully exported projects after nonprofit project creation: ProjectId={ProjectId}", newProject.ProjectId);
+                }
+                catch (Exception exportEx)
+                {
+                    r_logger.LogWarning(exportEx, "Failed to export projects after nonprofit project creation: ProjectId={ProjectId}", newProject.ProjectId);
+                    // Don't throw - the main operation succeeded
+                }
 
                 r_logger.LogInformation("Successfully created project for nonprofit: ProjectId={ProjectId}, NonprofitOrgId={NonprofitOrgId}", newProject.ProjectId, i_NonprofitOrgId);
                 return newProject;
@@ -381,6 +437,18 @@ namespace GainIt.API.Services.Projects.Implementations
                     r_logger.LogInformation("Successfully removed mentor from project: ProjectId={ProjectId}, RemainingActiveMembers={RemainingMembers}", 
                         i_ProjectId, activeMemberCount);
                 }
+
+                // Export projects to Azure blob for indexer
+                try
+                {
+                    await ExportAndUploadProjectsAsync();
+                    r_logger.LogInformation("Successfully exported projects after mentor removal: ProjectId={ProjectId}", i_ProjectId);
+                }
+                catch (Exception exportEx)
+                {
+                    r_logger.LogWarning(exportEx, "Failed to export projects after mentor removal: ProjectId={ProjectId}", i_ProjectId);
+                    // Don't throw - the main operation succeeded
+                }
             }
             else
             {
@@ -435,6 +503,18 @@ namespace GainIt.API.Services.Projects.Implementations
                     i_ProjectId, i_UserId, activeMemberCount);
             }
 
+            // Export projects to Azure blob for indexer
+            try
+            {
+                await ExportAndUploadProjectsAsync();
+                r_logger.LogInformation("Successfully exported projects after team member removal: ProjectId={ProjectId}", i_ProjectId);
+            }
+            catch (Exception exportEx)
+            {
+                r_logger.LogWarning(exportEx, "Failed to export projects after team member removal: ProjectId={ProjectId}", i_ProjectId);
+                // Don't throw - the main operation succeeded
+            }
+
             return project;
         }
 
@@ -483,9 +563,9 @@ namespace GainIt.API.Services.Projects.Implementations
             return projects;
         }
 
-        public async Task<UserProject> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId)
+        public async Task<UserProject> StartProjectFromTemplateAsync(Guid i_TemplateId, Guid i_UserId, string i_SelectedRole)
         {
-            r_logger.LogInformation("Starting project from template: TemplateId={TemplateId}, UserId={UserId}", i_TemplateId, i_UserId);
+            r_logger.LogInformation("Starting project from template: TemplateId={TemplateId}, UserId={UserId}, SelectedRole={SelectedRole}", i_TemplateId, i_UserId, i_SelectedRole);
 
             // Get the template project
             var template = await r_DbContext.TemplateProjects
@@ -503,6 +583,20 @@ namespace GainIt.API.Services.Projects.Implementations
             {
                 r_logger.LogWarning("User not found: UserId={UserId}", i_UserId);
                 throw new KeyNotFoundException($"User with ID {i_UserId} not found");
+            }
+
+            // Validate that the selected role is one of the template's required roles
+            if (string.IsNullOrWhiteSpace(i_SelectedRole))
+            {
+                r_logger.LogWarning("Selected role is empty: TemplateId={TemplateId}, UserId={UserId}", i_TemplateId, i_UserId);
+                throw new ArgumentException("Selected role cannot be empty");
+            }
+
+            if (template.RequiredRoles == null || !template.RequiredRoles.Contains(i_SelectedRole))
+            {
+                r_logger.LogWarning("Selected role is not valid for template: TemplateId={TemplateId}, UserId={UserId}, SelectedRole={SelectedRole}, AvailableRoles={AvailableRoles}", 
+                    i_TemplateId, i_UserId, i_SelectedRole, string.Join(", ", template.RequiredRoles ?? new List<string>()));
+                throw new ArgumentException($"Selected role '{i_SelectedRole}' is not one of the available roles for this template. Available roles: {string.Join(", ", template.RequiredRoles ?? new List<string>())}");
             }
 
             // Create new project from template
@@ -523,12 +617,12 @@ namespace GainIt.API.Services.Projects.Implementations
 
             };
 
-            // Add the user as a project member
+            // Add the user as a project member with their selected role
             newProject.ProjectMembers.Add(new ProjectMember
             {
                 ProjectId = newProject.ProjectId,
                 UserId = i_UserId,
-                UserRole = "Team Member",
+                UserRole = i_SelectedRole,  // Use the selected role instead of hardcoded "Team Member"
                 IsAdmin = true,  // the first user is the administrator 
                 Project = newProject,
                 User = user,
@@ -537,6 +631,18 @@ namespace GainIt.API.Services.Projects.Implementations
 
             await r_DbContext.Projects.AddAsync(newProject);
             await r_DbContext.SaveChangesAsync();
+
+            // Export projects to Azure blob for indexer
+            try
+            {
+                await ExportAndUploadProjectsAsync();
+                r_logger.LogInformation("Successfully exported projects after template project creation: ProjectId={ProjectId}", newProject.ProjectId);
+            }
+            catch (Exception exportEx)
+            {
+                r_logger.LogWarning(exportEx, "Failed to export projects after template project creation: ProjectId={ProjectId}", newProject.ProjectId);
+                // Don't throw - the main operation succeeded
+            }
 
             r_logger.LogInformation("Successfully started project from template: ProjectId={ProjectId}, TemplateId={TemplateId}, UserId={UserId}", newProject.ProjectId, i_TemplateId, i_UserId);
             return newProject;
@@ -557,6 +663,18 @@ namespace GainIt.API.Services.Projects.Implementations
 
             project.ProjectStatus = i_Status;
             await r_DbContext.SaveChangesAsync();
+
+            // Export projects to Azure blob for indexer
+            try
+            {
+                await ExportAndUploadProjectsAsync();
+                r_logger.LogInformation("Successfully exported projects after status update: ProjectId={ProjectId}", i_ProjectId);
+            }
+            catch (Exception exportEx)
+            {
+                r_logger.LogWarning(exportEx, "Failed to export projects after status update: ProjectId={ProjectId}", i_ProjectId);
+                // Don't throw - the main operation succeeded
+            }
 
             r_logger.LogInformation("Successfully updated project status: ProjectId={ProjectId}, Status={Status}", i_ProjectId, i_Status);
             return project;
@@ -604,6 +722,19 @@ namespace GainIt.API.Services.Projects.Implementations
             }
 
             r_logger.LogInformation("Successfully updated and re-linked GitHub repository: ProjectId={ProjectId}, RepositoryLink={RepositoryLink}", i_ProjectId, i_RepositoryLink);
+            
+            // Export projects to Azure blob for indexer
+            try
+            {
+                await ExportAndUploadProjectsAsync();
+                r_logger.LogInformation("Successfully exported projects after repository link update: ProjectId={ProjectId}", i_ProjectId);
+            }
+            catch (Exception exportEx)
+            {
+                r_logger.LogWarning(exportEx, "Failed to export projects after repository link update: ProjectId={ProjectId}", i_ProjectId);
+                // Don't throw - the main operation succeeded
+            }
+            
             return project;
         }
 
@@ -680,6 +811,18 @@ namespace GainIt.API.Services.Projects.Implementations
                 }
 
                 await r_DbContext.SaveChangesAsync();
+
+                // Export projects to Azure blob for indexer
+                try
+                {
+                    await ExportAndUploadProjectsAsync();
+                    r_logger.LogInformation("Successfully exported projects after project details update: ProjectId={ProjectId}", i_ProjectId);
+                }
+                catch (Exception exportEx)
+                {
+                    r_logger.LogWarning(exportEx, "Failed to export projects after project details update: ProjectId={ProjectId}", i_ProjectId);
+                    // Don't throw - the main operation succeeded
+                }
 
                 r_logger.LogInformation("Successfully updated project details: ProjectId={ProjectId}", i_ProjectId);
                 return project;
@@ -794,6 +937,297 @@ namespace GainIt.API.Services.Projects.Implementations
             {
                 r_logger.LogError(ex, "Error generating RAG context with AI for project: ProjectId={ProjectId}", project.ProjectId);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Starts a project by changing its status to InProgress and generating a roadmap
+        /// </summary>
+        public async Task<UserProject> StartProjectAsync(Guid projectId, Guid actorUserId)
+        {
+            r_logger.LogInformation("Starting project: ProjectId={ProjectId}, ActorUserId={ActorUserId}", projectId, actorUserId);
+
+            try
+            {
+                // Get the project with team members
+                var project = await r_DbContext.Projects
+                    .Include(p => p.ProjectMembers.Where(pm => pm.LeftAtUtc == null))
+                    .ThenInclude(pm => pm.User)
+                    .FirstOrDefaultAsync(p => p.ProjectId == projectId);
+
+                if (project == null)
+                {
+                    r_logger.LogWarning("Project not found: ProjectId={ProjectId}", projectId);
+                    throw new KeyNotFoundException($"Project with ID {projectId} not found");
+                }
+
+                // Validate project can be started
+                await validateProjectCanBeStartedAsync(project, actorUserId);
+
+                // Change project status to InProgress using existing service method
+                var updatedProject = await UpdateProjectStatusAsync(projectId, eProjectStatus.InProgress);
+                r_logger.LogInformation("Project status changed to InProgress: ProjectId={ProjectId}", projectId);
+
+                // Generate roadmap automatically
+                try
+                {
+                    var roadmap = await generateProjectRoadmapAsync(updatedProject);
+                    r_logger.LogInformation("Roadmap generated: ProjectId={ProjectId}, Milestones={Milestones}, Tasks={Tasks}", 
+                        projectId, roadmap.CreatedMilestones.Count, roadmap.CreatedTasks.Count());
+                }
+                catch (Exception ex)
+                {
+                    r_logger.LogWarning(ex, "Failed to generate roadmap for project: ProjectId={ProjectId}", projectId);
+                    // Don't throw - project was started successfully, roadmap is optional
+                }
+
+                // Send notifications to team members
+                try
+                {
+                    await sendProjectStartedNotificationsAsync(updatedProject);
+                    r_logger.LogInformation("Project start notifications sent: ProjectId={ProjectId}", projectId);
+                }
+                catch (Exception ex)
+                {
+                    r_logger.LogWarning(ex, "Failed to send project start notifications: ProjectId={ProjectId}", projectId);
+                    // Don't throw - project was started successfully, notifications are optional
+                }
+
+                // Create announcement post in project forum
+                try
+                {
+                    await createProjectStartAnnouncementAsync(updatedProject);
+                    r_logger.LogInformation("Project start announcement created: ProjectId={ProjectId}", projectId);
+                }
+                catch (Exception ex)
+                {
+                    r_logger.LogWarning(ex, "Failed to create project start announcement: ProjectId={ProjectId}", projectId);
+                    // Don't throw - project was started successfully, announcement is optional
+                }
+
+                // Export projects to Azure blob for indexer
+                try
+                {
+                    await ExportAndUploadProjectsAsync();
+                    r_logger.LogInformation("Successfully exported projects after project start: ProjectId={ProjectId}", projectId);
+                }
+                catch (Exception exportEx)
+                {
+                    r_logger.LogWarning(exportEx, "Failed to export projects after project start: ProjectId={ProjectId}", projectId);
+                    // Don't throw - project was started successfully, export is optional
+                }
+
+                r_logger.LogInformation("Project started successfully: ProjectId={ProjectId}", projectId);
+                return updatedProject;
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error starting project: ProjectId={ProjectId}, ActorUserId={ActorUserId}", projectId, actorUserId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Validates that a project can be started
+        /// </summary>
+        private async Task validateProjectCanBeStartedAsync(UserProject project, Guid actorUserId)
+        {
+            // Check if project is in Pending status
+            if (project.ProjectStatus != eProjectStatus.Pending)
+            {
+                throw new InvalidOperationException($"Project must be in Pending status to be started. Current status: {project.ProjectStatus}");
+            }
+
+            // Check if user has permission to start the project
+            var isProjectAdmin = project.ProjectMembers.Any(pm => pm.UserId == actorUserId && pm.IsAdmin && pm.LeftAtUtc == null);
+            var isMentor = await r_DbContext.Mentors.AnyAsync(m => m.UserId == actorUserId);
+            
+            if (!isProjectAdmin && !isMentor)
+            {
+                throw new UnauthorizedAccessException("Only project admins or mentors can start a project");
+            }
+
+            // Check if project has minimum team members
+            var activeMembers = project.ProjectMembers.Count(pm => pm.LeftAtUtc == null);
+            if (activeMembers < 1)
+            {
+                throw new InvalidOperationException("Project must have at least one team member to be started");
+            }
+
+            // Check if project has required information
+            if (string.IsNullOrWhiteSpace(project.ProjectName))
+            {
+                throw new InvalidOperationException("Project must have a name to be started");
+            }
+
+            if (string.IsNullOrWhiteSpace(project.ProjectDescription))
+            {
+                throw new InvalidOperationException("Project must have a description to be started");
+            }
+
+            if (project.Goals == null || !project.Goals.Any())
+            {
+                throw new InvalidOperationException("Project must have at least one goal to be started");
+            }
+        }
+
+        /// <summary>
+        /// Generates a roadmap for the project using AI planning
+        /// </summary>
+        private async Task<PlanApplyResultViewModel> generateProjectRoadmapAsync(UserProject project)
+        {
+            // Create planning request using project data
+            var planRequest = new PlanRequestDto
+            {
+                Goal = string.Join(", ", project.Goals ?? new List<string>()),
+                Constraints = null, // Let AI determine constraints based on project
+                PreferredTechnologies = string.Join(", ", project.Technologies ?? new List<string>()),
+                StartDateUtc = DateTime.UtcNow,
+                TargetDueDateUtc = DateTime.UtcNow.Add(project.Duration)
+            };
+
+            // Get team members for planning context
+            var teamMembers = project.ProjectMembers
+                .Where(pm => pm.LeftAtUtc == null)
+                .Select(pm => $"{pm.User.FullName} ({pm.UserRole})")
+                .ToList();
+
+            r_logger.LogInformation("Generating roadmap for project: ProjectId={ProjectId}, TeamMembers={TeamCount}", 
+                project.ProjectId, teamMembers.Count);
+
+            // Use the existing planning service to generate roadmap
+            var roadmap = await r_PlanningService.GenerateForProjectAsync(
+                project.ProjectId, 
+                planRequest, 
+                project.ProjectMembers.FirstOrDefault(pm => pm.IsAdmin && pm.LeftAtUtc == null)?.UserId ?? Guid.Empty);
+
+            r_logger.LogInformation("Roadmap generated successfully: ProjectId={ProjectId}, Milestones={MilestoneCount}, Tasks={TaskCount}", 
+                project.ProjectId, roadmap.CreatedMilestones.Count, roadmap.CreatedTasks.Count());
+
+            return roadmap;
+        }
+
+        /// <summary>
+        /// Sends notifications to all team members about project start
+        /// </summary>
+        private async Task<int> sendProjectStartedNotificationsAsync(UserProject project)
+        {
+            var notifiedCount = 0;
+            // Get all team members (including the person who started the project)
+            var teamMembersToNotify = project.ProjectMembers
+                .Where(pm => pm.LeftAtUtc == null)
+                .ToList();
+
+            // Get the first admin as the "started by" user for the notification data
+            var startedByUser = project.ProjectMembers.FirstOrDefault(pm => pm.IsAdmin && pm.LeftAtUtc == null)?.User;
+            if (startedByUser == null)
+            {
+                r_logger.LogWarning("No admin found for project start notification: ProjectId={ProjectId}", project.ProjectId);
+                return 0;
+            }
+
+            var notificationData = new ProjectStartedNotificationDto
+            {
+                ProjectId = project.ProjectId,
+                ProjectName = project.ProjectName,
+                ProjectDescription = project.Description ?? "",
+                StartedByUserName = startedByUser.FullName ?? "Unknown User",
+                StartedByUserId = startedByUser.UserId,
+                StartedAtUtc = DateTime.UtcNow,
+                TeamMembersCount = project.ProjectMembers.Count(pm => pm.LeftAtUtc == null),
+                Technologies = project.Technologies ?? new List<string>()
+            };
+
+            foreach (var member in teamMembersToNotify)
+            {
+                if (!string.IsNullOrEmpty(member.User.ExternalId))
+                {
+                    try
+                    {
+                        // Send SignalR notification
+                        await r_Hub.Clients.User(member.User.ExternalId)
+                            .SendAsync(RealtimeEvents.Projects.ProjectStarted, notificationData);
+
+                        // Send email notification
+                        await r_EmailSender.SendAsync(
+                            member.User.EmailAddress,
+                            $"GainIt Notifications: Project '{project.ProjectName}' has started!",
+                            $"Hi {member.User.FullName},\n\nGreat news! The project '{project.ProjectName}' has officially started and is now in progress.\n\nProject Description: {project.Description}\nTechnologies: {string.Join(", ", project.Technologies ?? new List<string>())}\nTeam Members: {project.ProjectMembers.Count(pm => pm.LeftAtUtc == null)}\n\nYou can now begin working on your assigned tasks and collaborate with your team members.\n\nGood luck with the project!",
+                            null
+                        );
+
+                        notifiedCount++;
+                        r_logger.LogInformation("Project start notification sent: UserId={UserId}, ExternalId={ExternalId}, ProjectId={ProjectId}", 
+                            member.UserId, member.User.ExternalId, project.ProjectId);
+                    }
+                    catch (Exception ex)
+                    {
+                        r_logger.LogWarning(ex, "Failed to send notification to team member: UserId={UserId}, ProjectId={ProjectId}", 
+                            member.UserId, project.ProjectId);
+                    }
+                }
+                else
+                {
+                    r_logger.LogWarning("User has no ExternalId for SignalR notification: UserId={UserId}, Email={Email}, ProjectId={ProjectId}", 
+                        member.UserId, member.User.EmailAddress, project.ProjectId);
+                }
+            }
+
+            return notifiedCount;
+        }
+
+        /// <summary>
+        /// Creates an announcement post in the project forum
+        /// </summary>
+        private async Task createProjectStartAnnouncementAsync(UserProject project)
+        {
+            try
+            {
+                // Get the first admin to be the author of the announcement
+                var adminMember = project.ProjectMembers.FirstOrDefault(pm => pm.IsAdmin && pm.LeftAtUtc == null);
+                if (adminMember == null)
+                {
+                    r_logger.LogWarning("No admin found to create project start announcement: ProjectId={ProjectId}", project.ProjectId);
+                    return;
+                }
+
+                var announcementContent = $@"🎉 **Project '{project.ProjectName}' has officially started!**
+
+We're excited to announce that our project is now **in progress** and ready for development!
+
+**Project Overview:**
+{project.Description}
+
+**Technologies:**
+{string.Join(", ", project.Technologies ?? new List<string>())}
+
+**Team Members:** {project.ProjectMembers.Count(pm => pm.LeftAtUtc == null)}
+
+**What's Next:**
+- Check your assigned tasks in the project dashboard
+- Review the project roadmap and milestones
+- Start collaborating with your team members
+- Use the project forum for discussions and updates
+
+Let's make this project a success! 🚀
+
+*This announcement was automatically created when the project was started.*";
+
+                var createPostDto = new CreateForumPostDto
+                {
+                    ProjectId = project.ProjectId,
+                    Content = announcementContent
+                };
+
+                await r_ForumService.CreatePostAsync(createPostDto, adminMember.UserId);
+
+                r_logger.LogInformation("Project start announcement created: ProjectId={ProjectId}, AuthorId={AuthorId}", 
+                    project.ProjectId, adminMember.UserId);
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogWarning(ex, "Failed to create project start announcement: ProjectId={ProjectId}", project.ProjectId);
+                // Don't throw - this is optional functionality
             }
         }
 

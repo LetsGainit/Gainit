@@ -317,6 +317,7 @@ GET /api/users/12345678-1234-1234-1234-123456789012/dashboard?forceRefresh=true
 | Method | Endpoint | Description | Authorization |
 |--------|----------|-------------|---------------|
 | POST | `/start-from-template` | Start a new project from template | RequireAccessAsUser |
+| POST | `/{projectId}/start` | Start a project (change status to InProgress, generate roadmap, send notifications) | RequireAccessAsUser |
 | PUT | `/{projectId}/update` | Update project details (including picture upload) | Project Admin/Mentor |
 | PUT | `/{projectId}/mentor` | Update project mentor | - |
 | DELETE | `/{projectId}/mentor` | Remove project mentor | - |
@@ -331,14 +332,55 @@ GET /api/users/12345678-1234-1234-1234-123456789012/dashboard?forceRefresh=true
 
 **Authorization:** Requires authentication (`RequireAccessAsUser`)
 
-**Query Parameters:**
-- `templateId`: The ID of the template to use (required)
+**Request Body:** `CreateProjectFromTemplateRequestDto`
+```json
+{
+  "selectedRole": "string"
+}
+```
 
 **Response:** `UserProjectViewModel` (same structure as GET `/{projectId}`)
 
 **Example Usage:**
 ```
 POST /api/projects/start-from-template?templateId=12345678-1234-1234-1234-123456789012
+Content-Type: application/json
+
+{
+  "selectedRole": "Frontend Developer"
+}
+```
+
+#### POST `/{projectId}/start`
+**Description:** Start a project by changing its status to InProgress, generating a roadmap using AI, sending notifications to all team members, and creating a forum announcement post.
+
+**Authorization:** Requires authentication (`RequireAccessAsUser`)
+
+**What this endpoint does:**
+1. **Validates** project can be started (status is Pending, has goals, etc.)
+2. **Changes status** to InProgress
+3. **Generates roadmap** automatically using AI planning service
+4. **Sends notifications** to all team members via SignalR and email
+5. **Creates forum post** announcing project start
+6. **Updates search index** for project discovery
+
+**Response:** `UserProjectViewModel` (updated project with InProgress status)
+
+**Example Usage:**
+```
+POST /api/projects/12345678-1234-1234-1234-123456789012/start
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "projectId": "12345678-1234-1234-1234-123456789012",
+  "projectName": "My Awesome Project",
+  "projectStatus": "InProgress",
+  "description": "Project description...",
+  // ... other project fields
+}
 ```
 
 #### GET `/user/me`
@@ -486,11 +528,11 @@ projectPictureUrl: "https://example.com/image.jpg"
 - `pageSize`: Items per page (default: 20)
 
 #### GET `/search/vector`
-**Description:** Performs vector-based semantic search for projects using AI-powered matching.
+**Description:** Performs vector-based semantic search for projects using AI-powered matching with iterative search to guarantee exact result count.
 
 **Query Parameters:**
 - `query`: The user's search text (required)
-- `count`: Maximum number of results to return (default: 3)
+- `count`: **Exact** number of results to return (default: 3) - **guaranteed to return exactly this many projects**
 
 **Response:** `ProjectMatchResultViewModel`
 ```json
@@ -523,18 +565,24 @@ projectPictureUrl: "https://example.com/image.jpg"
 }
 ```
 
+**Key Features:**
+- **Iterative Search**: Uses multiple search attempts with decreasing similarity thresholds (0.75 → 0.65 → 0.55) to ensure exact count
+- **Deduplication**: Prevents duplicate projects across multiple search attempts
+- **AI Explanation**: Provides detailed explanation of why projects match the query
+- **Reliable Count**: Always returns exactly the number of projects requested
+
 **Example Usage:**
 ```
 GET /api/projects/search/vector?query=web development with React&count=5
 ```
 
 #### GET `/match/profile`
-**Description:** Matches projects to the current authenticated user's profile using AI-powered analysis of their skills, interests, and experience.
+**Description:** Matches projects to the current authenticated user's profile using AI-powered analysis of their skills, interests, and experience with iterative search to guarantee exact result count.
 
 **Authorization:** Requires authentication (`RequireAccessAsUser`)
 
 **Query Parameters:**
-- `count`: Maximum number of results to return (default: 3)
+- `count`: **Exact** number of results to return (default: 3) - **guaranteed to return exactly this many projects**
 
 **Response:** `IEnumerable<AzureVectorSearchProjectViewModel>`
 ```json
@@ -575,6 +623,12 @@ GET /api/projects/search/vector?query=web development with React&count=5
 - `"InProgress"`: Project is currently active
 - `"Completed"`: Project is completed
 
+**Key Features:**
+- **Iterative Search**: Uses multiple search attempts with decreasing similarity thresholds to ensure exact count
+- **Deduplication**: Prevents duplicate projects across multiple search attempts
+- **Profile Analysis**: Analyzes user's skills, interests, education, and experience
+- **Reliable Count**: Always returns exactly the number of projects requested
+
 **Example Usage:**
 ```
 GET /api/projects/match/profile?count=5
@@ -585,6 +639,7 @@ GET /api/projects/match/profile?count=5
 - **Status Information**: Use `projectStatus` to show current project state for active projects
 - **Rich Metadata**: Access `ragContext` for additional categorization and filtering
 - **Consistent Structure**: All project matching endpoints return the same view model structure
+- **Predictable Results**: Count parameter always returns exactly the requested number of projects
 
 ### Nonprofit Projects
 | Method | Endpoint | Description | Authorization |

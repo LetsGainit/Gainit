@@ -15,8 +15,9 @@ namespace GainIt.API.Realtime
 
         public override async Task OnConnectedAsync()
         {
-            _logger.LogInformation("Hub connected. User={UserId}, ConnectionId={ConnId}",
-                Context.UserIdentifier, Context.ConnectionId);
+            _logger.LogInformation("Hub connected. User={UserId}, ConnectionId={ConnId}, UserClaims={UserClaims}",
+                Context.UserIdentifier, Context.ConnectionId, 
+                string.Join(", ", Context.User?.Claims?.Select(c => $"{c.Type}={c.Value}") ?? new[] { "No claims" }));
 
             await base.OnConnectedAsync();
         }

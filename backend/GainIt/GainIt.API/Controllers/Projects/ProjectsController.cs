@@ -1,5 +1,6 @@
 ﻿using GainIt.API.DTOs.Search;
 using GainIt.API.DTOs.ViewModels.Projects;
+using GainIt.API.DTOs.Requests.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
 using GainIt.API.Models.Users;
@@ -292,18 +293,22 @@ namespace GainIt.API.Controllers.Projects
 
         #region Template Actions
         /// <summary>
-        /// Starts a new project from a template and assigns the current authenticated user as a team member.
+        /// Starts a new project from a template and assigns the current authenticated user with their selected role.
         /// </summary>
         /// <param name="templateId">The ID of the template to use.</param>
+        /// <param name="request">The request containing the user's selected role.</param>
         /// <returns>The newly created project details.</returns>
         [HttpPost("start-from-template")]
         [Authorize(Policy = "RequireAccessAsUser")]
-        public async Task<ActionResult<UserProjectViewModel>> CreateProjectFromTemplate([FromQuery] Guid templateId)
+        public async Task<ActionResult<UserProjectViewModel>> CreateProjectFromTemplate(
+            [FromQuery] Guid templateId, 
+            [FromBody] CreateProjectFromTemplateRequestDto request)
         {
             try
             {
                 var userId = await GetCurrentUserIdAsync();
-                r_logger.LogInformation("Creating project from template: TemplateId={TemplateId}, UserId={UserId}", templateId, userId);
+                r_logger.LogInformation("Creating project from template: TemplateId={TemplateId}, UserId={UserId}, SelectedRole={SelectedRole}", 
+                    templateId, userId, request?.SelectedRole);
                 
                 if (templateId == Guid.Empty)
                 {
@@ -311,12 +316,19 @@ namespace GainIt.API.Controllers.Projects
                     return BadRequest(new { Message = "Template ID cannot be empty." });
                 }
 
-                UserProject o_Project = await r_ProjectService.StartProjectFromTemplateAsync(templateId, userId);
+                if (request == null || string.IsNullOrWhiteSpace(request.SelectedRole))
+                {
+                    r_logger.LogWarning("Invalid request or empty selected role: TemplateId={TemplateId}, Request={Request}", 
+                        templateId, request?.SelectedRole ?? "null");
+                    return BadRequest(new { Message = "Selected role is required." });
+                }
+
+                UserProject o_Project = await r_ProjectService.StartProjectFromTemplateAsync(templateId, userId, request.SelectedRole);
 
                 UserProjectViewModel projectViewModel = new UserProjectViewModel(o_Project);
                 
-                r_logger.LogInformation("Successfully created project from template: ProjectId={ProjectId}, TemplateId={TemplateId}, UserId={UserId}", 
-                    o_Project.ProjectId, templateId, userId);
+                r_logger.LogInformation("Successfully created project from template: ProjectId={ProjectId}, TemplateId={TemplateId}, UserId={UserId}, SelectedRole={SelectedRole}", 
+                    o_Project.ProjectId, templateId, userId, request.SelectedRole);
 
                 return CreatedAtAction(
                     nameof(GetActiveProjectById),
@@ -333,6 +345,11 @@ namespace GainIt.API.Controllers.Projects
             {
                 r_logger.LogWarning("Template or user not found: TemplateId={TemplateId}, Error={Error}", templateId, e.Message);
                 return NotFound(new { Message = e.Message });
+            }
+            catch (ArgumentException e)
+            {
+                r_logger.LogWarning("Invalid argument: TemplateId={TemplateId}, Error={Error}", templateId, e.Message);
+                return BadRequest(new { Message = e.Message });
             }
             catch (Exception ex)
             {
@@ -471,6 +488,61 @@ namespace GainIt.API.Controllers.Projects
             catch (Exception ex)
             {
                 r_logger.LogError(ex, "Error removing team member from project: ProjectId={ProjectId}", projectId);
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Project Start
+
+        /// <summary>
+        /// Starts a project by changing its status to InProgress and generating a roadmap
+        /// </summary>
+        /// <param name="projectId">The ID of the project to start</param>
+        /// <returns>The updated project with InProgress status</returns>
+        [HttpPost("{projectId}/start")]
+        [Authorize(Policy = "RequireAccessAsUser")]
+        public async Task<ActionResult<UserProjectViewModel>> StartProject([FromRoute] Guid projectId)
+        {
+            r_logger.LogInformation("Starting project: ProjectId={ProjectId}", projectId);
+            
+            if (projectId == Guid.Empty)
+            {
+                r_logger.LogWarning("Invalid project ID provided: {ProjectId}", projectId);
+                return BadRequest(new { Message = "Project ID cannot be empty." });
+            }
+
+            try
+            {
+                var userId = await GetCurrentUserIdAsync();
+                var updatedProject = await r_ProjectService.StartProjectAsync(projectId, userId);
+
+                var projectViewModel = new UserProjectViewModel(updatedProject);
+
+                r_logger.LogInformation("Project started successfully: ProjectId={ProjectId}, Status={Status}", 
+                    projectId, updatedProject.ProjectStatus);
+
+                return Ok(projectViewModel);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                r_logger.LogWarning("Unauthorized access: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
+                return Unauthorized(new { Message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                r_logger.LogWarning("Project not found: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
+                return NotFound(new { Message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                r_logger.LogWarning("Invalid operation: ProjectId={ProjectId}, Error={Error}", projectId, ex.Message);
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                r_logger.LogError(ex, "Error starting project: ProjectId={ProjectId}", projectId);
                 throw;
             }
         }
@@ -920,12 +992,13 @@ namespace GainIt.API.Controllers.Projects
         #region NonProfit Project Creation
 
         /// <summary>
-        /// Creates a new project for a nonprofit organization.
+        /// Creates a new project for a nonprofit organization and assigns the creator as admin.
         /// </summary>
         /// <param name="CreateProjectForNonprofitViewModel">The project details to create.</param>
         /// <param name="nonprofitOrgId">The ID of the nonprofit organization.</param>
         /// <returns>The newly created project details.</returns>
         [HttpPost("nonprofit")]
+        [Authorize(Policy = "RequireAccessAsUser")]
         public async Task<ActionResult<UserProjectViewModel>> CreateProjectForNonprofit(
             [FromBody] UserProjectViewModel CreateProjectForNonprofitViewModel,
             [FromQuery] Guid nonprofitOrgId)
@@ -955,6 +1028,11 @@ namespace GainIt.API.Controllers.Projects
                     o_Project.ProjectId, nonprofitOrgId, CreateProjectForNonprofitViewModel.ProjectName);
 
                 return CreatedAtAction(nameof(GetActiveProjectById), new { projectId = o_Project.ProjectId }, userProjectViewModel);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                r_logger.LogWarning("Unauthorized access: NonprofitOrgId={NonprofitOrgId}, Error={Error}", nonprofitOrgId, ex.Message);
+                return Unauthorized(new { Message = ex.Message });
             }
             catch (KeyNotFoundException e)
             {

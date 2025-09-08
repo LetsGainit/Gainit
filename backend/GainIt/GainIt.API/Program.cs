@@ -195,7 +195,7 @@ try
     var policyAuthority = !string.IsNullOrWhiteSpace(policy)
         ? $"{b2c["Instance"]!.TrimEnd('/')}/{tenantId}/{policy}/v2.0"
         : null;
-    Log.Information("AUTH CONFIG VERSION v7 - base issuer without policy");
+    Log.Information("AUTH CONFIG VERSION v8 - base issuer without policy");
     Log.Information("Authority: {Authority}", baseAuthority);
 
     builder.Services
@@ -220,6 +220,19 @@ try
         // JWT validation events
         o.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+            {
+                // Handle SignalR authentication - extract token from query string
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                    Log.Information("SignalR authentication: Token extracted from query string for path: {Path}", path);
+                }
+                return Task.CompletedTask;
+            },
             OnAuthenticationFailed = context =>
             {
                 Log.Error("JWT Authentication failed: {Error}", context.Exception.Message);
@@ -318,7 +331,8 @@ try
 
     // Add health checks
     builder.Services.AddHealthChecks()
-        .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "database", "sql" });
+        .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "database", "sql" })
+        .AddCheck<SignalRHealthCheck>("signalr", tags: new[] { "signalr", "realtime" });
 
     // Configure JSON serialization to handle circular references without adding $id/$values
     builder.Services.AddControllers().AddJsonOptions(options =>
