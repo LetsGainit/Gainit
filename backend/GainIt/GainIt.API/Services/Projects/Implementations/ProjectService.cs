@@ -1236,6 +1236,7 @@ Let's make this project a success! 🚀
         /// <summary>
         /// Export all projects for Azure Cognitive Search vector indexing and upload to blob storage
         /// Deletes all previous export files to keep only the latest export
+        /// Only exports template projects and user projects with Pending status (joinable projects)
         /// </summary>
         /// <returns>Blob URL where the file was uploaded</returns>
         public async Task<string> ExportAndUploadProjectsAsync()
@@ -1409,6 +1410,7 @@ Let's make this project a success! 🚀
                 /// <summary>
         /// Export all projects for Azure Cognitive Search vector indexing
         /// Creates the exact JSON structure needed for the projects-rag index
+        /// Only exports template projects and user projects with Pending status (joinable projects)
         /// </summary>
         /// <returns>List of projects formatted for Azure Cognitive Search</returns>
         public async Task<List<AzureVectorSearchProjectViewModel>> ExportProjectsForAzureVectorSearchAsync()
@@ -1424,9 +1426,10 @@ Let's make this project a success! 🚀
                     
                 var userProjects = await r_DbContext.Projects
                     .Include(p => p.RagContext)
+                    .Where(p => p.ProjectStatus == eProjectStatus.Pending)
                     .ToListAsync();
                 
-                r_logger.LogInformation("Retrieved projects: Template={TemplateCount}, User={UserCount}", 
+                r_logger.LogInformation("Retrieved projects: Template={TemplateCount}, UserPending={UserPendingCount} (filtered to only Pending status)", 
                     templateProjects.Count, userProjects.Count);
                 
                 // Log all project IDs for debugging

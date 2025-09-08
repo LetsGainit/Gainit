@@ -73,6 +73,7 @@ namespace GainIt.API.Services.Projects.Interfaces
         /// <summary>
         /// Export all projects for Azure Cognitive Search vector indexing
         /// Creates the exact JSON structure needed for the projects-rag index
+        /// Only exports template projects and user projects with Pending status (joinable projects)
         /// </summary>
         /// <returns>List of projects formatted for Azure Cognitive Search</returns>
         Task<List<AzureVectorSearchProjectViewModel>> ExportProjectsForAzureVectorSearchAsync();
