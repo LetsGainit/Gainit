@@ -7,6 +7,8 @@ using GainIt.API.Data;
 using GainIt.API.DTOs.ViewModels.Projects;
 using GainIt.API.DTOs.Requests.Projects;
 using GainIt.API.DTOs.Requests.Forum;
+using GainIt.API.DTOs.Requests.Tasks;
+using GainIt.API.DTOs.ViewModels.Tasks;
 using GainIt.API.DTOs.Projects;
 using GainIt.API.Models.Enums.Projects;
 using GainIt.API.Models.Projects;
@@ -1130,7 +1132,7 @@ namespace GainIt.API.Services.Projects.Implementations
             {
                 ProjectId = project.ProjectId,
                 ProjectName = project.ProjectName,
-                ProjectDescription = project.Description ?? "",
+                ProjectDescription = project.ProjectDescription ?? "",
                 StartedByUserName = startedByUser.FullName ?? "Unknown User",
                 StartedByUserId = startedByUser.UserId,
                 StartedAtUtc = DateTime.UtcNow,
@@ -1152,7 +1154,7 @@ namespace GainIt.API.Services.Projects.Implementations
                         await r_EmailSender.SendAsync(
                             member.User.EmailAddress,
                             $"GainIt Notifications: Project '{project.ProjectName}' has started!",
-                            $"Hi {member.User.FullName},\n\nGreat news! The project '{project.ProjectName}' has officially started and is now in progress.\n\nProject Description: {project.Description}\nTechnologies: {string.Join(", ", project.Technologies ?? new List<string>())}\nTeam Members: {project.ProjectMembers.Count(pm => pm.LeftAtUtc == null)}\n\nYou can now begin working on your assigned tasks and collaborate with your team members.\n\nGood luck with the project!",
+                            $"Hi {member.User.FullName},\n\nGreat news! The project '{project.ProjectName}' has officially started and is now in progress.\n\nProject Description: {project.ProjectDescription}\nTechnologies: {string.Join(", ", project.Technologies ?? new List<string>())}\nTeam Members: {project.ProjectMembers.Count(pm => pm.LeftAtUtc == null)}\n\nYou can now begin working on your assigned tasks and collaborate with your team members.\n\nGood luck with the project!",
                             null
                         );
 
@@ -1196,7 +1198,7 @@ namespace GainIt.API.Services.Projects.Implementations
 We're excited to announce that our project is now **in progress** and ready for development!
 
 **Project Overview:**
-{project.Description}
+{project.ProjectDescription}
 
 **Technologies:**
 {string.Join(", ", project.Technologies ?? new List<string>())}
